@@ -176,14 +176,13 @@ export default function DashboardLayout({ children }) {
     return pathname.startsWith(href)
   }
 
-  // Bottom nav: 5 items = Dashboard, Kasir, Stok, Laporan, Hutang + Pengaturan (ganti Menu)
+  // Bottom nav: 5 items saja — Pengaturan diakses via avatar di header
   const bottomNavItems = [
-    { href: '/dashboard',            label: 'Dashboard',  icon: LayoutDashboard },
-    { href: '/dashboard/kasir',      label: 'Kasir',      icon: ShoppingCart },
-    { href: '/dashboard/stok',       label: 'Stok',       icon: Package },
-    { href: '/dashboard/laporan',    label: 'Laporan',    icon: BarChart3 },
-    { href: '/dashboard/hutang',     label: 'Hutang',     icon: Users },
-    { href: '/dashboard/pengaturan', label: 'Pengaturan', icon: Settings },
+    { href: '/dashboard',         label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/dashboard/kasir',   label: 'Kasir',     icon: ShoppingCart },
+    { href: '/dashboard/stok',    label: 'Stok',      icon: Package },
+    { href: '/dashboard/laporan', label: 'Laporan',   icon: BarChart3 },
+    { href: '/dashboard/hutang',  label: 'Hutang',    icon: Users },
   ]
 
   return (
