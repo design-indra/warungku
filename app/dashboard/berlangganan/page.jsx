@@ -1,94 +1,223 @@
 'use client'
 
-import React from 'react'
-import { Check, Crown, Zap, ShieldCheck } from 'lucide-react'
-
-const plans = [
-  {
-    name: 'Gratis',
-    price: 'Rp 0',
-    desc: 'Cocok untuk warung rintisan yang baru memulai.',
-    features: ['Kelola hingga 50 produk', 'Laporan harian standar', '1 Akun kasir', 'Catatan utang dasar'],
-    isPopular: false,
-    buttonText: 'Paket Aktif Saat Ini',
-    buttonClass: 'bg-gray-100 text-gray-500 cursor-not-allowed',
-  },
-  {
-    name: 'Warung Pro',
-    price: 'Rp 49.000',
-    period: '/bulan',
-    desc: 'Pilihan terbaik untuk meningkatkan omset dan efisiensi.',
-    features: ['Produk tidak terbatas', 'Laporan laba rugi lengkap', 'Multi-kasir (hingga 5 staf)', 'Fitur PWA & Cetak Struk Bluetooth', 'Manajemen stok otomatis'],
-    isPopular: true,
-    buttonText: 'Upgrade ke Pro',
-    buttonClass: 'bg-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-200',
-  }
-]
+import { useState, useEffect, useRef } from 'react'
+import Icon from '@/components/Icon'
 
 export default function BerlanggananPage() {
+  // ── Keadaan Subscription / Paket (Asli) ──
+  const [subStatus, setSubStatus]     = useState(null)   // { active, plan, expired_at }
+  const [subLoading, setSubLoading]   = useState(false)
+  const [orderData, setOrderData]     = useState(null)   // { qr_url, order_id, amount, expires_at }
+  const [paying, setPaying]           = useState(false)
+  const [pollMsg, setPollMsg]         = useState('')
+  const pollRef = useRef(null)
+
+  // ── Pembantu Subscription (Asli) ──
+  const fetchSubStatus = async () => {
+    setSubLoading(true)
+    try {
+      const res = await fetch('/api/subscription/status')
+      const json = await res.json()
+      setSubStatus(json)
+    } catch { setSubStatus({ active: false }) }
+    finally { setSubLoading(false) }
+  }
+
+  // Ambil status automatik semasa halaman dimuatkan
+  useEffect(() => {
+    fetchSubStatus()
+  }, [])
+
+  const handleBuPaket = async (plan) => {
+    setPaying(true)
+    setOrderData(null)
+    setPollMsg('')
+    try {
+      const res = await fetch('/api/subscription/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan }),
+      })
+      const json = await res.json()
+      if (!json.success) { alert(json.error || 'Gagal membuat order'); return }
+      setOrderData(json)
+      startPolling(json.order_id)
+    } catch { alert('Gagal terhubung ke server') }
+    finally { setPaying(false) }
+  }
+
+  const startPolling = (orderId) => {
+    setPollMsg('Menunggu pembayaran...')
+    let attempt = 0
+    const MAX = 60 // max 5 minit (5s selang masa)
+    pollRef.current = setInterval(async () => {
+      attempt++
+      try {
+        const res = await fetch('/api/subscription/status', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ order_id: orderId }),
+        })
+        const json = await res.json()
+        if (json.settled) {
+          clearInterval(pollRef.current)
+          setPollMsg('✅ Pembayaran berhasil! Paket aktif.')
+          setOrderData(null)
+          fetchSubStatus()
+        } else if (json.status === 'EXPIRED' || attempt >= MAX) {
+          clearInterval(pollRef.current)
+          setPollMsg('⏱ QR Code kadaluarsa. Silakan buat order baru.')
+          setOrderData(null)
+        }
+      } catch { /* silent */ }
+    }, 5000)
+  }
+
+  useEffect(() => () => clearInterval(pollRef.current), [])
+
   return (
-    <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-6">
-      <div className="text-center space-y-2 py-4">
-        <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-50 rounded-full border border-amber-200 text-amber-700 text-xs font-semibold">
-          <Crown className="w-3.5 h-3.5" /> Premium Plan
-        </div>
-        <h1 className="text-xl md:text-2xl font-extrabold text-gray-900">Kembangkan Bisnis Warungmu</h1>
-        <p className="text-xs md:text-sm text-gray-500">Pilih paket yang paling sesuai dengan kebutuhan operasional harian Anda.</p>
-      </div>
+    <div className="overflow-y-auto page-content space-y-4">
+      <div className="max-w-lg mx-auto space-y-4">
 
-      <div className="grid md:grid-cols-2 gap-6 items-stretch">
-        {plans.map((plan) => (
-          <div 
-            key={plan.name} 
-            className={`bg-white rounded-2xl border p-5 md:p-6 flex flex-col justify-between relative overflow-hidden transition-all hover:shadow-lg ${
-              plan.isPopular ? 'border-blue-500 ring-2 ring-blue-100' : 'border-gray-200'
-            }`}
-          >
-            {plan.isPopular && (
-              <span className="absolute top-0 right-0 bg-blue-500 text-white text-[10px] font-bold px-3 py-1 rounded-bl-xl uppercase tracking-wider flex items-center gap-1">
-                <Zap className="w-3 h-3 fill-current" /> Rekomendasi
-              </span>
-            )}
-
-            <div>
-              <h3 className="text-base font-bold text-gray-800">{plan.name}</h3>
-              <p className="text-xs text-gray-400 mt-1 min-h-[32px]">{plan.desc}</p>
-              
-              <div className="mt-4 mb-5 flex items-baseline gap-1">
-                <span className="text-2xl font-black text-gray-900">{plan.price}</span>
-                {plan.period && <span className="text-xs text-gray-400">{plan.period}</span>}
-              </div>
-
-              <div className="border-t border-gray-100 pt-4 space-y-3">
-                <p className="text-xs font-bold text-gray-700 uppercase tracking-wider">Fitur Utama:</p>
-                <ul className="space-y-2.5">
-                  {plan.features.map((feature) => (
-                    <li key={feature} className="flex items-start gap-2.5 text-xs text-gray-600">
-                      <div className="w-4 h-4 bg-emerald-50 rounded-full flex items-center justify-center mt-0.5 flex-shrink-0">
-                        <Check className="w-3 h-3 text-emerald-600 stroke-[3]" />
-                      </div>
-                      <span>{feature}</span>
-                    </li>
-                  ))}
-                </ul>
+        {/* ── Status Aktif ── */}
+        <div className="card p-5">
+          <h3 className="font-bold text-gray-900 mb-3">Status Paket</h3>
+          {subLoading ? (
+            <div className="flex items-center gap-2 text-gray-400 text-sm py-2">
+              <Icon name="refresh" size={15} color="#9ca3af" /> Memuat...
+            </div>
+          ) : subStatus?.active ? (
+            <div className="flex items-center gap-3 bg-green-50 rounded-xl p-4">
+              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 text-xl">✅</div>
+              <div>
+                <p className="font-bold text-green-800 capitalize">Paket {subStatus.plan} Aktif</p>
+                <p className="text-xs text-green-600 mt-0.5">
+                  Berlaku hingga: {new Date(subStatus.expired_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                </p>
               </div>
             </div>
+          ) : (
+            <div className="flex items-center gap-3 bg-gray-50 rounded-xl p-4">
+              <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0 text-xl">🆓</div>
+              <div>
+                <p className="font-bold text-gray-700">Paket Free</p>
+                <p className="text-xs text-gray-500 mt-0.5">Upgrade untuk fitur lengkap</p>
+              </div>
+            </div>
+          )}
+          {pollMsg && (
+            <p className={`mt-3 text-sm font-semibold text-center ${pollMsg.startsWith('✅') ? 'text-green-600' : 'text-amber-600'}`}>
+              {pollMsg}
+            </p>
+          )}
+        </div>
 
-            <div className="mt-6 pt-2">
-              <button className={`w-full py-2.5 px-4 rounded-xl font-bold text-xs transition-colors ${plan.buttonClass}`}>
-                {plan.buttonText}
+        {/* ── QR Code (Semasa menunggu pembayaran) ── */}
+        {orderData && (
+          <div className="card p-5 text-center">
+            <p className="font-bold text-gray-900 mb-1">Scan QRIS untuk Bayar</p>
+            <p className="text-xs text-gray-500 mb-4">
+              Paket {orderData.plan} — Rp {Number(orderData.amount).toLocaleString('id-ID')}
+            </p>
+            <div className="flex justify-center mb-4">
+              <img
+                src={orderData.qr_url}
+                alt="QRIS QR Code"
+                className="w-52 h-52 border border-gray-200 rounded-xl"
+              />
+            </div>
+            <p className="text-xs text-gray-400 mb-1">
+              Kode: <span className="font-mono font-semibold text-gray-600">{orderData.order_id}</span>
+            </p>
+            <p className="text-xs text-amber-600 font-medium">
+              QR berlaku hingga: {orderData.expires_at ? new Date(orderData.expires_at).toLocaleTimeString('id-ID') : '—'}
+            </p>
+            <div className="mt-4 flex items-center justify-center gap-2 text-xs text-gray-400 animate-pulse">
+              <Icon name="refresh" size={13} color="#9ca3af" />
+              Mendeteksi pembayaran otomatis...
+            </div>
+            <button
+              onClick={() => { clearInterval(pollRef.current); setOrderData(null); setPollMsg('') }}
+              className="mt-3 text-xs text-red-400 hover:text-red-600 underline"
+            >
+              Batalkan
+            </button>
+          </div>
+        )}
+
+        {/* ── Pilihan Paket ── */}
+        {!orderData && (
+          <div className="space-y-3">
+            <h3 className="font-bold text-gray-900 text-sm px-1">Pilih Paket</h3>
+
+            {/* Basic */}
+            <div className="card p-5 border-2 border-gray-200 hover:border-blue-300 transition-colors">
+              <div className="flex items-start justify-between mb-3">
+                <div>
+                  <p className="font-bold text-gray-900 text-base">Basic</p>
+                  <p className="text-2xl font-extrabold text-blue-700 mt-0.5">
+                    Rp 49.000 <span className="text-sm font-normal text-gray-400">/ bulan</span>
+                  </p>
+                </div>
+                <span className="text-3xl">📦</span>
+              </div>
+              <ul className="space-y-1.5 mb-4">
+                {['1 Cabang', 'Max 3 Kasir', 'Laporan bulanan', 'Manajemen stok'].map(f => (
+                  <li key={f} className="flex items-center gap-2 text-sm text-gray-600">
+                    <span className="text-green-500 font-bold">✓</span> {f}
+                  </li>
+                ))}
+              </ul>
+              <button
+                onClick={() => handleBuPaket('basic')}
+                disabled={paying || subStatus?.active}
+                className={`w-full py-2.5 rounded-xl font-bold text-sm transition-colors
+                  ${paying || subStatus?.active
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-blue-700 hover:bg-blue-800 text-white'}`}
+              >
+                {paying ? 'Memproses...' : subStatus?.active ? 'Sudah Aktif' : 'Pilih Basic'}
               </button>
             </div>
-          </div>
-        ))}
-      </div>
 
-      <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-4 flex items-start gap-3">
-        <ShieldCheck className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
-        <div>
-          <h4 className="text-xs font-bold text-blue-900">Jaminan Keamanan Transaksi</h4>
-          <p className="text-[11px] text-blue-700/80 mt-0.5">Pembayaran diproses secara aman. Anda dapat membatalkan atau mengubah paket langganan kapan saja dari pengaturan akun.</p>
-        </div>
+            {/* Pro */}
+            <div className="card p-5 border-2 border-blue-600 relative">
+              <div className="absolute -top-3 left-4">
+                <span className="bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full">Populer</span>
+              </div>
+              <div className="flex items-start justify-between mb-3 mt-1">
+                <div>
+                  <p className="font-bold text-gray-900 text-base">Pro</p>
+                  <p className="text-2xl font-extrabold text-blue-700 mt-0.5">
+                    Rp 99.000 <span className="text-sm font-normal text-gray-400">/ bulan</span>
+                  </p>
+                </div>
+                <span className="text-3xl">🚀</span>
+              </div>
+              <ul className="space-y-1.5 mb-4">
+                {['Cabang tidak terbatas', 'Kasir tidak terbatas', 'Laporan & analitik lengkap', 'Manajemen stok & hutang', 'Prioritas support'].map(f => (
+                  <li key={f} className="flex items-center gap-2 text-sm text-gray-600">
+                    <span className="text-green-500 font-bold">✓</span> {f}
+                  </li>
+                ))}
+              </ul>
+              <button
+                onClick={() => handleBuPaket('pro')}
+                disabled={paying || subStatus?.active}
+                className={`w-full py-2.5 rounded-xl font-bold text-sm transition-colors
+                  ${paying || subStatus?.active
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-blue-700 hover:bg-blue-800 text-white'}`}
+              >
+                {paying ? 'Memproses...' : subStatus?.active ? 'Sudah Aktif' : 'Pilih Pro'}
+              </button>
+            </div>
+
+            <p className="text-xs text-center text-gray-400 pb-2">
+              Pembayaran via QRIS · Diproses oleh Cashi.id
+            </p>
+          </div>
+        )}
       </div>
     </div>
   )
