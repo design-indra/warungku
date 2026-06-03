@@ -54,7 +54,7 @@ function ProfileDropdown({ user, warungName, initial, onClose, onLogout, router 
       bg: 'bg-amber-50',
       action: () => {
         onClose()
-        router.push('/dashboard/pengaturan?tab=paket')
+        router.push('/dashboard/berlangganan')
       }
     },
   ]
