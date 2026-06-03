@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { User, Lock, Camera, Crown, Users, Plus, Shield, ShieldAlert } from 'lucide-react'
+import { User, Lock, Camera, Crown, Users, Plus, Shield } from 'lucide-react'
 
 export default function PengaturanPage() {
   return (
@@ -16,8 +16,16 @@ function PengaturanContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   
-  // Membaca tab aktif langsung dari URL (?tab=...)
-  const currentTab = searchParams.get('tab') || 'profil'
+  // 1. Ambil tab aktif dari URL, jika tidak ada default ke 'profil'
+  const tabFromUrl = searchParams.get('tab') || 'profil'
+  const [activeTab, setActiveTab] = useState(tabFromUrl)
+
+  // 2. Efek untuk mensinkronisasi state ketika ada perubahan URL dari Dropdown Profil
+  useEffect(() => {
+    if (tabFromUrl) {
+      setActiveTab(tabFromUrl)
+    }
+  }, [tabFromUrl])
 
   const tabs = [
     { id: 'profil',     label: 'Profil Saya',        icon: User },
@@ -28,15 +36,9 @@ function PengaturanContent() {
   ]
 
   const handleTabChange = (tabId) => {
+    setActiveTab(tabId)
     router.push(`/dashboard/pengaturan?tab=${tabId}`)
   }
-
-  // State Dummy khusus untuk Tab User & Role (Admin/Kasir) agar berfungsi jelas
-  const [users, setUsers] = useState([
-    { id: 1, nama: 'Muhamad Holis', email: 'holis@warungku.com', role: 'Owner', status: 'Aktif' },
-    { id: 2, nama: 'Andi Wijaya', email: 'andi@warungku.com', role: 'Admin', status: 'Aktif' },
-    { id: 3, nama: 'Siti Rahma', email: 'siti@warungku.com', role: 'Kasir', status: 'Aktif' },
-  ])
 
   return (
     <div className="p-4 md:p-6 max-w-5xl mx-auto pb-24">
@@ -49,7 +51,7 @@ function PengaturanContent() {
       <div className="flex border-b border-gray-200 overflow-x-auto no-scrollbar mb-6 bg-white p-1 rounded-xl shadow-sm border">
         {tabs.map((tab) => {
           const Icon = tab.icon
-          const isActive = currentTab === tab.id
+          const isActive = activeTab === tab.id
           return (
             <button
               key={tab.id}
@@ -70,8 +72,8 @@ function PengaturanContent() {
       {/* Area Konten Masing-Masing Menu */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
         
-        {/* 1. KONTEN: PROFIL SAYA */}
-        {currentTab === 'profil' && (
+        {/* TAB 1: PROFIL SAYA */}
+        {activeTab === 'profil' && (
           <div className="space-y-4">
             <div>
               <h3 className="text-base font-bold text-gray-800">Informasi Profil</h3>
@@ -93,8 +95,8 @@ function PengaturanContent() {
           </div>
         )}
 
-        {/* 2. KONTEN: GANTI KATA SANDI */}
-        {currentTab === 'password' && (
+        {/* TAB 2: GANTI KATA SANDI */}
+        {activeTab === 'password' && (
           <div className="space-y-4">
             <div>
               <h3 className="text-base font-bold text-gray-800">Keamanan & Kata Sandi</h3>
@@ -116,8 +118,8 @@ function PengaturanContent() {
           </div>
         )}
 
-        {/* 3. KONTEN: FOTO PROFIL */}
-        {currentTab === 'foto' && (
+        {/* TAB 3: FOTO PROFIL */}
+        {activeTab === 'foto' && (
           <div className="space-y-4">
             <div>
               <h3 className="text-base font-bold text-gray-800">Foto Profil & Warung</h3>
@@ -137,30 +139,49 @@ function PengaturanContent() {
           </div>
         )}
 
-        {/* 4. KONTEN: PAKET BERLANGGANAN */}
-        {currentTab === 'paket' && (
-          <div className="space-y-4">
+        {/* TAB 4: PAKET BERLANGGANAN */}
+        {activeTab === 'paket' && (
+          <div className="space-y-6">
             <div>
-              <h3 className="text-base font-bold text-gray-800">Status Langganan Anda</h3>
-              <p className="text-xs text-gray-400">Pantau tipe paket aktif dan kelola tagihan fitur premium warung Anda.</p>
+              <h3 className="text-base font-bold text-gray-800">Status & Paket Langganan</h3>
+              <p className="text-xs text-gray-400">Pantau masa aktif paket Anda dan pilih opsi berlangganan terbaik.</p>
             </div>
-            <div className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl mt-4 flex items-start gap-4 max-w-2xl">
-              <div className="w-10 h-10 rounded-lg bg-amber-500 flex items-center justify-center text-white flex-shrink-0 shadow-sm">
+            
+            {/* Kartu Status Aktif */}
+            <div className="p-5 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl flex items-start gap-4">
+              <div className="w-10 h-10 rounded-xl bg-amber-500 flex items-center justify-center text-white flex-shrink-0 shadow-sm">
                 <Crown className="w-5 h-5" />
               </div>
               <div className="flex-1">
-                <h4 className="text-sm font-bold text-amber-900">Paket Pro (Free Trial)</h4>
-                <p className="text-xs text-amber-800 mt-0.5 leading-relaxed">Masa uji coba gratis Anda tersisa 14 hari lagi. Tingkatkan ke Pro Permanen untuk membuka kunci fitur kelola multi-cabang tanpa batasan kasir.</p>
-                <button className="mt-3 bg-amber-600 hover:bg-amber-700 text-white px-4 py-1.5 rounded-lg text-xs font-bold transition-colors shadow-sm">
-                  Upgrade Ke Premium Pro
-                </button>
+                <div className="flex items-center gap-2">
+                  <h4 className="text-sm font-bold text-amber-900">Paket Premium Pro (Masa Uji Coba)</h4>
+                  <span className="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full">14 Hari Tersisa</span>
+                </div>
+                <p className="text-xs text-amber-700 mt-1 leading-relaxed">Anda sedang menikmati akses penuh fitur kelola multi-cabang, riwayat laporan tak terbatas, dan multi-akun kasir karyawan.</p>
+              </div>
+            </div>
+
+            {/* Pilihan Paket */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+              <div className="border border-gray-100 rounded-xl p-4 bg-gray-50/50">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Basic</span>
+                <h5 className="text-base font-bold text-gray-800 mt-1">Gratis Selamanya</h5>
+                <p className="text-xs text-gray-500 mt-1">Cocok untuk rintisan awal toko tunggal.</p>
+                <div className="text-lg font-bold text-gray-900 mt-3">Rp 0 <span className="text-xs font-normal text-gray-400">/ bulan</span></div>
+              </div>
+              <div className="border-2 border-blue-500 rounded-xl p-4 bg-blue-50/20 relative overflow-hidden">
+                <div className="absolute top-0 right-0 bg-blue-500 text-white text-[9px] font-bold px-3 py-1 rounded-bl-xl">POPULER</div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600">Professional</span>
+                <h5 className="text-base font-bold text-gray-800 mt-1">Premium Full Akses</h5>
+                <p className="text-xs text-gray-500 mt-1">Akses mutakhir tanpa batasan fitur.</p>
+                <div className="text-lg font-bold text-blue-600 mt-3">Rp 49.000 <span className="text-xs font-normal text-gray-400">/ bulan</span></div>
               </div>
             </div>
           </div>
         )}
 
-        {/* 5. KONTEN: USER & ROLE (MANAJEMEN ADMIN/KASIR) */}
-        {currentTab === 'user-role' && (
+        {/* TAB 5: USER & ROLE */}
+        {activeTab === 'user-role' && (
           <div className="space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-50 pb-4">
               <div>
@@ -177,39 +198,33 @@ function PengaturanContent() {
             <div className="overflow-x-auto border border-gray-100 rounded-xl mt-4">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <th className="bg-gray-50 text-[11px] font-bold text-gray-500 uppercase tracking-wider px-4 py-3">Nama Lengkap</th>
-                  <th className="bg-gray-50 text-[11px] font-bold text-gray-500 uppercase tracking-wider px-4 py-3">Email</th>
-                  <th className="bg-gray-50 text-[11px] font-bold text-gray-500 uppercase tracking-wider px-4 py-3">Hak Akses / Role</th>
-                  <th className="bg-gray-50 text-[11px] font-bold text-gray-500 uppercase tracking-wider px-4 py-3">Status</th>
-                  <th className="bg-gray-50 text-[11px] font-bold text-gray-500 uppercase tracking-wider px-4 py-3 text-center">Aksi</th>
+                  <tr className="border-b border-gray-100">
+                    <th className="bg-gray-50 text-[11px] font-bold text-gray-500 uppercase tracking-wider px-4 py-3">Nama Lengkap</th>
+                    <th className="bg-gray-50 text-[11px] font-bold text-gray-500 uppercase tracking-wider px-4 py-3">Email</th>
+                    <th className="bg-gray-50 text-[11px] font-bold text-gray-500 uppercase tracking-wider px-4 py-3">Hak Akses / Role</th>
+                    <th className="bg-gray-50 text-[11px] font-bold text-gray-500 uppercase tracking-wider px-4 py-3">Status</th>
+                    <th className="bg-gray-50 text-[11px] font-bold text-gray-500 uppercase tracking-wider px-4 py-3 text-center">Aksi</th>
+                  </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50 text-sm">
-                  {users.map((item) => (
-                    <tr key={item.id} className="hover:bg-gray-50/50 transition-colors">
-                      <td className="px-4 py-3 font-semibold text-gray-800">{item.nama}</td>
-                      <td className="px-4 py-3 text-gray-600 text-xs">{item.email}</td>
-                      <td className="px-4 py-3">
-                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                          item.role === 'Owner' ? 'bg-purple-100 text-purple-700' :
-                          item.role === 'Admin' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'
-                        }`}>
-                          {item.role === 'Owner' && <Shield className="w-3 h-3" />}
-                          {item.role}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                          {item.status}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <button className="text-xs font-semibold text-blue-600 hover:text-blue-700 mx-2">Edit</button>
-                        {item.role !== 'Owner' && (
-                          <button className="text-xs font-semibold text-red-500 hover:text-red-600 mx-2">Hapus</button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
+                  <tr className="hover:bg-gray-50/50 transition-colors">
+                    <td className="px-4 py-3 font-semibold text-gray-800">Muhamad Holis</td>
+                    <td className="px-4 py-3 text-gray-600 text-xs">holis@warungku.com</td>
+                    <td className="px-4 py-3">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-700">
+                        <Shield className="w-3 h-3" /> Owner
+                      </span>
+                    </td>
+                    <td className="px-4 py-3"><span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">Aktif</span></td>
+                    <td className="px-4 py-3 text-center"><button className="text-xs font-semibold text-blue-600 hover:text-blue-700 mx-2">Edit</button></td>
+                  </tr>
+                  <tr className="hover:bg-gray-50/50 transition-colors">
+                    <td className="px-4 py-3 font-semibold text-gray-800">Andi Kasir 1</td>
+                    <td className="px-4 py-3 text-gray-600 text-xs">kasir1@warungku.com</td>
+                    <td className="px-4 py-3"><span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-orange-100 text-orange-700">Kasir</span></td>
+                    <td className="px-4 py-3"><span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">Aktif</span></td>
+                    <td className="px-4 py-3 text-center"><button className="text-xs font-semibold text-blue-600 hover:text-blue-700 mx-2">Edit</button></td>
+                  </tr>
                 </tbody>
               </table>
             </div>
