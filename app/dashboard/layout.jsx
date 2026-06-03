@@ -6,8 +6,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import {
   LayoutDashboard, ShoppingCart, Package, BarChart3,
   Users, Settings, LogOut, Store, Menu, X,
-  Bell, User, Lock, Camera, Crown, ChevronRight,
-  Edit3
+  Bell, Crown, ChevronRight, Edit3
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase'
 
@@ -36,48 +35,18 @@ function ProfileDropdown({ user, warungName, onClose, onLogout, router }) {
   const fullName = user?.user_metadata?.full_name || 'Admin'
   const email = user?.email || ''
 
-  // FUNGSI UTAMA: Navigasi pintar tanpa merusak halaman pengaturan asli Anda
-  const navigateToTab = (tabName) => {
-    onClose()
-    
-    // 1. Dorong URL baru dengan query parameter tab
-    router.push(`/dashboard/pengaturan?tab=${tabName}`)
-    
-    // 2. Trik jitu: Picu event agar state internal di page pengaturan Anda terpaksa membaca URL baru
-    setTimeout(() => {
-      window.dispatchEvent(new Event('popstate'))
-      
-      // Jika halaman pengaturan asli Anda menggunakan pencarian elemen manual (state string)
-      const tabButton = document.querySelector(`[data-tab="${tabName}"]`) || 
-                        Array.from(document.querySelectorAll('button')).find(b => b.textContent.toLowerCase().includes(tabName))
-      if (tabButton) tabButton.click()
-    }, 100)
-  }
-
+  // Daftar menu yang sudah dipangkas (Hanya Pengaturan & Paket Langganan)
   const menuItems = [
     {
-      icon: User,
-      label: 'Profil Saya',
-      sub: 'Nama & info akun',
+      icon: Settings,
+      label: 'Pengaturan',
+      sub: 'Kelola sistem warung',
       color: 'text-blue-600',
       bg: 'bg-blue-50',
-      action: () => navigateToTab('profil')
-    },
-    {
-      icon: Lock,
-      label: 'Ganti Kata Sandi',
-      sub: 'Keamanan akun',
-      color: 'text-purple-600',
-      bg: 'bg-purple-50',
-      action: () => navigateToTab('password')
-    },
-    {
-      icon: Camera,
-      label: 'Foto Profil',
-      sub: 'Unggah foto warung',
-      color: 'text-emerald-600',
-      bg: 'bg-emerald-50',
-      action: () => navigateToTab('foto')
+      action: () => {
+        onClose()
+        router.push('/dashboard/pengaturan')
+      }
     },
     {
       icon: Crown,
@@ -85,7 +54,11 @@ function ProfileDropdown({ user, warungName, onClose, onLogout, router }) {
       sub: 'Upgrade & kelola paket',
       color: 'text-amber-600',
       bg: 'bg-amber-50',
-      action: () => navigateToTab('paket')
+      action: () => {
+        onClose()
+        // Mengarahkan langsung ke halaman paket langganan asli Anda
+        router.push('/dashboard/pengaturan?tab=paket')
+      }
     },
   ]
 
@@ -96,7 +69,7 @@ function ProfileDropdown({ user, warungName, onClose, onLogout, router }) {
         className="absolute right-3 top-14 w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden"
         style={{ animation: 'dropIn 0.18s ease-out' }}
       >
-        {/* Header - user info */}
+        {/* Header - Info Akun */}
         <div className="px-4 py-4 bg-gradient-to-br from-blue-700 to-blue-900 text-white">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center text-white text-lg font-bold border-2 border-white/30 flex-shrink-0">
@@ -119,7 +92,7 @@ function ProfileDropdown({ user, warungName, onClose, onLogout, router }) {
           </div>
         </div>
 
-        {/* Menu items */}
+        {/* Menu Items yang Tersisa */}
         <div className="py-2">
           {menuItems.map((item) => (
             <button
@@ -139,7 +112,7 @@ function ProfileDropdown({ user, warungName, onClose, onLogout, router }) {
           ))}
         </div>
 
-        {/* Divider + Logout */}
+        {/* Tombol Keluar Akun */}
         <div className="border-t border-gray-100 px-3 py-2.5">
           <button
             onClick={() => { onLogout(); onClose() }}
@@ -204,7 +177,7 @@ export default function DashboardLayout({ children }) {
 
   return (
     <div className="flex h-screen bg-gray-100 overflow-hidden">
-      {/* SIDEBAR DESKTOP */}
+      {/* DESKTOP SIDEBAR */}
       <aside className="hidden md:flex flex-col w-56 lg:w-60 bg-blue-900 text-white flex-shrink-0">
         <div className="px-4 py-5 border-b border-blue-800">
           <div className="flex items-center gap-3">
@@ -233,7 +206,7 @@ export default function DashboardLayout({ children }) {
         </div>
       </aside>
 
-      {/* SIDEBAR MOBILE */}
+      {/* MOBILE SIDEBAR */}
       {sidebarOpen && (
         <div className="md:hidden fixed inset-0 z-50 flex">
           <div className="absolute inset-0 bg-black/50" onClick={() => setSidebarOpen(false)} />
@@ -265,7 +238,7 @@ export default function DashboardLayout({ children }) {
         </div>
       )}
 
-      {/* KONTEN UTAMA */}
+      {/* MAIN CONTENT AREA */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between flex-shrink-0 shadow-sm sticky top-0 z-20">
           <div className="flex items-center gap-3">
