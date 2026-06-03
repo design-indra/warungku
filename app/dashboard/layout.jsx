@@ -20,7 +20,7 @@ const navItems = [
 ]
 
 // ─── Profile Dropdown Overlay ───────────────────────────────────────────────
-function ProfileDropdown({ user, warungName, onClose, onLogout, router }) {
+function ProfileDropdown({ user, warungName, initial, onClose, onLogout, router }) {
   const dropRef = useRef(null)
 
   useEffect(() => {
@@ -31,11 +31,9 @@ function ProfileDropdown({ user, warungName, onClose, onLogout, router }) {
     return () => document.removeEventListener('mousedown', handler)
   }, [onClose])
 
-  const initial = user?.email?.[0]?.toUpperCase() || 'A'
   const fullName = user?.user_metadata?.full_name || 'Admin'
   const email = user?.email || ''
 
-  // Daftar menu yang sudah dipangkas (Hanya Pengaturan & Paket Langganan)
   const menuItems = [
     {
       icon: Settings,
@@ -56,7 +54,6 @@ function ProfileDropdown({ user, warungName, onClose, onLogout, router }) {
       bg: 'bg-amber-50',
       action: () => {
         onClose()
-        // Mengarahkan langsung ke halaman paket langganan asli Anda
         router.push('/dashboard/pengaturan?tab=paket')
       }
     },
@@ -92,7 +89,7 @@ function ProfileDropdown({ user, warungName, onClose, onLogout, router }) {
           </div>
         </div>
 
-        {/* Menu Items yang Tersisa */}
+        {/* Menu Items */}
         <div className="py-2">
           {menuItems.map((item) => (
             <button
@@ -166,6 +163,10 @@ export default function DashboardLayout({ children }) {
     if (href === '/dashboard') return pathname === '/dashboard'
     return pathname.startsWith(href)
   }
+
+  // Definisikan inisial di tingkat Layout utama agar aman diakses oleh header maupun dropdown
+  const initial = user?.email?.[0]?.toUpperCase() || 'G'
+  const fullName = user?.user_metadata?.full_name || 'Admin'
 
   const bottomNavItems = [
     { href: '/dashboard',         label: 'Dashboard', icon: LayoutDashboard },
@@ -276,6 +277,7 @@ export default function DashboardLayout({ children }) {
           <ProfileDropdown
             user={user}
             warungName={warungName}
+            initial={initial}
             onClose={() => setProfileOpen(false)}
             onLogout={handleLogout}
             router={router}
