@@ -7,7 +7,7 @@ import {
   LayoutDashboard, ShoppingCart, Package, BarChart3,
   Users, Settings, LogOut, Store, Menu, X,
   Bell, User, Lock, Camera, Crown, ChevronRight,
-  Shield, Edit3
+  Edit3
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase'
 
@@ -176,12 +176,11 @@ export default function DashboardLayout({ children }) {
     return pathname.startsWith(href)
   }
 
-  // Bottom nav: 5 items saja — Pengaturan diakses via avatar di header
   const bottomNavItems = [
     { href: '/dashboard',         label: 'Dashboard', icon: LayoutDashboard },
     { href: '/dashboard/kasir',   label: 'Kasir',     icon: ShoppingCart },
     { href: '/dashboard/stok',    label: 'Stok',      icon: Package },
-    { href: '/dashboard/laporan', label: 'Laporan',   icon: BarChart3 },
+    { href: '/dashboard/laporan', label: 'Laporan',     icon: BarChart3 },
     { href: '/dashboard/hutang',  label: 'Hutang',    icon: Users },
   ]
 
@@ -279,7 +278,7 @@ export default function DashboardLayout({ children }) {
               <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
             </button>
 
-            {/* Avatar — klik buka profil dropdown */}
+            {/* Avatar */}
             <button
               onClick={() => setProfileOpen(true)}
               className="flex items-center gap-2 pl-2 border-l border-gray-200 hover:bg-gray-50 rounded-lg pr-1 py-1 transition-colors"
