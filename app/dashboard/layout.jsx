@@ -146,7 +146,7 @@ export default function DashboardLayout({ children }) {
   useEffect(() => {
     const supabase = createClient()
     supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) { router.push('/login'); return }
+      if (!data.user) { router.push('/auth/login'); return }
       setUser(data.user)
       const meta = data.user.user_metadata
       if (meta?.nama_warung) setWarungName(meta.nama_warung)
@@ -156,7 +156,7 @@ export default function DashboardLayout({ children }) {
   const handleLogout = async () => {
     const supabase = createClient()
     await supabase.auth.signOut()
-    router.push('/login')
+    router.push('/auth/login')
   }
 
   const isActive = (href) => {
