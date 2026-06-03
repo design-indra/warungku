@@ -1,236 +1,454 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
-import { useSearchParams, useRouter } from 'next/navigation'
-import { User, Lock, Camera, Crown, Users, Plus, Shield } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import Icon from '@/components/Icon'
+
+const TABS = ['User & Role', 'Cabang', 'Profil Warung', 'Satuan Barang', 'Paket']
+
+const INITIAL_USERS = [
+  { id: 1, nama: 'Admin',   username: 'admin',  role: 'owner', cabang: 'Pusat' },
+  { id: 2, nama: 'Kasir 1', username: 'kasir1', role: 'kasir', cabang: 'Cabang A' },
+  { id: 3, nama: 'Kasir 2', username: 'kasir2', role: 'kasir', cabang: 'Cabang B' },
+]
+const INITIAL_CABANG = [
+  { id: 1, nama: 'Pusat',    alamat: 'Jl. Merdeka No. 123, Jakarta' },
+  { id: 2, nama: 'Cabang A', alamat: 'Jl. Mawar No. 10, Bandung' },
+  { id: 3, nama: 'Cabang B', alamat: 'Jl. Melati No. 5, Surabaya' },
+]
+const INITIAL_SATUAN = ['pcs', 'kg', 'liter', 'pack', 'dus']
 
 export default function PengaturanPage() {
-  return (
-    <Suspense fallback={<div className="p-6 text-sm text-gray-500 animate-pulse">Memuat Pengaturan...</div>}>
-      <PengaturanContent />
-    </Suspense>
-  )
-}
+  const [activeTab, setActiveTab] = useState('User & Role')
+  const [users, setUsers]   = useState(INITIAL_USERS)
+  const [cabang, setCabang] = useState(INITIAL_CABANG)
+  const [satuan, setSatuan] = useState(INITIAL_SATUAN)
+  const [profil, setProfil] = useState({
+    namaWarung: 'WarungKu',
+    noTelp: '0812-3456-7890',
+    alamat: 'Jl. Merdeka No. 123, Jakarta',
+  })
+  const [newSatuan, setNewSatuan] = useState('')
 
-function PengaturanContent() {
-  const searchParams = useSearchParams()
-  const router = useRouter()
-  
-  // 1. Ambil tab aktif dari URL, jika tidak ada default ke 'profil'
-  const tabFromUrl = searchParams.get('tab') || 'profil'
-  const [activeTab, setActiveTab] = useState(tabFromUrl)
+  // ── Subscription / Paket state ──
+  const [subStatus, setSubStatus]     = useState(null)   // { active, plan, expired_at }
+  const [subLoading, setSubLoading]   = useState(false)
+  const [orderData, setOrderData]     = useState(null)   // { qr_url, order_id, amount, expires_at }
+  const [paying, setPaying]           = useState(false)
+  const [pollMsg, setPollMsg]         = useState('')
+  const pollRef = useRef(null)
 
-  // 2. Efek untuk mensinkronisasi state ketika ada perubahan URL dari Dropdown Profil
-  useEffect(() => {
-    if (tabFromUrl) {
-      setActiveTab(tabFromUrl)
+  const deleteUser   = (id) => setUsers(prev => prev.filter(u => u.id !== id))
+  const deleteCabang = (id) => setCabang(prev => prev.filter(c => c.id !== id))
+  const addSatuan = () => {
+    if (newSatuan.trim() && !satuan.includes(newSatuan.trim())) {
+      setSatuan(prev => [...prev, newSatuan.trim()])
+      setNewSatuan('')
     }
-  }, [tabFromUrl])
-
-  const tabs = [
-    { id: 'profil',     label: 'Profil Saya',        icon: User },
-    { id: 'password',   label: 'Ganti Kata Sandi',   icon: Lock },
-    { id: 'foto',       label: 'Foto Profil',        icon: Camera },
-    { id: 'paket',      label: 'Paket Berlangganan', icon: Crown },
-    { id: 'user-role',  label: 'User & Role',        icon: Users },
-  ]
-
-  const handleTabChange = (tabId) => {
-    setActiveTab(tabId)
-    router.push(`/dashboard/pengaturan?tab=${tabId}`)
   }
 
+  // ── Subscription helpers ──
+  const fetchSubStatus = async () => {
+    setSubLoading(true)
+    try {
+      const res = await fetch('/api/subscription/status')
+      const json = await res.json()
+      setSubStatus(json)
+    } catch { setSubStatus({ active: false }) }
+    finally { setSubLoading(false) }
+  }
+
+  useEffect(() => {
+    if (activeTab === 'Paket') fetchSubStatus()
+  }, [activeTab])
+
+  const handleBuPaket = async (plan) => {
+    setPaying(true)
+    setOrderData(null)
+    setPollMsg('')
+    try {
+      const res = await fetch('/api/subscription/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan }),
+      })
+      const json = await res.json()
+      if (!json.success) { alert(json.error || 'Gagal membuat order'); return }
+      setOrderData(json)
+      startPolling(json.order_id)
+    } catch { alert('Gagal terhubung ke server') }
+    finally { setPaying(false) }
+  }
+
+  const startPolling = (orderId) => {
+    setPollMsg('Menunggu pembayaran...')
+    let attempt = 0
+    const MAX = 60 // max 5 menit (5s interval)
+    pollRef.current = setInterval(async () => {
+      attempt++
+      try {
+        const res = await fetch('/api/subscription/status', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ order_id: orderId }),
+        })
+        const json = await res.json()
+        if (json.settled) {
+          clearInterval(pollRef.current)
+          setPollMsg('✅ Pembayaran berhasil! Paket aktif.')
+          setOrderData(null)
+          fetchSubStatus()
+        } else if (json.status === 'EXPIRED' || attempt >= MAX) {
+          clearInterval(pollRef.current)
+          setPollMsg('⏱ QR Code kadaluarsa. Silakan buat order baru.')
+          setOrderData(null)
+        }
+      } catch { /* silent */ }
+    }, 5000)
+  }
+
+  useEffect(() => () => clearInterval(pollRef.current), [])
+
   return (
-    <div className="p-4 md:p-6 max-w-5xl mx-auto pb-24">
-      <div className="mb-6">
-        <h1 className="text-xl font-bold text-gray-900">Pengaturan Sistem</h1>
-        <p className="text-xs text-gray-500 mt-0.5">Kelola data profil, keamanan akun, hingga hak akses karyawan.</p>
+    <div className="flex flex-col h-full overflow-hidden">
+      {/* Tab bar */}
+      <div className="bg-white border-b border-gray-200 flex overflow-x-auto flex-shrink-0">
+        {TABS.map(t => (
+          <button key={t} onClick={() => setActiveTab(t)}
+            className={`flex-none px-4 py-3 text-xs font-semibold whitespace-nowrap transition-colors border-b-2
+              ${activeTab === t
+                ? 'text-blue-700 border-blue-700'
+                : 'text-gray-400 border-transparent hover:text-gray-600'}`}>
+            {t}
+          </button>
+        ))}
       </div>
 
-      {/* Tab Navigasi Atas */}
-      <div className="flex border-b border-gray-200 overflow-x-auto no-scrollbar mb-6 bg-white p-1 rounded-xl shadow-sm border">
-        {tabs.map((tab) => {
-          const Icon = tab.icon
-          const isActive = activeTab === tab.id
-          return (
-            <button
-              key={tab.id}
-              onClick={() => handleTabChange(tab.id)}
-              className={`flex items-center gap-2 py-2.5 px-4 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
-                isActive
-                  ? 'bg-blue-50 text-blue-600 font-semibold shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-              }`}
-            >
-              <Icon className="w-4 h-4" />
-              {tab.label}
-            </button>
-          )
-        })}
-      </div>
+      <div className="flex-1 overflow-y-auto page-content space-y-4">
 
-      {/* Area Konten Masing-Masing Menu */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-        
-        {/* TAB 1: PROFIL SAYA */}
-        {activeTab === 'profil' && (
-          <div className="space-y-4">
-            <div>
-              <h3 className="text-base font-bold text-gray-800">Informasi Profil</h3>
-              <p className="text-xs text-gray-400">Kelola informasi nama pemilik dan detail nama akun warung Anda.</p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Nama Lengkap</label>
-                <input type="text" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" defaultValue="Muhamad Holis" />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Nama Warung</label>
-                <input type="text" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" defaultValue="Warungku Digital" />
-              </div>
-            </div>
-            <button className="mt-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors shadow-sm">
-              Simpan Perubahan
-            </button>
-          </div>
-        )}
-
-        {/* TAB 2: GANTI KATA SANDI */}
-        {activeTab === 'password' && (
-          <div className="space-y-4">
-            <div>
-              <h3 className="text-base font-bold text-gray-800">Keamanan & Kata Sandi</h3>
-              <p className="text-xs text-gray-400">Amankan akun Anda dengan memperbarui kata sandi secara berkala.</p>
-            </div>
-            <div className="grid grid-cols-1 gap-4 mt-4 max-w-md">
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Kata Sandi Lama</label>
-                <input type="password" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="••••••••" />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Kata Sandi Baru</label>
-                <input type="password" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="••••••••" />
-              </div>
-            </div>
-            <button className="mt-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors shadow-sm">
-              Perbarui Kata Sandi
-            </button>
-          </div>
-        )}
-
-        {/* TAB 3: FOTO PROFIL */}
-        {activeTab === 'foto' && (
-          <div className="space-y-4">
-            <div>
-              <h3 className="text-base font-bold text-gray-800">Foto Profil & Warung</h3>
-              <p className="text-xs text-gray-400">Unggah logo warung untuk ditampilkan pada struk belanjaan fisik/digital dan dashboard.</p>
-            </div>
-            <div className="flex items-center gap-5 mt-4 p-4 border border-dashed border-gray-200 rounded-xl bg-gray-50 w-full max-w-xl">
-              <div className="w-20 h-20 bg-white rounded-xl border border-gray-200 flex items-center justify-center text-gray-400 shadow-sm flex-shrink-0">
-                <Camera className="w-6 h-6 text-gray-400" />
-              </div>
-              <div>
-                <button className="bg-white hover:bg-gray-50 text-gray-700 px-3 py-2 rounded-lg text-sm font-semibold border border-gray-200 transition-colors shadow-sm">
-                  Pilih Berkas Foto
+        {/* ── Tab: User & Role ── */}
+        {activeTab === 'User & Role' && (
+          <>
+            {/* Users table */}
+            <div className="card overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+                <h3 className="font-semibold text-gray-900 text-sm">Daftar User</h3>
+                <button className="btn-primary text-xs py-1.5 px-3">
+                  <Icon name="plus" size={13} color="#fff" /> Tambah User
                 </button>
-                <p className="text-[11px] text-gray-400 mt-1.5 leading-relaxed">Format yang didukung: JPG, PNG. Rekomendasi ukuran maks 500x500 piksel.</p>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr>{['Nama', 'Username', 'Role', 'Cabang', 'Aksi'].map(h => <th key={h} className="table-header">{h}</th>)}</tr>
+                  </thead>
+                  <tbody>
+                    {users.map(u => (
+                      <tr key={u.id} className="hover:bg-gray-50">
+                        <td className="table-cell font-medium">{u.nama}</td>
+                        <td className="table-cell text-gray-500">{u.username}</td>
+                        <td className="table-cell">
+                          <span className={`badge ${u.role === 'owner' ? 'badge-blue' : 'badge-green'}`}>{u.role}</span>
+                        </td>
+                        <td className="table-cell text-gray-500 text-xs">{u.cabang}</td>
+                        <td className="table-cell">
+                          <div className="flex gap-1.5">
+                            <button className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center hover:bg-blue-100">
+                              <Icon name="edit" size={13} color="#2563eb" />
+                            </button>
+                            <button onClick={() => deleteUser(u.id)}
+                              className="w-7 h-7 rounded-lg bg-red-50 flex items-center justify-center hover:bg-red-100">
+                              <Icon name="trash" size={13} color="#dc2626" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
-          </div>
+
+            {/* Cabang table */}
+            <div className="card overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+                <h3 className="font-semibold text-gray-900 text-sm">Cabang</h3>
+                <button className="btn-primary text-xs py-1.5 px-3">
+                  <Icon name="plus" size={13} color="#fff" /> Tambah Cabang
+                </button>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr>{['Nama Cabang', 'Alamat', 'Aksi'].map(h => <th key={h} className="table-header">{h}</th>)}</tr>
+                  </thead>
+                  <tbody>
+                    {cabang.map(c => (
+                      <tr key={c.id} className="hover:bg-gray-50">
+                        <td className="table-cell font-medium">{c.nama}</td>
+                        <td className="table-cell text-gray-500 text-xs">{c.alamat}</td>
+                        <td className="table-cell">
+                          <div className="flex gap-1.5">
+                            <button className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center hover:bg-blue-100">
+                              <Icon name="edit" size={13} color="#2563eb" />
+                            </button>
+                            <button onClick={() => deleteCabang(c.id)}
+                              className="w-7 h-7 rounded-lg bg-red-50 flex items-center justify-center hover:bg-red-100">
+                              <Icon name="trash" size={13} color="#dc2626" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
         )}
 
-        {/* TAB 4: PAKET BERLANGGANAN */}
-        {activeTab === 'paket' && (
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-base font-bold text-gray-800">Status & Paket Langganan</h3>
-              <p className="text-xs text-gray-400">Pantau masa aktif paket Anda dan pilih opsi berlangganan terbaik.</p>
-            </div>
-            
-            {/* Kartu Status Aktif */}
-            <div className="p-5 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl flex items-start gap-4">
-              <div className="w-10 h-10 rounded-xl bg-amber-500 flex items-center justify-center text-white flex-shrink-0 shadow-sm">
-                <Crown className="w-5 h-5" />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <h4 className="text-sm font-bold text-amber-900">Paket Premium Pro (Masa Uji Coba)</h4>
-                  <span className="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full">14 Hari Tersisa</span>
-                </div>
-                <p className="text-xs text-amber-700 mt-1 leading-relaxed">Anda sedang menikmati akses penuh fitur kelola multi-cabang, riwayat laporan tak terbatas, dan multi-akun kasir karyawan.</p>
-              </div>
-            </div>
-
-            {/* Pilihan Paket */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-              <div className="border border-gray-100 rounded-xl p-4 bg-gray-50/50">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Basic</span>
-                <h5 className="text-base font-bold text-gray-800 mt-1">Gratis Selamanya</h5>
-                <p className="text-xs text-gray-500 mt-1">Cocok untuk rintisan awal toko tunggal.</p>
-                <div className="text-lg font-bold text-gray-900 mt-3">Rp 0 <span className="text-xs font-normal text-gray-400">/ bulan</span></div>
-              </div>
-              <div className="border-2 border-blue-500 rounded-xl p-4 bg-blue-50/20 relative overflow-hidden">
-                <div className="absolute top-0 right-0 bg-blue-500 text-white text-[9px] font-bold px-3 py-1 rounded-bl-xl">POPULER</div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600">Professional</span>
-                <h5 className="text-base font-bold text-gray-800 mt-1">Premium Full Akses</h5>
-                <p className="text-xs text-gray-500 mt-1">Akses mutakhir tanpa batasan fitur.</p>
-                <div className="text-lg font-bold text-blue-600 mt-3">Rp 49.000 <span className="text-xs font-normal text-gray-400">/ bulan</span></div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* TAB 5: USER & ROLE */}
-        {activeTab === 'user-role' && (
-          <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-50 pb-4">
-              <div>
-                <h3 className="text-base font-bold text-gray-800">Manajemen Pengguna & Otorisasi</h3>
-                <p className="text-xs text-gray-400">Kelola pendaftaran akun staff karyawan, hak tingkatan akses admin, serta otorisasi kasir toko.</p>
-              </div>
-              <button className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-xs font-bold transition-colors self-start sm:self-center shadow-sm">
-                <Plus className="w-3.5 h-3.5" />
-                Tambah User Baru
+        {/* ── Tab: Cabang (detail view) ── */}
+        {activeTab === 'Cabang' && (
+          <div className="card overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+              <h3 className="font-semibold text-gray-900 text-sm">Kelola Cabang</h3>
+              <button className="btn-primary text-xs py-1.5 px-3">
+                <Icon name="plus" size={13} color="#fff" /> Tambah Cabang
               </button>
             </div>
-
-            {/* Tabel Hak Akses User */}
-            <div className="overflow-x-auto border border-gray-100 rounded-xl mt-4">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-gray-100">
-                    <th className="bg-gray-50 text-[11px] font-bold text-gray-500 uppercase tracking-wider px-4 py-3">Nama Lengkap</th>
-                    <th className="bg-gray-50 text-[11px] font-bold text-gray-500 uppercase tracking-wider px-4 py-3">Email</th>
-                    <th className="bg-gray-50 text-[11px] font-bold text-gray-500 uppercase tracking-wider px-4 py-3">Hak Akses / Role</th>
-                    <th className="bg-gray-50 text-[11px] font-bold text-gray-500 uppercase tracking-wider px-4 py-3">Status</th>
-                    <th className="bg-gray-50 text-[11px] font-bold text-gray-500 uppercase tracking-wider px-4 py-3 text-center">Aksi</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50 text-sm">
-                  <tr className="hover:bg-gray-50/50 transition-colors">
-                    <td className="px-4 py-3 font-semibold text-gray-800">Muhamad Holis</td>
-                    <td className="px-4 py-3 text-gray-600 text-xs">holis@warungku.com</td>
-                    <td className="px-4 py-3">
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-700">
-                        <Shield className="w-3 h-3" /> Owner
-                      </span>
-                    </td>
-                    <td className="px-4 py-3"><span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">Aktif</span></td>
-                    <td className="px-4 py-3 text-center"><button className="text-xs font-semibold text-blue-600 hover:text-blue-700 mx-2">Edit</button></td>
-                  </tr>
-                  <tr className="hover:bg-gray-50/50 transition-colors">
-                    <td className="px-4 py-3 font-semibold text-gray-800">Andi Kasir 1</td>
-                    <td className="px-4 py-3 text-gray-600 text-xs">kasir1@warungku.com</td>
-                    <td className="px-4 py-3"><span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-orange-100 text-orange-700">Kasir</span></td>
-                    <td className="px-4 py-3"><span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">Aktif</span></td>
-                    <td className="px-4 py-3 text-center"><button className="text-xs font-semibold text-blue-600 hover:text-blue-700 mx-2">Edit</button></td>
-                  </tr>
-                </tbody>
-              </table>
+            <div className="divide-y divide-gray-50">
+              {cabang.map(c => (
+                <div key={c.id} className="flex items-center gap-3 px-4 py-3">
+                  <div className="w-9 h-9 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Icon name="store" size={16} color="#2563eb" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-semibold text-gray-900 text-sm">{c.nama}</p>
+                    <p className="text-xs text-gray-400">{c.alamat}</p>
+                  </div>
+                  <div className="flex gap-1.5">
+                    <button className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center">
+                      <Icon name="edit" size={13} color="#2563eb" />
+                    </button>
+                    <button onClick={() => deleteCabang(c.id)} className="w-7 h-7 rounded-lg bg-red-50 flex items-center justify-center">
+                      <Icon name="trash" size={13} color="#dc2626" />
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
 
+        {/* ── Tab: Profil Warung ── */}
+        {activeTab === 'Profil Warung' && (
+          <div className="max-w-lg space-y-4">
+            <div className="card p-5">
+              <h3 className="font-bold text-gray-900 mb-4">Profil Warung</h3>
+
+              {/* Logo */}
+              <div className="text-center mb-5">
+                <div className="text-5xl mb-3">🏪</div>
+                <button className="btn-secondary text-xs">Ubah Logo</button>
+              </div>
+
+              <div className="space-y-3">
+                {[
+                  { label: 'Nama Warung', key: 'namaWarung', placeholder: 'WarungKu' },
+                  { label: 'No. Telepon', key: 'noTelp',     placeholder: '0812-xxx-xxxx' },
+                ].map(f => (
+                  <div key={f.key}>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">{f.label}</label>
+                    <input value={profil[f.key]} onChange={e => setProfil({ ...profil, [f.key]: e.target.value })}
+                      placeholder={f.placeholder} className="input-field" />
+                  </div>
+                ))}
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1">Alamat</label>
+                  <textarea value={profil.alamat} onChange={e => setProfil({ ...profil, alamat: e.target.value })}
+                    rows={2} className="input-field resize-none" />
+                </div>
+              </div>
+
+              <button className="w-full btn-primary justify-center mt-4 py-3">
+                <Icon name="save" size={16} color="#fff" /> Simpan Perubahan
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Tab: Satuan Barang ── */}
+        {activeTab === 'Satuan Barang' && (
+          <div className="max-w-lg space-y-4">
+            <div className="card p-5">
+              <h3 className="font-bold text-gray-900 mb-4">Satuan Barang</h3>
+              <div className="flex flex-wrap gap-2 mb-4">
+                {satuan.map(s => (
+                  <div key={s} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-full text-sm font-semibold">
+                    {s}
+                    <button onClick={() => setSatuan(prev => prev.filter(x => x !== s))}
+                      className="hover:bg-blue-200 rounded-full w-4 h-4 flex items-center justify-center">
+                      <Icon name="x" size={10} color="#1d4ed8" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <input value={newSatuan} onChange={e => setNewSatuan(e.target.value)}
+                  placeholder="Tambah satuan baru..." className="input-field flex-1"
+                  onKeyDown={e => e.key === 'Enter' && addSatuan()} />
+                <button onClick={addSatuan} className="btn-primary flex-shrink-0">
+                  <Icon name="plus" size={15} color="#fff" /> Tambah
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Tab: Paket ── */}
+        {activeTab === 'Paket' && (
+          <div className="max-w-lg space-y-4">
+
+            {/* Status Aktif */}
+            <div className="card p-5">
+              <h3 className="font-bold text-gray-900 mb-3">Status Paket</h3>
+              {subLoading ? (
+                <div className="flex items-center gap-2 text-gray-400 text-sm py-2">
+                  <Icon name="refresh" size={15} color="#9ca3af" /> Memuat...
+                </div>
+              ) : subStatus?.active ? (
+                <div className="flex items-center gap-3 bg-green-50 rounded-xl p-4">
+                  <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 text-xl">✅</div>
+                  <div>
+                    <p className="font-bold text-green-800 capitalize">Paket {subStatus.plan} Aktif</p>
+                    <p className="text-xs text-green-600 mt-0.5">
+                      Berlaku hingga: {new Date(subStatus.expired_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-3 bg-gray-50 rounded-xl p-4">
+                  <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0 text-xl">🆓</div>
+                  <div>
+                    <p className="font-bold text-gray-700">Paket Free</p>
+                    <p className="text-xs text-gray-500 mt-0.5">Upgrade untuk fitur lengkap</p>
+                  </div>
+                </div>
+              )}
+              {pollMsg && (
+                <p className={`mt-3 text-sm font-semibold text-center ${pollMsg.startsWith('✅') ? 'text-green-600' : 'text-amber-600'}`}>
+                  {pollMsg}
+                </p>
+              )}
+            </div>
+
+            {/* QR Code (saat menunggu pembayaran) */}
+            {orderData && (
+              <div className="card p-5 text-center">
+                <p className="font-bold text-gray-900 mb-1">Scan QRIS untuk Bayar</p>
+                <p className="text-xs text-gray-500 mb-4">
+                  Paket {orderData.plan} — Rp {Number(orderData.amount).toLocaleString('id-ID')}
+                </p>
+                <div className="flex justify-center mb-4">
+                  <img
+                    src={orderData.qr_url}
+                    alt="QRIS QR Code"
+                    className="w-52 h-52 border border-gray-200 rounded-xl"
+                  />
+                </div>
+                <p className="text-xs text-gray-400 mb-1">
+                  Kode: <span className="font-mono font-semibold text-gray-600">{orderData.order_id}</span>
+                </p>
+                <p className="text-xs text-amber-600 font-medium">
+                  QR berlaku hingga: {orderData.expires_at ? new Date(orderData.expires_at).toLocaleTimeString('id-ID') : '—'}
+                </p>
+                <div className="mt-4 flex items-center justify-center gap-2 text-xs text-gray-400 animate-pulse">
+                  <Icon name="refresh" size={13} color="#9ca3af" />
+                  Mendeteksi pembayaran otomatis...
+                </div>
+                <button
+                  onClick={() => { clearInterval(pollRef.current); setOrderData(null); setPollMsg('') }}
+                  className="mt-3 text-xs text-red-400 hover:text-red-600 underline"
+                >
+                  Batalkan
+                </button>
+              </div>
+            )}
+
+            {/* Pilihan Paket */}
+            {!orderData && (
+              <div className="space-y-3">
+                <h3 className="font-bold text-gray-900 text-sm px-1">Pilih Paket</h3>
+
+                {/* Basic */}
+                <div className="card p-5 border-2 border-gray-200 hover:border-blue-300 transition-colors">
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <p className="font-bold text-gray-900 text-base">Basic</p>
+                      <p className="text-2xl font-extrabold text-blue-700 mt-0.5">
+                        Rp 49.000 <span className="text-sm font-normal text-gray-400">/ bulan</span>
+                      </p>
+                    </div>
+                    <span className="text-3xl">📦</span>
+                  </div>
+                  <ul className="space-y-1.5 mb-4">
+                    {['1 Cabang', 'Max 3 Kasir', 'Laporan bulanan', 'Manajemen stok'].map(f => (
+                      <li key={f} className="flex items-center gap-2 text-sm text-gray-600">
+                        <span className="text-green-500 font-bold">✓</span> {f}
+                      </li>
+                    ))}
+                  </ul>
+                  <button
+                    onClick={() => handleBuPaket('basic')}
+                    disabled={paying || subStatus?.active}
+                    className={`w-full py-2.5 rounded-xl font-bold text-sm transition-colors
+                      ${paying || subStatus?.active
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        : 'bg-blue-700 hover:bg-blue-800 text-white'}`}
+                  >
+                    {paying ? 'Memproses...' : subStatus?.active ? 'Sudah Aktif' : 'Pilih Basic'}
+                  </button>
+                </div>
+
+                {/* Pro */}
+                <div className="card p-5 border-2 border-blue-600 relative">
+                  <div className="absolute -top-3 left-4">
+                    <span className="bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full">Populer</span>
+                  </div>
+                  <div className="flex items-start justify-between mb-3 mt-1">
+                    <div>
+                      <p className="font-bold text-gray-900 text-base">Pro</p>
+                      <p className="text-2xl font-extrabold text-blue-700 mt-0.5">
+                        Rp 99.000 <span className="text-sm font-normal text-gray-400">/ bulan</span>
+                      </p>
+                    </div>
+                    <span className="text-3xl">🚀</span>
+                  </div>
+                  <ul className="space-y-1.5 mb-4">
+                    {['Cabang tidak terbatas', 'Kasir tidak terbatas', 'Laporan & analitik lengkap', 'Manajemen stok & hutang', 'Prioritas support'].map(f => (
+                      <li key={f} className="flex items-center gap-2 text-sm text-gray-600">
+                        <span className="text-green-500 font-bold">✓</span> {f}
+                      </li>
+                    ))}
+                  </ul>
+                  <button
+                    onClick={() => handleBuPaket('pro')}
+                    disabled={paying || subStatus?.active}
+                    className={`w-full py-2.5 rounded-xl font-bold text-sm transition-colors
+                      ${paying || subStatus?.active
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        : 'bg-blue-700 hover:bg-blue-800 text-white'}`}
+                  >
+                    {paying ? 'Memproses...' : subStatus?.active ? 'Sudah Aktif' : 'Pilih Pro'}
+                  </button>
+                </div>
+
+                <p className="text-xs text-center text-gray-400 pb-2">
+                  Pembayaran via QRIS · Diproses oleh Cashi.id
+                </p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )
