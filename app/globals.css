@@ -81,7 +81,7 @@ html, body {
 
 /* Mobile bottom nav — 6 items, compact */
 .bottom-nav-item {
-  @apply flex flex-col items-center justify-center gap-0.5 flex-1 py-2 text-gray-400 transition-colors;
+  @apply flex flex-col items-center justify-center gap-0.5 flex-1 py-3 text-gray-400 transition-colors;
   min-width: 0;
 }
 .bottom-nav-item span {
