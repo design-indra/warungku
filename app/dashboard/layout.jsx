@@ -125,7 +125,7 @@ export default function DashboardLayout({ children }) {
       {/* ─── MAIN CONTENT ─── */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Top bar */}
-        <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between flex-shrink-0 shadow-sm">
+        <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between flex-shrink-0 shadow-sm z-10 relative">
           <div className="flex items-center gap-3">
             <button className="md:hidden p-1.5 rounded-lg hover:bg-gray-100" onClick={() => setSidebarOpen(true)}>
               <Menu className="w-5 h-5 text-gray-600" />
@@ -160,7 +160,7 @@ export default function DashboardLayout({ children }) {
         </main>
 
         {/* ─── MOBILE BOTTOM NAV ─── */}
-        <nav className="md:hidden bg-white border-t border-gray-200 flex items-center safe-area-pb">
+        <nav className="md:hidden bg-white border-t border-gray-200 flex items-center safe-area-pb z-10 relative flex-shrink-0">
           {navItems.slice(0, 5).map(({ href, label, icon: Icon }) => (
             <Link key={href} href={href} className={`bottom-nav-item ${isActive(href) ? 'active' : ''}`}>
               <Icon className="w-5 h-5" />
