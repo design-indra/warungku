@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import {
   LayoutDashboard, ShoppingCart, Package, BarChart3,
   Users, Settings, LogOut, Store, Menu, X,
@@ -32,9 +32,19 @@ function ProfileDropdown({ user, warungName, onClose, onLogout, router }) {
     return () => document.removeEventListener('mousedown', handler)
   }, [onClose])
 
-  const initial = user?.email?.[0]?.toUpperCase() || 'A'
-  const fullName = user?.user_metadata?.full_name || 'Admin'
-  const email = user?.email || ''
+  const initial = user?.email?.[0]?.toUpperCase() || 'A[span_1](start_span)'[span_1](end_span)
+  const fullName = user?.user_metadata?.full_name || 'Admin[span_2](start_span)'[span_2](end_span)
+  const email = user?.email || '[span_3](start_span)'[span_3](end_span)
+
+  // Handler navigasi dinamis agar tab langsung berubah jika sudah di halaman /pengaturan
+  const navigateToTab = (tabName) => {
+    onClose()
+    router.push(`/dashboard/pengaturan?tab=${tabName}`)
+    // Memicu window custom event agar komponen internal pengaturan mendeteksi perubahan tab tanpa reload
+    setTimeout(() => {
+      window.dispatchEvent(new Event('popstate'))
+    }, 50)
+  }
 
   const menuItems = [
     {
@@ -43,7 +53,7 @@ function ProfileDropdown({ user, warungName, onClose, onLogout, router }) {
       sub: 'Nama & info akun',
       color: 'text-blue-600',
       bg: 'bg-blue-50',
-      action: () => { router.push('/dashboard/pengaturan?tab=profil'); onClose() }
+      action: () => navigateToTab('profil')
     },
     {
       icon: Lock,
@@ -51,7 +61,7 @@ function ProfileDropdown({ user, warungName, onClose, onLogout, router }) {
       sub: 'Keamanan akun',
       color: 'text-purple-600',
       bg: 'bg-purple-50',
-      action: () => { router.push('/dashboard/pengaturan?tab=password'); onClose() }
+      action: () => navigateToTab('password')
     },
     {
       icon: Camera,
@@ -59,7 +69,7 @@ function ProfileDropdown({ user, warungName, onClose, onLogout, router }) {
       sub: 'Unggah foto warung',
       color: 'text-emerald-600',
       bg: 'bg-emerald-50',
-      action: () => { router.push('/dashboard/pengaturan?tab=foto'); onClose() }
+      action: () => navigateToTab('foto')
     },
     {
       icon: Crown,
@@ -67,7 +77,7 @@ function ProfileDropdown({ user, warungName, onClose, onLogout, router }) {
       sub: 'Upgrade & kelola paket',
       color: 'text-amber-600',
       bg: 'bg-amber-50',
-      action: () => { router.push('/dashboard/pengaturan?tab=paket'); onClose() }
+      action: () => navigateToTab('paket')
     },
   ]
 
@@ -180,7 +190,7 @@ export default function DashboardLayout({ children }) {
     { href: '/dashboard',         label: 'Dashboard', icon: LayoutDashboard },
     { href: '/dashboard/kasir',   label: 'Kasir',     icon: ShoppingCart },
     { href: '/dashboard/stok',    label: 'Stok',      icon: Package },
-    { href: '/dashboard/laporan', label: 'Laporan',     icon: BarChart3 },
+    { href: '/dashboard/laporan', label: 'Laporan',   icon: BarChart3 },
     { href: '/dashboard/hutang',  label: 'Hutang',    icon: Users },
   ]
 
@@ -278,7 +288,7 @@ export default function DashboardLayout({ children }) {
               <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
             </button>
 
-            {/* Avatar */}
+            {/* Avatar — klik buka profil dropdown */}
             <button
               onClick={() => setProfileOpen(true)}
               className="flex items-center gap-2 pl-2 border-l border-gray-200 hover:bg-gray-50 rounded-lg pr-1 py-1 transition-colors"
