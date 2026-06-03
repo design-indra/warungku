@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import {
   LayoutDashboard, ShoppingCart, Package, BarChart3,
   Users, Settings, LogOut, Store, Menu, X,
@@ -32,18 +32,26 @@ function ProfileDropdown({ user, warungName, onClose, onLogout, router }) {
     return () => document.removeEventListener('mousedown', handler)
   }, [onClose])
 
-  const initial = user?.email?.[0]?.toUpperCase() || 'A[span_1](start_span)'[span_1](end_span)
-  const fullName = user?.user_metadata?.full_name || 'Admin[span_2](start_span)'[span_2](end_span)
-  const email = user?.email || '[span_3](start_span)'[span_3](end_span)
+  const initial = user?.email?.[0]?.toUpperCase() || 'A'
+  const fullName = user?.user_metadata?.full_name || 'Admin'
+  const email = user?.email || ''
 
-  // Handler navigasi dinamis agar tab langsung berubah jika sudah di halaman /pengaturan
+  // FUNGSI UTAMA: Navigasi pintar tanpa merusak halaman pengaturan asli Anda
   const navigateToTab = (tabName) => {
     onClose()
+    
+    // 1. Dorong URL baru dengan query parameter tab
     router.push(`/dashboard/pengaturan?tab=${tabName}`)
-    // Memicu window custom event agar komponen internal pengaturan mendeteksi perubahan tab tanpa reload
+    
+    // 2. Trik jitu: Picu event agar state internal di page pengaturan Anda terpaksa membaca URL baru
     setTimeout(() => {
       window.dispatchEvent(new Event('popstate'))
-    }, 50)
+      
+      // Jika halaman pengaturan asli Anda menggunakan pencarian elemen manual (state string)
+      const tabButton = document.querySelector(`[data-tab="${tabName}"]`) || 
+                        Array.from(document.querySelectorAll('button')).find(b => b.textContent.toLowerCase().includes(tabName))
+      if (tabButton) tabButton.click()
+    }, 100)
   }
 
   const menuItems = [
@@ -196,8 +204,7 @@ export default function DashboardLayout({ children }) {
 
   return (
     <div className="flex h-screen bg-gray-100 overflow-hidden">
-
-      {/* ─── DESKTOP SIDEBAR ─── */}
+      {/* SIDEBAR DESKTOP */}
       <aside className="hidden md:flex flex-col w-56 lg:w-60 bg-blue-900 text-white flex-shrink-0">
         <div className="px-4 py-5 border-b border-blue-800">
           <div className="flex items-center gap-3">
@@ -226,7 +233,7 @@ export default function DashboardLayout({ children }) {
         </div>
       </aside>
 
-      {/* ─── MOBILE SIDEBAR OVERLAY ─── */}
+      {/* SIDEBAR MOBILE */}
       {sidebarOpen && (
         <div className="md:hidden fixed inset-0 z-50 flex">
           <div className="absolute inset-0 bg-black/50" onClick={() => setSidebarOpen(false)} />
@@ -254,20 +261,12 @@ export default function DashboardLayout({ children }) {
                 </Link>
               ))}
             </nav>
-            <div className="px-3 py-4 border-t border-blue-800">
-              <button onClick={handleLogout} className="nav-item w-full text-red-300">
-                <LogOut className="icon" />
-                <span>Keluar</span>
-              </button>
-            </div>
           </aside>
         </div>
       )}
 
-      {/* ─── MAIN CONTENT ─── */}
+      {/* KONTEN UTAMA */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-
-        {/* Top bar */}
         <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between flex-shrink-0 shadow-sm sticky top-0 z-20">
           <div className="flex items-center gap-3">
             <button className="md:hidden p-1.5 rounded-lg hover:bg-gray-100" onClick={() => setSidebarOpen(true)}>
@@ -277,29 +276,22 @@ export default function DashboardLayout({ children }) {
               <h2 className="text-sm font-bold text-gray-900">
                 {navItems.find(n => isActive(n.href))?.label || 'Dashboard'}
               </h2>
-              <p className="text-xs text-gray-400 hidden sm:block">{warungName} · {cabang}</p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Notifikasi */}
             <button className="relative p-2 rounded-lg hover:bg-gray-100">
               <Bell className="w-5 h-5 text-gray-500" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
             </button>
-
-            {/* Avatar — klik buka profil dropdown */}
             <button
               onClick={() => setProfileOpen(true)}
               className="flex items-center gap-2 pl-2 border-l border-gray-200 hover:bg-gray-50 rounded-lg pr-1 py-1 transition-colors"
             >
               <div className="w-8 h-8 bg-blue-700 rounded-full flex items-center justify-center text-white text-xs font-bold ring-2 ring-blue-200">
-                {user?.email?.[0]?.toUpperCase() || 'A'}
+                {initial}
               </div>
               <div className="hidden sm:block text-left">
-                <p className="text-xs font-semibold text-gray-800 leading-tight">
-                  {user?.user_metadata?.full_name || 'Admin'}
-                </p>
+                <p className="text-xs font-semibold text-gray-800 leading-tight">{fullName}</p>
                 <p className="text-[10px] text-gray-400">Owner</p>
               </div>
               <Edit3 className="w-3 h-3 text-gray-400 hidden sm:block" />
@@ -307,7 +299,6 @@ export default function DashboardLayout({ children }) {
           </div>
         </header>
 
-        {/* Profile Dropdown */}
         {profileOpen && (
           <ProfileDropdown
             user={user}
@@ -318,19 +309,14 @@ export default function DashboardLayout({ children }) {
           />
         )}
 
-        {/* Page content */}
         <main className="flex-1 overflow-y-auto pb-20 md:pb-0">
           {children}
         </main>
 
-        {/* ─── MOBILE BOTTOM NAV ─── */}
+        {/* BOTTOM NAV */}
         <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex items-center safe-area-pb z-20">
           {bottomNavItems.map(({ href, label, icon: Icon }) => (
-            <Link
-              key={href}
-              href={href}
-              className={`bottom-nav-item ${isActive(href) ? 'active' : ''}`}
-            >
+            <Link key={href} href={href} className={`bottom-nav-item ${isActive(href) ? 'active' : ''}`}>
               <Icon className="w-5 h-5" />
               <span className="text-[10px] truncate max-w-[50px] text-center">{label}</span>
             </Link>
