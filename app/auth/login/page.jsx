@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase'
 import Icon from '@/components/Icon'
 
@@ -76,11 +77,20 @@ export default function LoginPage() {
         {/* Card */}
         <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-7">
 
+          {/* Illustration */}
+          <div className="-mx-7 -mt-7 mb-5 rounded-t-3xl overflow-hidden bg-blue-50">
+            <Image
+              src="/assets/login.png"
+              alt="WarungKu Illustration"
+              width={400}
+              height={220}
+              className="w-full object-cover"
+              priority
+            />
+          </div>
+
           {/* Feature list */}
           <div className="mb-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-3 leading-snug">
-              Kelola warung Anda<br />dengan lebih mudah
-            </h2>
             <div className="space-y-2">
               {FEATURES.map(f => (
                 <div key={f} className="flex items-center gap-2">
