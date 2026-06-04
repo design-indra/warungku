@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import {
   Search, QrCode, ShoppingCart, Trash2, Plus, Minus,
   CreditCard, Wallet, Banknote, ScanLine, CheckCircle2,
@@ -556,7 +556,7 @@ export default function KasirPage() {
       <div className="bg-white border-b border-gray-100 px-4 py-2.5 flex items-center gap-3 flex-shrink-0">
         <div className="flex-1">
           <p className="text-[10px] text-gray-400 uppercase tracking-wide font-medium">No. Transaksi</p>
-          <p className="text-xs font-bold text-gray-600"> — </p>
+          <p className="text-xs font-bold text-gray-600">— akan digenerate —</p>
         </div>
         <div className="flex-1 text-center">
           <p className="text-[10px] text-gray-400 uppercase tracking-wide font-medium">Tanggal</p>
@@ -707,4 +707,183 @@ export default function KasirPage() {
       `}</style>
     </div>
   )
+}// ─── STRUK ───────────────────────────────────────────────────────────────────
+function StrukView({ tx, onSelesai, store }) {
+  const [btStatus, setBtStatus]     = useState('idle')  // idle|connecting|connected|printing|error
+  const [btName, setBtName]         = useState('')
+  const [btError, setBtError]       = useState('')
+  const [paperWidth, setPaperWidth] = useState(32)      // 32=58mm, 48=80mm
+
+  const handleConnect = useCallback(async () => {
+    setBtStatus('connecting'); setBtError('')
+    try {
+      const { connectPrinter } = await import('@/lib/bluetooth-print')
+      const name = await connectPrinter()
+      setBtName(name); setBtStatus('connected')
+    } catch (e) { setBtError(e.message); setBtStatus('error') }
+  }, [])
+
+  const handleDisconnect = useCallback(async () => {
+    const { disconnectPrinter } = await import('@/lib/bluetooth-print')
+    await disconnectPrinter()
+    setBtStatus('idle'); setBtName('')
+  }, [])
+
+  const handlePrint = useCallback(async () => {
+    setBtStatus('printing'); setBtError('')
+    try {
+      const { printStruk, isConnected, connectPrinter } = await import('@/lib/bluetooth-print')
+      if (!isConnected()) { const name = await connectPrinter(); setBtName(name) }
+      await printStruk(tx, store, paperWidth)
+      setBtStatus('connected')
+    } catch (e) { setBtError(e.message); setBtStatus('error') }
+  }, [tx, store, paperWidth])
+
+  return (
+    <div className="flex flex-col h-full bg-gray-50">
+      <div className="flex-1 overflow-y-auto p-4">
+        <div className="bg-white rounded-2xl p-5 shadow-sm max-w-sm mx-auto">
+          {/* Status sukses */}
+          <div className="text-center mb-5">
+            <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+              <CheckCircle2 className="w-8 h-8 text-green-500" />
+            </div>
+            <p className="font-extrabold text-lg text-gray-900">Pembayaran Berhasil</p>
+            <p className="text-gray-400 text-sm">Terima kasih telah berbelanja</p>
+          </div>
+
+          {/* Info toko */}
+          <div className="text-center py-3 border-t border-b border-dashed border-gray-200 mb-4">
+            <p className="font-extrabold tracking-widest text-gray-900 text-sm">
+              {store.nama_warung || 'WARUNGKU'}
+            </p>
+            {store.alamat && <p className="text-xs text-gray-400 mt-0.5">{store.alamat}</p>}
+            {store.no_hp   && <p className="text-xs text-gray-400">{store.no_hp}</p>}
+          </div>
+
+          {/* Meta */}
+          <div className="space-y-1 pb-4 border-b border-dashed border-gray-200 mb-4">
+            {[
+              ['No. Transaksi', tx.nomor_transaksi || '-'],
+              ['Tanggal',       fmt(tx.created_at || new Date())],
+              ['Kasir',         'Admin'],
+            ].map(([k, v]) => (
+              <div key={k} className="flex justify-between text-sm">
+                <span className="text-gray-500">{k}</span>
+                <span className="font-medium">: {v}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Items */}
+          <div className="pb-4 border-b border-dashed border-gray-200 mb-4 space-y-1.5">
+            {tx.items.map(item => (
+              <div key={item.id} className="flex justify-between text-sm">
+                <span className="flex-1 text-gray-700">
+                  {item.nama}
+                  <span className="text-gray-400 ml-1 text-xs">
+                    {item.qty} x {Number(item.harga).toLocaleString('id-ID')}
+                  </span>
+                </span>
+                <span className="font-semibold ml-3 flex-shrink-0">
+                  {Number(item.harga * item.qty).toLocaleString('id-ID')}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          {/* Totals */}
+          <div className="space-y-1.5">
+            <div className="flex justify-between text-sm"><span className="text-gray-500">Total Item</span><span>{tx.items.reduce((s,i)=>s+i.qty,0)}</span></div>
+            <div className="flex justify-between text-sm"><span className="text-gray-500">Subtotal</span><span>{rp(tx.subtotal)}</span></div>
+            <div className="flex justify-between text-sm"><span className="text-gray-500">Diskon</span><span className="text-red-500">{tx.diskon>0?`-${rp(tx.diskon)}`:rp(0)}</span></div>
+            <div className="flex justify-between font-bold text-base border-t border-gray-200 pt-2 mt-1">
+              <span>Total Bayar</span><span className="text-green-600">{rp(tx.total)}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-500">Dibayar ({METODE.find(m=>m.id===tx.metode_bayar)?.label||'Tunai'})</span>
+              <span>{rp(tx.bayar)}</span>
+            </div>
+            {tx.kembalian > 0 && (
+              <div className="flex justify-between font-bold text-sm">
+                <span>Kembalian</span><span className="text-green-600">{rp(tx.kembalian)}</span>
+              </div>
+            )}
+          </div>
+          <p className="text-center text-gray-300 text-[10px] mt-5">— Simpan struk ini sebagai bukti —</p>
+        </div>
+
+        {/* ── Bluetooth Print Panel ── */}
+        <div className="max-w-sm mx-auto mt-4 bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+          <div className="flex items-center justify-between mb-3">
+            <p className="font-semibold text-sm text-gray-800 flex items-center gap-2">
+              <Bluetooth className="w-4 h-4 text-blue-600" />
+              Printer Bluetooth
+            </p>
+            {/* Paper width toggle 58mm / 80mm */}
+            <div className="flex gap-1">
+              {[[32,'58mm'],[48,'80mm']].map(([w,l]) => (
+                <button key={w} onClick={() => setPaperWidth(w)}
+                  className={`px-2 py-1 text-[10px] font-bold rounded-lg border transition-colors
+                    ${paperWidth===w ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-100 text-gray-500 border-gray-200'}`}>
+                  {l}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Terhubung */}
+          {btStatus === 'connected' && (
+            <div className="flex items-center justify-between mb-3 px-3 py-2 bg-blue-50 rounded-xl border border-blue-200">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+                <span className="text-xs font-semibold text-blue-700">{btName || 'Printer Terhubung'}</span>
+              </div>
+              <button onClick={handleDisconnect} className="text-[10px] text-red-500 font-semibold hover:text-red-700">Putuskan</button>
+            </div>
+          )}
+
+          {/* Error */}
+          {btStatus === 'error' && (
+            <div className="flex items-start gap-2 mb-3 px-3 py-2 bg-red-50 rounded-xl border border-red-200">
+              <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+              <p className="text-xs text-red-600">{btError}</p>
+            </div>
+          )}
+
+          {/* Tombol */}
+          {btStatus !== 'connected' ? (
+            <button onClick={handleConnect} disabled={btStatus==='connecting'}
+              className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition-colors
+                ${btStatus==='connecting' ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-blue-50 border-2 border-blue-200 text-blue-700 hover:bg-blue-100'}`}>
+              {btStatus==='connecting'
+                ? <><BluetoothSearching className="w-4 h-4 animate-pulse" /> Mencari Printer...</>
+                : <><Bluetooth className="w-4 h-4" /> Hubungkan Printer</>}
+            </button>
+          ) : (
+            <button onClick={handlePrint} disabled={btStatus==='printing'}
+              className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition-colors
+                ${btStatus==='printing' ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-blue-700 text-white hover:bg-blue-800'}`}>
+              {btStatus==='printing'
+                ? <><BluetoothSearching className="w-4 h-4 animate-spin" /> Mencetak...</>
+                : <><Printer className="w-4 h-4" /> Cetak Struk</>}
+            </button>
+          )}
+
+          <p className="text-[10px] text-gray-400 text-center mt-2">
+            Kertas {paperWidth===32?'58mm':'80mm'} · ESC/POS Universal
+          </p>
+        </div>
+      </div>
+
+      {/* Selesai */}
+      <div className="bg-white border-t border-gray-100 p-4 flex-shrink-0">
+        <button onClick={onSelesai}
+          className="w-full flex items-center justify-center gap-2 py-3.5 bg-blue-700 text-white rounded-xl font-bold text-base hover:bg-blue-800 transition-colors">
+          <CheckCircle2 className="w-5 h-5" /> Selesai
+        </button>
+      </div>
+    </div>
+  )
 }
+
