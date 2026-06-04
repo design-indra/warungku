@@ -9,10 +9,17 @@ export async function middleware(request) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     {
       cookies: {
-        getAll() { return request.cookies.getAll() },
+        getAll() {
+          return request.cookies.getAll()
+        },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          // Set cookies di request
+          cookiesToSet.forEach(({ name, value }) =>
+            request.cookies.set(name, value)
+          )
+          // Buat response baru dengan cookies yang diupdate
           response = NextResponse.next({ request })
+          // Set cookies di response agar browser menyimpannya
           cookiesToSet.forEach(({ name, value, options }) =>
             response.cookies.set(name, value, options)
           )
@@ -21,6 +28,7 @@ export async function middleware(request) {
     }
   )
 
+  // PENTING: getUser() akan refresh session otomatis dan update cookie
   const { data: { user } } = await supabase.auth.getUser()
 
   // Protect dashboard routes
@@ -41,5 +49,7 @@ export async function middleware(request) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/auth/:path*'],
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
 }
