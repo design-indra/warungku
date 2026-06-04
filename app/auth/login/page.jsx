@@ -69,7 +69,7 @@ export default function LoginPage() {
 
         {/* Brand */}
         <div className="text-center mb-8">
-          <div className="text-5xl mb-2">🏪</div>
+          <div className="text-5xl mb-2">🏡</div>
           <h1 className="text-3xl font-extrabold text-white tracking-tight">WarungKu</h1>
           <p className="text-blue-200 text-sm mt-1">Aplikasi manajemen warung mudah &amp; lengkap</p>
         </div>
