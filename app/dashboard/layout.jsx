@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import {
   LayoutDashboard, ShoppingCart, Package, BarChart3,
   Users, Settings, LogOut, Store, Menu, X,
-  Bell, Crown, ChevronRight, Edit3
+  Bell, Crown, ChevronRight, Edit3, Receipt
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase'
 
@@ -170,10 +170,10 @@ export default function DashboardLayout({ children }) {
 
   const bottomNavItems = [
     { href: '/dashboard',         label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/dashboard/kasir',   label: 'Kasir',     icon: ShoppingCart },
-    { href: '/dashboard/stok',    label: 'Stok',      icon: Package },
-    { href: '/dashboard/laporan', label: 'Laporan',   icon: BarChart3 },
-    { href: '/dashboard/hutang',  label: 'Hutang',    icon: Users },
+    { href: '/dashboard/kasir',   label: 'Kasir (POS)',icon: ShoppingCart },
+    { href: '/dashboard/stok',    label: 'Barang',    icon: Package },
+    { href: '/dashboard/laporan', label: 'Transaksi', icon: Receipt },
+    { href: '/dashboard/hutang',  label: 'Lainnya',   icon: Users },
   ]
 
   return (
@@ -250,6 +250,9 @@ export default function DashboardLayout({ children }) {
               <h2 className="text-sm font-bold text-gray-900">
                 {navItems.find(n => isActive(n.href))?.label || 'Dashboard'}
               </h2>
+              {pathname.startsWith('/dashboard/kasir') && (
+                <p className="text-[10px] text-gray-400 leading-tight">Input transaksi penjualan</p>
+              )}
             </div>
           </div>
 
