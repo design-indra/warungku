@@ -5,13 +5,11 @@ export async function POST(request) {
   try {
     const supabase = createServerSupabase()
 
-    // Ambil user
     const { data: { user }, error: authErr } = await supabase.auth.getUser()
     if (authErr || !user) {
       return NextResponse.json({ error: 'Unauthorized', detail: authErr?.message }, { status: 401 })
     }
 
-    // Ambil tenant_id dari user_profiles
     const { data: profile, error: profileErr } = await supabase
       .from('user_profiles')
       .select('tenant_id')
@@ -19,11 +17,7 @@ export async function POST(request) {
       .single()
 
     if (profileErr || !profile?.tenant_id) {
-      return NextResponse.json({
-        error: 'Tenant tidak ditemukan',
-        detail: profileErr?.message,
-        user_id: user.id
-      }, { status: 400 })
+      return NextResponse.json({ error: 'Tenant tidak ditemukan', detail: profileErr?.message }, { status: 400 })
     }
 
     const { items } = await request.json()
@@ -49,18 +43,14 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Tidak ada data valid' }, { status: 400 })
     }
 
-    // Insert langsung, skip duplicate nama
+    // Upsert — jika nama + tenant_id sama, UPDATE (tidak duplikat)
     const { data, error: insertErr } = await supabase
       .from('barang')
-      .insert(rows)
+      .upsert(rows, { onConflict: 'tenant_id,nama' })
       .select('id')
 
     if (insertErr) {
-      return NextResponse.json({
-        error: 'Gagal insert',
-        detail: insertErr.message,
-        code: insertErr.code
-      }, { status: 500 })
+      return NextResponse.json({ error: 'Gagal insert', detail: insertErr.message, code: insertErr.code }, { status: 500 })
     }
 
     return NextResponse.json({ inserted: data?.length || rows.length })
