@@ -556,7 +556,7 @@ export default function KasirPage() {
       <div className="bg-white border-b border-gray-100 px-4 py-2.5 flex items-center gap-3 flex-shrink-0">
         <div className="flex-1">
           <p className="text-[10px] text-gray-400 uppercase tracking-wide font-medium">No. Transaksi</p>
-          <p className="text-xs font-bold text-gray-600">— akan digenerate —</p>
+          <p className="text-xs font-bold text-gray-600"> — </p>
         </div>
         <div className="flex-1 text-center">
           <p className="text-[10px] text-gray-400 uppercase tracking-wide font-medium">Tanggal</p>
