@@ -36,6 +36,7 @@ export async function GET() {
 
 // POST /api/pengaturan/cabang
 // Body: { nama, alamat }
+// ⚠️  Trigger enforce_cabang_limit di DB akan blokir jika plan tidak izinkan.
 export async function POST(request) {
   try {
     const supabase = createServerSupabase()
@@ -55,7 +56,14 @@ export async function POST(request) {
       .select()
       .single()
 
-    if (error) throw error
+    if (error) {
+      // Tangkap error dari trigger plan limit (ERRCODE P0001)
+      if (error.code === 'P0001' || error.message?.includes('Paket')) {
+        return NextResponse.json({ error: error.message }, { status: 403 })
+      }
+      throw error
+    }
+
     return NextResponse.json({ success: true, data }, { status: 201 })
   } catch (e) {
     return NextResponse.json({ error: e.message }, { status: 500 })
