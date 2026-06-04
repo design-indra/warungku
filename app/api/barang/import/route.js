@@ -1,45 +1,68 @@
 import { NextResponse } from 'next/server'
 import { createServerSupabase } from '@/lib/supabase-server'
 
-// POST /api/barang/import  → bulk insert barang dari file import
 export async function POST(request) {
   try {
     const supabase = createServerSupabase()
-    const { data: { user }, error: authErr } = await supabase.auth.getUser()
-    if (authErr || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const { data: profile } = await supabase
+    // Ambil user
+    const { data: { user }, error: authErr } = await supabase.auth.getUser()
+    if (authErr || !user) {
+      return NextResponse.json({ error: 'Unauthorized', detail: authErr?.message }, { status: 401 })
+    }
+
+    // Ambil tenant_id dari user_profiles
+    const { data: profile, error: profileErr } = await supabase
       .from('user_profiles')
       .select('tenant_id')
       .eq('id', user.id)
       .single()
 
-    if (!profile?.tenant_id) return NextResponse.json({ error: 'Tenant tidak ditemukan' }, { status: 400 })
+    if (profileErr || !profile?.tenant_id) {
+      return NextResponse.json({
+        error: 'Tenant tidak ditemukan',
+        detail: profileErr?.message,
+        user_id: user.id
+      }, { status: 400 })
+    }
 
     const { items } = await request.json()
     if (!Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: 'Data kosong' }, { status: 400 })
     }
 
-    const rows = items.map(item => ({
-      tenant_id:    profile.tenant_id,
-      nama:         String(item.nama || '').trim(),
-      satuan:       String(item.satuan || 'pcs').trim(),
-      harga_beli:   Number(item.harga_beli) || 0,
-      harga_jual:   Number(item.harga_jual) || 0,
-      stok:         Number(item.stok) || 0,
-      stok_minimum: Number(item.stok_minimum) || 5,
-      emoji:        '📦',
-      is_active:    true,
-    })).filter(r => r.nama)
+    const rows = items
+      .map(item => ({
+        tenant_id:    profile.tenant_id,
+        nama:         String(item.nama || '').trim(),
+        satuan:       String(item.satuan || 'pcs').trim(),
+        harga_beli:   Number(item.harga_beli) || 0,
+        harga_jual:   Number(item.harga_jual) || 0,
+        stok:         Number(item.stok) || 0,
+        stok_minimum: Number(item.stok_minimum) || 5,
+        emoji:        '📦',
+        is_active:    true,
+      }))
+      .filter(r => r.nama)
 
-    // upsert by nama agar tidak duplikat jika import ulang
-    const { data, error } = await supabase
+    if (rows.length === 0) {
+      return NextResponse.json({ error: 'Tidak ada data valid' }, { status: 400 })
+    }
+
+    // Insert langsung, skip duplicate nama
+    const { data, error: insertErr } = await supabase
       .from('barang')
-      .upsert(rows, { onConflict: 'tenant_id,nama', ignoreDuplicates: false })
+      .insert(rows)
       .select('id')
 
-    if (error) throw error
+    if (insertErr) {
+      return NextResponse.json({
+        error: 'Gagal insert',
+        detail: insertErr.message,
+        code: insertErr.code
+      }, { status: 500 })
+    }
+
     return NextResponse.json({ inserted: data?.length || rows.length })
   } catch (e) {
     return NextResponse.json({ error: e.message }, { status: 500 })
