@@ -172,8 +172,7 @@ export default function DashboardLayout({ children }) {
     { href: '/dashboard',         label: 'Dashboard', icon: LayoutDashboard },
     { href: '/dashboard/kasir',   label: 'Kasir (POS)',icon: ShoppingCart },
     { href: '/dashboard/stok',    label: 'Barang',    icon: Package },
-    { href: '/dashboard/laporan', label: 'Transaksi', icon: Receipt },
-    { href: '/dashboard/hutang',  label: 'Lainnya',   icon: Users },
+    { href: '/dashboard/laporan', label: 'Laporan',   icon: Receipt },
   ]
 
   return (
@@ -299,6 +298,10 @@ export default function DashboardLayout({ children }) {
               <span className="text-[10px] truncate max-w-[50px] text-center">{label}</span>
             </Link>
           ))}
+          <button onClick={() => setSidebarOpen(true)} className="bottom-nav-item">
+            <Menu className="w-5 h-5" />
+            <span className="text-[10px] text-center">Lainnya</span>
+          </button>
         </nav>
       </div>
     </div>
