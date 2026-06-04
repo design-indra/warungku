@@ -6,16 +6,52 @@ export async function PUT(request, { params }) {
     const supabase = createServerSupabase()
     const { data: { user }, error: authErr } = await supabase.auth.getUser()
     if (authErr || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
     const body = await request.json()
+    const { data: profile } = await supabase.from('user_profiles').select('tenant_id').eq('id', user.id).single()
+
+    // Resolve kategori_id dari nama jika perlu
+    let kategori_id = body.kategori_id || null
+    if (!kategori_id && body.kategori) {
+      const { data: kat } = await supabase
+        .from('kategori')
+        .select('id')
+        .eq('tenant_id', profile.tenant_id)
+        .ilike('nama', body.kategori)
+        .maybeSingle()
+
+      if (kat) {
+        kategori_id = kat.id
+      } else {
+        const { data: newKat } = await supabase
+          .from('kategori')
+          .insert({ tenant_id: profile.tenant_id, nama: body.kategori })
+          .select('id')
+          .single()
+        kategori_id = newKat?.id || null
+      }
+    }
+
     const { data, error } = await supabase.from('barang').update({
-      nama: body.nama, satuan: body.satuan,
-      harga_beli: Number(body.harga_beli), harga_jual: Number(body.harga_jual),
-      stok: Number(body.stok), stok_minimum: Number(body.stok_minimum) || 5,
-      emoji: body.emoji, kategori_id: body.kategori_id || null,
-    }).eq('id', params.id).select().single()
+      kode_barang:  body.kode_barang || null,
+      nama:         body.nama,
+      satuan:       body.satuan,
+      harga_beli:   Number(body.harga_beli),
+      harga_jual:   Number(body.harga_jual),
+      stok:         Number(body.stok),
+      stok_minimum: Number(body.stok_minimum) || 5,
+      emoji:        body.emoji,
+      kategori_id,
+      foto_url:     body.foto_url ?? null,
+      barcode:      body.barcode || null,
+      updated_at:   new Date().toISOString(),
+    }).eq('id', params.id).select('*, kategori(id, nama)').single()
+
     if (error) throw error
     return NextResponse.json({ data })
-  } catch (e) { return NextResponse.json({ error: e.message }, { status: 500 }) }
+  } catch (e) {
+    return NextResponse.json({ error: e.message }, { status: 500 })
+  }
 }
 
 export async function DELETE(request, { params }) {
@@ -23,8 +59,11 @@ export async function DELETE(request, { params }) {
     const supabase = createServerSupabase()
     const { data: { user }, error: authErr } = await supabase.auth.getUser()
     if (authErr || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
     const { error } = await supabase.from('barang').update({ is_active: false }).eq('id', params.id)
     if (error) throw error
     return NextResponse.json({ success: true })
-  } catch (e) { return NextResponse.json({ error: e.message }, { status: 500 }) }
+  } catch (e) {
+    return NextResponse.json({ error: e.message }, { status: 500 })
+  }
 }
