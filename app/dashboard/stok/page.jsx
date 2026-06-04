@@ -38,11 +38,11 @@ function mapRow(row) {
   return { nama: nama.trim(), kategori: kategori.trim(), satuan: satuan.trim(), harga_beli, harga_jual, stok, stok_minimum: stok_min, emoji: '📦' }
 }
 
-// ─── Parse XLSX/XLS pakai SheetJS (browser) ──────────────────
+// ─── Parse XLSX/XLS pakai SheetJS (npm) ──────────────────────
 async function parseExcel(file) {
-  const XLSX = await import('https://cdn.sheetjs.com/xlsx-0.20.3/package/xlsx.mjs')
+  const XLSX = await import('xlsx')
   const buf  = await file.arrayBuffer()
-  const wb   = XLSX.read(buf, { type: 'array' })
+  const wb   = XLSX.read(new Uint8Array(buf), { type: 'array' })
   const ws   = wb.Sheets[wb.SheetNames[0]]
   return XLSX.utils.sheet_to_json(ws, { defval: '' })
 }
