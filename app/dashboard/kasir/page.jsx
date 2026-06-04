@@ -5,7 +5,7 @@ import {
   Search, QrCode, ShoppingCart, Trash2, Plus, Minus,
   CreditCard, Wallet, Banknote, ScanLine, CheckCircle2,
   Printer, ArrowLeft, X, History, Receipt,
-  Bluetooth, BluetoothSearching, AlertCircle
+  Bluetooth, BluetoothSearching, AlertCircle, FileDown
 } from 'lucide-react'
 
 const rp  = (n) => 'Rp ' + Number(n || 0).toLocaleString('id-ID')
@@ -604,6 +604,101 @@ export default function KasirPage() {
   )
 }
 
+// ─── HELPER: Generate PDF Struk Thermal ──────────────────────────────────────
+function generateStrukPDF(tx, store, paperWidth = 32) {
+  const namaMetode = METODE.find(m => m.id === tx.metode_bayar)?.label || 'Tunai'
+  const mmWidth    = paperWidth === 32 ? '58mm' : '80mm'
+  const totalItem  = tx.items.reduce((s, i) => s + i.qty, 0)
+
+  const itemsHtml = tx.items.map(item => `
+    <div style="display:flex;justify-content:space-between;margin-bottom:2px;">
+      <span style="flex:1;">${item.nama}<br/>
+        <span style="font-size:9px;color:#666;">${item.qty} x ${Number(item.harga).toLocaleString('id-ID')}</span>
+      </span>
+      <span style="white-space:nowrap;margin-left:8px;">${Number(item.harga * item.qty).toLocaleString('id-ID')}</span>
+    </div>`).join('')
+
+  const kembalianHtml = tx.kembalian > 0 ? `
+    <div style="display:flex;justify-content:space-between;font-weight:700;">
+      <span>Kembalian</span>
+      <span>${rp(tx.kembalian)}</span>
+    </div>` : ''
+
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8"/>
+  <title>Struk - ${tx.nomor_transaksi || ''}</title>
+  <style>
+    @page { margin: 0; size: ${mmWidth} auto; }
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 11px;
+      width: ${mmWidth};
+      margin: 0 auto;
+      padding: 6mm 4mm;
+      color: #111;
+      background: #fff;
+    }
+    .center { text-align: center; }
+    .bold   { font-weight: 700; }
+    .small  { font-size: 9px; color: #555; }
+    .dash   { border-top: 1px dashed #999; margin: 5px 0; }
+    .row    { display: flex; justify-content: space-between; margin-bottom: 2px; }
+    .total-row { display: flex; justify-content: space-between; font-weight: 700; font-size: 12px; border-top: 1px solid #333; padding-top: 4px; margin-top: 4px; }
+    @media print {
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+  </style>
+</head>
+<body>
+  <div class="center bold" style="font-size:13px;letter-spacing:2px;margin-bottom:2px;">
+    ${store.nama_warung || 'WARUNGKU'}
+  </div>
+  ${store.alamat ? `<div class="center small">${store.alamat}</div>` : ''}
+  ${store.no_hp  ? `<div class="center small">Telp: ${store.no_hp}</div>` : ''}
+
+  <div class="dash"></div>
+
+  <div class="row"><span>No. Transaksi</span><span>${tx.nomor_transaksi || '-'}</span></div>
+  <div class="row"><span>Tanggal</span><span>${fmt(tx.created_at || new Date())}</span></div>
+  <div class="row"><span>Kasir</span><span>Admin</span></div>
+
+  <div class="dash"></div>
+
+  ${itemsHtml}
+
+  <div class="dash"></div>
+
+  <div class="row"><span>Total Item</span><span>${totalItem}</span></div>
+  <div class="row"><span>Subtotal</span><span>${rp(tx.subtotal)}</span></div>
+  ${tx.diskon > 0 ? `<div class="row"><span>Diskon</span><span>-${rp(tx.diskon)}</span></div>` : ''}
+
+  <div class="total-row"><span>TOTAL</span><span>${rp(tx.total)}</span></div>
+
+  <div class="dash"></div>
+
+  <div class="row"><span>Dibayar (${namaMetode})</span><span>${rp(tx.bayar)}</span></div>
+  ${kembalianHtml}
+
+  <div class="dash"></div>
+
+  <div class="center small" style="margin-top:6px;">Terima kasih telah berbelanja</div>
+  <div class="center small">*** Simpan struk ini sebagai bukti ***</div>
+</body>
+</html>`
+
+  // Buka di tab baru lalu trigger print/save as PDF
+  const win = window.open('', '_blank', 'width=400,height=600')
+  win.document.write(html)
+  win.document.close()
+  win.onload = () => {
+    win.focus()
+    win.print()
+  }
+}
+
 // ─── STRUK (dengan Bluetooth Printer) ────────────────────────────────────────
 function StrukView({ tx, onSelesai, store }) {
   const [btStatus, setBtStatus]     = useState('idle')  // idle|connecting|connected|printing|error
@@ -710,28 +805,47 @@ function StrukView({ tx, onSelesai, store }) {
           <p className="text-center text-gray-300 text-[10px] mt-5">— Simpan struk ini sebagai bukti —</p>
         </div>
 
-        {/* ── Bluetooth Print Panel ── */}
-        <div className="max-w-sm mx-auto mt-4 bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between mb-3">
-            <p className="font-semibold text-sm text-gray-800 flex items-center gap-2">
-              <Bluetooth className="w-4 h-4 text-blue-600" />
-              Printer Bluetooth
-            </p>
-            {/* Paper width toggle 58mm / 80mm */}
-            <div className="flex gap-1">
-              {[[32,'58mm'],[48,'80mm']].map(([w,l]) => (
-                <button key={w} onClick={() => setPaperWidth(w)}
-                  className={`px-2 py-1 text-[10px] font-bold rounded-lg border transition-colors
-                    ${paperWidth===w ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-100 text-gray-500 border-gray-200'}`}>
-                  {l}
-                </button>
-              ))}
-            </div>
+        {/* ── Aksi Cetak ── */}
+        <div className="max-w-sm mx-auto mt-4 space-y-3">
+
+          {/* Baris 2 tombol: PDF + Bluetooth connect/print */}
+          <div className="grid grid-cols-2 gap-3">
+
+            {/* Cetak PDF */}
+            <button
+              onClick={() => generateStrukPDF(tx, store, paperWidth)}
+              className="flex flex-col items-center justify-center gap-1.5 py-4 bg-emerald-50 border-2 border-emerald-200 text-emerald-700 rounded-2xl font-semibold text-sm hover:bg-emerald-100 transition-colors">
+              <FileDown className="w-5 h-5" />
+              <span className="text-xs font-bold">Cetak PDF</span>
+            </button>
+
+            {/* Bluetooth */}
+            {btStatus !== 'connected' ? (
+              <button onClick={handleConnect} disabled={btStatus === 'connecting'}
+                className={`flex flex-col items-center justify-center gap-1.5 py-4 border-2 rounded-2xl font-semibold text-sm transition-colors
+                  ${btStatus === 'connecting'
+                    ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed'
+                    : 'bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100'}`}>
+                {btStatus === 'connecting'
+                  ? <><BluetoothSearching className="w-5 h-5 animate-pulse" /><span className="text-xs font-bold">Mencari...</span></>
+                  : <><Bluetooth className="w-5 h-5" /><span className="text-xs font-bold">Bluetooth</span></>}
+              </button>
+            ) : (
+              <button onClick={handlePrint} disabled={btStatus === 'printing'}
+                className={`flex flex-col items-center justify-center gap-1.5 py-4 border-2 rounded-2xl font-semibold text-sm transition-colors
+                  ${btStatus === 'printing'
+                    ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed'
+                    : 'bg-blue-700 border-blue-700 text-white hover:bg-blue-800'}`}>
+                {btStatus === 'printing'
+                  ? <><BluetoothSearching className="w-5 h-5 animate-spin" /><span className="text-xs font-bold">Mencetak...</span></>
+                  : <><Printer className="w-5 h-5" /><span className="text-xs font-bold">Cetak BT</span></>}
+              </button>
+            )}
           </div>
 
-          {/* Terhubung */}
+          {/* Status Bluetooth terhubung */}
           {btStatus === 'connected' && (
-            <div className="flex items-center justify-between mb-3 px-3 py-2 bg-blue-50 rounded-xl border border-blue-200">
+            <div className="flex items-center justify-between px-3 py-2 bg-blue-50 rounded-xl border border-blue-200">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
                 <span className="text-xs font-semibold text-blue-700">{btName || 'Printer Terhubung'}</span>
@@ -740,36 +854,27 @@ function StrukView({ tx, onSelesai, store }) {
             </div>
           )}
 
-          {/* Error */}
+          {/* Error Bluetooth */}
           {btStatus === 'error' && (
-            <div className="flex items-start gap-2 mb-3 px-3 py-2 bg-red-50 rounded-xl border border-red-200">
+            <div className="flex items-start gap-2 px-3 py-2 bg-red-50 rounded-xl border border-red-200">
               <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
               <p className="text-xs text-red-600">{btError}</p>
             </div>
           )}
 
-          {/* Tombol */}
-          {btStatus !== 'connected' ? (
-            <button onClick={handleConnect} disabled={btStatus==='connecting'}
-              className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition-colors
-                ${btStatus==='connecting' ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-blue-50 border-2 border-blue-200 text-blue-700 hover:bg-blue-100'}`}>
-              {btStatus==='connecting'
-                ? <><BluetoothSearching className="w-4 h-4 animate-pulse" /> Mencari Printer...</>
-                : <><Bluetooth className="w-4 h-4" /> Hubungkan Printer</>}
-            </button>
-          ) : (
-            <button onClick={handlePrint} disabled={btStatus==='printing'}
-              className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition-colors
-                ${btStatus==='printing' ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-blue-700 text-white hover:bg-blue-800'}`}>
-              {btStatus==='printing'
-                ? <><BluetoothSearching className="w-4 h-4 animate-spin" /> Mencetak...</>
-                : <><Printer className="w-4 h-4" /> Cetak Struk</>}
-            </button>
-          )}
-
-          <p className="text-[10px] text-gray-400 text-center mt-2">
-            Kertas {paperWidth===32?'58mm':'80mm'} · ESC/POS Universal
-          </p>
+          {/* Paper width toggle */}
+          <div className="flex items-center justify-between px-1">
+            <span className="text-[10px] text-gray-400">Ukuran kertas (Bluetooth & PDF)</span>
+            <div className="flex gap-1">
+              {[[32,'58mm'],[48,'80mm']].map(([w,l]) => (
+                <button key={w} onClick={() => setPaperWidth(w)}
+                  className={`px-2 py-1 text-[10px] font-bold rounded-lg border transition-colors
+                    ${paperWidth === w ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-100 text-gray-500 border-gray-200'}`}>
+                  {l}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
