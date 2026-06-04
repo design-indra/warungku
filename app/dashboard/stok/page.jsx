@@ -27,15 +27,19 @@ function parseCSV(text) {
 
 // ─── Map kolom file ke format WarungKu ───────────────────────
 function mapRow(row) {
-  // Coba berbagai nama kolom yang mungkin
-  const nama      = row['NAMA'] || row['NAMA_BARANG'] || row['NAME'] || row['PRODUCT'] || ''
-  const kategori  = row['KATEGORI'] || row['CATEGORY'] || row['KAT'] || 'Lainnya'
-  const satuan    = row['SATUAN_1'] || row['SATUAN'] || row['UNIT'] || 'pcs'
-  const harga_beli= parseFloat(row['HPP'] || row['HARGA_BELI'] || row['COST'] || 0) || 0
-  const harga_jual= parseFloat(row['HARGA_TOKO_1'] || row['HARGA_JUAL'] || row['PRICE'] || 0) || 0
-  const stok      = parseFloat(row['TOKO'] || row['STOK'] || row['STOCK'] || row['QTY'] || 0) || 0
-  const stok_min  = parseFloat(row['STOK_MIN'] || row['MIN_STOK'] || 5) || 5
-  return { nama: nama.trim(), kategori: kategori.trim(), satuan: satuan.trim(), harga_beli, harga_jual, stok, stok_minimum: stok_min, emoji: '📦' }
+  // Normalisasi semua key ke UPPERCASE agar case-insensitive
+  const r = {}
+  Object.keys(row).forEach(k => { r[k.trim().toUpperCase()] = row[k] })
+
+  const nama      = r['NAMA'] || r['NAMA_BARANG'] || r['NAME'] || r['PRODUCT'] || ''
+  const kategori  = r['KATEGORI'] || r['CATEGORY'] || r['KAT'] || 'Lainnya'
+  const satuan    = r['SATUAN_1'] || r['SATUAN'] || r['UNIT'] || 'pcs'
+  const harga_beli= parseFloat(r['HPP'] || r['HARGA_BELI'] || r['COST'] || 0) || 0
+  const harga_jual= parseFloat(r['HARGA_TOKO_1'] || r['HARGA_JUAL'] || r['PRICE'] || 0) || 0
+  const stok      = parseFloat(r['TOKO'] || r['STOK'] || r['STOCK'] || r['QTY'] || 0) || 0
+  const stok_min  = parseFloat(r['STOK_MIN'] || r['MIN_STOK'] || 5) || 5
+
+  return { nama: String(nama).trim(), kategori: String(kategori).trim(), satuan: String(satuan).trim(), harga_beli, harga_jual, stok, stok_minimum: stok_min, emoji: '📦' }
 }
 
 // ─── Parse XLSX/XLS pakai SheetJS (npm) ──────────────────────
@@ -166,19 +170,38 @@ export default function StokPage() {
       }
       const mapped = rows.map(mapRow).filter(r => r.nama)
 
-      // Kirim batch per 50 supaya tidak timeout
+      if (mapped.length === 0) {
+        setImportError('Tidak ada data valid yang bisa diimport. Cek format kolom file.')
+        setImportLoading(false)
+        return
+      }
+
+      // Kirim batch per 50
       const BATCH = 50
       let done = 0
+      let totalInserted = 0
+
       for (let i = 0; i < mapped.length; i += BATCH) {
         const batch = mapped.slice(i, i + BATCH)
-        await fetch('/api/barang/import', {
+        const res = await fetch('/api/barang/import', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ items: batch }),
         })
+        const json = await res.json()
+
+        if (!res.ok) {
+          setImportError(`Error: ${json.error} — ${json.detail || ''}`)
+          setImportLoading(false)
+          return
+        }
+
+        totalInserted += json.inserted || 0
         done += batch.length
         setImportProgress(Math.round((done / mapped.length) * 100))
       }
+
+      setImportTotal(totalInserted)
       setImportDone(true)
       fetchBarang()
     } catch (err) {
