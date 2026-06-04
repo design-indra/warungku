@@ -35,7 +35,13 @@ export default function Icon({ name, size = 20, color = 'currentColor', strokeWi
     info:        'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z M12 8h.01 M12 12v4',
     refresh:     'M23 4v6h-6 M1 20v-6h6 M3.51 9a9 9 0 0 1 14.85-3.36L23 10 M1 14l4.64 4.36A9 9 0 0 0 20.49 15',
     logout:      'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4 M16 17l5-5-5-5 M21 12H9',
-    menu:        'M3 12h18 M3 6h18 M3 18h18',
+    menu:          'M3 12h18 M3 6h18 M3 18h18',
+    'arrow-left':  'M19 12H5 M12 19l-7-7 7-7',
+    camera:        'M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z M12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z',
+    image:         'M21 19V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2z M8.5 10a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z M21 15l-5-5L5 21',
+    'chevron-down':  'M6 9l6 6 6-6',
+    'chevron-left':  'M15 18l-6-6 6-6',
+    'chevron-right': 'M9 18l6-6-6-6',
   }
 
   return (
