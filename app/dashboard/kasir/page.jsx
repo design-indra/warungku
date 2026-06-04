@@ -4,7 +4,8 @@ import { useState, useMemo, useEffect, useCallback } from 'react'
 import {
   Search, QrCode, ShoppingCart, Trash2, Plus, Minus,
   CreditCard, Wallet, Banknote, ScanLine, CheckCircle2,
-  Printer, ArrowLeft, X, History, Receipt
+  Printer, ArrowLeft, X, History, Receipt,
+  Bluetooth, BluetoothSearching, AlertCircle
 } from 'lucide-react'
 
 const rp  = (n) => 'Rp ' + Number(n || 0).toLocaleString('id-ID')
@@ -107,112 +108,6 @@ function RiwayatView({ onBack }) {
             </div>
           ))}
         </div>
-      </div>
-    </div>
-  )
-}
-
-// ─── STRUK ────────────────────────────────────────────────────────────────────
-function StrukView({ tx, onSelesai, store }) {
-  return (
-    <div className="flex flex-col h-full bg-gray-50">
-      <div className="flex-1 overflow-y-auto p-4">
-        <div className="bg-white rounded-2xl p-5 shadow-sm max-w-sm mx-auto">
-
-          {/* Status sukses */}
-          <div className="text-center mb-5">
-            <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-              <CheckCircle2 className="w-8 h-8 text-green-500" />
-            </div>
-            <p className="font-extrabold text-lg text-gray-900">Pembayaran Berhasil</p>
-            <p className="text-gray-400 text-sm">Terima kasih telah berbelanja</p>
-          </div>
-
-          {/* Info toko */}
-          <div className="text-center py-3 border-t border-b border-dashed border-gray-200 mb-4">
-            <p className="font-extrabold tracking-widest text-gray-900 text-sm">
-              {store.nama_warung || 'WARUNGKU'}
-            </p>
-            {store.alamat && <p className="text-xs text-gray-400 mt-0.5">{store.alamat}</p>}
-            {store.no_hp   && <p className="text-xs text-gray-400">{store.no_hp}</p>}
-          </div>
-
-          {/* Meta */}
-          <div className="space-y-1 pb-4 border-b border-dashed border-gray-200 mb-4">
-            {[
-              ['No. Transaksi', tx.nomor_transaksi || '-'],
-              ['Tanggal',       fmt(tx.created_at || new Date())],
-              ['Kasir',         'Admin'],
-            ].map(([k,v]) => (
-              <div key={k} className="flex justify-between text-sm">
-                <span className="text-gray-500">{k}</span>
-                <span className="font-medium">: {v}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* Items */}
-          <div className="pb-4 border-b border-dashed border-gray-200 mb-4 space-y-1.5">
-            {tx.items.map(item => (
-              <div key={item.id} className="flex justify-between text-sm">
-                <span className="flex-1 text-gray-700">
-                  {item.nama}
-                  <span className="text-gray-400 ml-1 text-xs">
-                    {item.qty} x {Number(item.harga).toLocaleString('id-ID')}
-                  </span>
-                </span>
-                <span className="font-semibold ml-3 flex-shrink-0">
-                  {Number(item.harga * item.qty).toLocaleString('id-ID')}
-                </span>
-              </div>
-            ))}
-          </div>
-
-          {/* Totals */}
-          <div className="space-y-1.5">
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Total Item</span>
-              <span>{tx.items.reduce((s,i) => s + i.qty, 0)}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Subtotal</span>
-              <span>{rp(tx.subtotal)}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Diskon</span>
-              <span className="text-red-500">{tx.diskon > 0 ? `-${rp(tx.diskon)}` : rp(0)}</span>
-            </div>
-            <div className="flex justify-between font-bold text-base border-t border-gray-200 pt-2 mt-1">
-              <span>Total Bayar</span>
-              <span className="text-green-600">{rp(tx.total)}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-500">
-                Dibayar ({METODE.find(m => m.id === tx.metode_bayar)?.label || 'Tunai'})
-              </span>
-              <span>{rp(tx.bayar)}</span>
-            </div>
-            {tx.kembalian > 0 && (
-              <div className="flex justify-between font-bold text-sm">
-                <span>Kembalian</span>
-                <span className="text-green-600">{rp(tx.kembalian)}</span>
-              </div>
-            )}
-          </div>
-
-          <p className="text-center text-gray-300 text-[10px] mt-5">— Simpan struk ini sebagai bukti —</p>
-        </div>
-      </div>
-
-      {/* Actions */}
-      <div className="bg-white border-t border-gray-100 p-4 flex gap-3 flex-shrink-0">
-        <button className="flex-1 flex items-center justify-center gap-2 py-3.5 border-2 border-blue-200 text-blue-700 rounded-xl font-semibold text-sm hover:bg-blue-50 transition-colors">
-          <Printer className="w-4 h-4" /> Cetak Struk
-        </button>
-        <button onClick={onSelesai}
-          className="flex-1 flex items-center justify-center gap-2 py-3.5 bg-blue-700 text-white rounded-xl font-semibold text-sm hover:bg-blue-800 transition-colors">
-          <CheckCircle2 className="w-4 h-4" /> Selesai
-        </button>
       </div>
     </div>
   )
@@ -707,7 +602,9 @@ export default function KasirPage() {
       `}</style>
     </div>
   )
-}// ─── STRUK ───────────────────────────────────────────────────────────────────
+}
+
+// ─── STRUK (dengan Bluetooth Printer) ────────────────────────────────────────
 function StrukView({ tx, onSelesai, store }) {
   const [btStatus, setBtStatus]     = useState('idle')  // idle|connecting|connected|printing|error
   const [btName, setBtName]         = useState('')
