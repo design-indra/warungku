@@ -68,13 +68,13 @@ export default function LoginPage() {
       <div className="flex-1 flex flex-col px-4 pb-4 min-h-0">
         <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm mx-auto flex flex-col overflow-hidden h-full">
 
-          {/* Ilustrasi — tinggi fixed kecil */}
-          <div className="flex-shrink-0 bg-blue-50 h-36 relative">
+          {/* Ilustrasi splash */}
+          <div className="flex-shrink-0 h-52 relative overflow-hidden" style={{ background: 'linear-gradient(160deg, #1d4ed8, #1e3a8a)' }}>
             <Image
               src="/assets/login.png"
               alt="WarungKu Illustration"
               fill
-              className="object-cover object-top"
+              className="object-cover object-center"
               priority
             />
           </div>
@@ -194,6 +194,21 @@ export default function LoginPage() {
                 Belum punya akun?{' '}
                 <Link href="/auth/register" className="text-blue-600 font-semibold hover:underline">Daftar Gratis</Link>
               </p>
+
+              {/* Logo bawah */}
+              <div className="flex flex-col items-center mt-4 pt-3 border-t border-gray-100">
+                <div className="w-12 h-12 relative mb-1.5">
+                  <Image
+                    src="/icons/icon-128x128.png"
+                    alt="WarungKu"
+                    fill
+                    className="object-contain"
+                  />
+                </div>
+                <p className="text-[10px] text-gray-400 text-center">
+                  WarungKu · Kelola warung, makin mudah
+                </p>
+              </div>
             </div>
           </div>
         </div>
