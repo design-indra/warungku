@@ -42,7 +42,7 @@ function mapRow(row) {
     harga_jual:   parseFloat(r['HARGA_TOKO_1'] || r['HARGA_JUAL'] || r['PRICE'] || 0) || 0,
     stok:         parseFloat(r['TOKO'] || r['STOK'] || r['STOCK'] || r['QTY'] || 0) || 0,
     stok_minimum: parseFloat(r['STOK_MIN'] || r['MIN_STOK'] || 5) || 5,
-    emoji:        '📦',
+    emoji:        String(r['EMOJI'] || r['emoji'] || r['ICON'] || '📦').trim() || '📦',
   }
 }
 
