@@ -684,6 +684,8 @@ export default function StokPage() {
   const [search, setSearch]         = useState('')
   const [page, setPage]             = useState(1)
   const [totalCount, setTotalCount] = useState(0)
+  // #6 Fix: summary dari DB (bukan dari halaman saat ini)
+  const [summaryDB, setSummaryDB]   = useState({ totalStok: 0, stokRendah: 0, totalNilai: 0 })
 
   const [modalOpen, setModalOpen]   = useState(false)
   const [editData, setEditData]     = useState(null)   // null = tambah, object = edit
@@ -711,6 +713,22 @@ export default function StokPage() {
 
       setBarang(data)
       setTotalCount(json.total || 0)
+
+      // #6 Fix: fetch summary semua barang dari DB (bukan hanya halaman ini)
+      try {
+        const [allRes, rendahRes] = await Promise.all([
+          fetch('/api/barang?limit=9999'),
+          fetch('/api/barang?stok=rendah&limit=9999'),
+        ])
+        const [allJson, rendahJson] = await Promise.all([allRes.json(), rendahRes.json()])
+        const allData    = allJson.data || []
+        const rendahData = rendahJson.data || []
+        setSummaryDB({
+          totalStok:  allData.reduce((s, b) => s + b.stok, 0),
+          stokRendah: rendahData.filter(b => b.stok > 0 && b.stok <= b.stok_minimum).length,
+          totalNilai: allData.reduce((s, b) => s + b.harga_jual * b.stok, 0),
+        })
+      } catch {}
     } catch {}
     finally { setLoading(false) }
   }, [tab, search])
@@ -753,10 +771,10 @@ export default function StokPage() {
   const openAdd  = () => { setEditData(null); setModalOpen(true) }
   const openEdit = (b) => { setEditData(b); setModalOpen(true) }
 
-  // ─── Summary stats ─────────────────────────────────────────
-  const totalNilai = barang.reduce((s, b) => s + b.harga_jual * b.stok, 0)
-  const totalStok  = barang.reduce((s, b) => s + b.stok, 0)
-  const stokRendah = barang.filter(b => b.stok <= 10 && b.stok > 0).length
+  // ─── Summary stats (dari DB via summaryDB) ──────────────────
+  const totalNilai = summaryDB.totalNilai
+  const totalStok  = summaryDB.totalStok
+  const stokRendah = summaryDB.stokRendah
   const totalPages = Math.ceil(totalCount / PAGE_SIZE)
 
   return (

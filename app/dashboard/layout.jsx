@@ -139,17 +139,50 @@ export default function DashboardLayout({ children }) {
   const router = useRouter()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
+  const [bellOpen, setBellOpen]       = useState(false)
+  const [notifs, setNotifs]           = useState([])
   const [user, setUser] = useState(null)
   const [warungName, setWarungName] = useState('WarungKu')
-  const [cabang, setCabang] = useState('Cabang A')
+  const [cabang, setCabang] = useState('')
 
   useEffect(() => {
     const supabase = createClient()
-    supabase.auth.getUser().then(({ data }) => {
+    supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) { router.push('/auth/login'); return }
       setUser(data.user)
-      const meta = data.user.user_metadata
-      if (meta?.nama_warung) setWarungName(meta.nama_warung)
+
+      // #2 Fix: ambil nama warung dari DB (bukan user_metadata)
+      try {
+        const res  = await fetch('/api/pengaturan/profil')
+        const json = await res.json()
+        if (json.nama_warung) setWarungName(json.nama_warung)
+      } catch {}
+
+      // #1 Fix: ambil cabang aktif user dari DB
+      try {
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('cabang:cabang_id(nama)')
+          .eq('id', data.user.id)
+          .single()
+        if (profile?.cabang?.nama) setCabang(profile.cabang.nama)
+      } catch {}
+
+      // #3 Fix: fetch notifikasi stok rendah
+      try {
+        const res  = await fetch('/api/barang?stok=rendah&limit=50')
+        const json = await res.json()
+        const stokRendah = (json.data || []).filter(b => b.stok <= b.stok_minimum)
+        if (stokRendah.length > 0) {
+          setNotifs(stokRendah.map(b => ({
+            id:   b.id,
+            type: b.stok === 0 ? 'habis' : 'rendah',
+            msg:  b.stok === 0
+              ? `${b.nama} — stok habis!`
+              : `${b.nama} — sisa ${b.stok} ${b.satuan}`,
+          })))
+        }
+      } catch {}
     })
   }, [])
 
@@ -256,9 +289,56 @@ export default function DashboardLayout({ children }) {
           </div>
 
           <div className="flex items-center gap-2">
-            <button className="relative p-2 rounded-lg hover:bg-gray-100">
-              <Bell className="w-5 h-5 text-gray-500" />
-            </button>
+            {/* Bell Notifikasi */}
+            <div className="relative">
+              <button
+                onClick={() => setBellOpen(v => !v)}
+                className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                <Bell className="w-5 h-5 text-gray-500" />
+                {notifs.length > 0 && (
+                  <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center leading-none">
+                    {notifs.length > 9 ? '9+' : notifs.length}
+                  </span>
+                )}
+              </button>
+
+              {bellOpen && (
+                <div className="absolute right-0 top-10 w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden"
+                  style={{ animation: 'dropIn 0.18s ease-out' }}>
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+                    <p className="font-bold text-sm text-gray-900">Notifikasi</p>
+                    {notifs.length > 0 && (
+                      <button onClick={() => setNotifs([])}
+                        className="text-[10px] text-gray-400 hover:text-red-500 font-semibold">
+                        Hapus semua
+                      </button>
+                    )}
+                  </div>
+                  <div className="max-h-64 overflow-y-auto divide-y divide-gray-50">
+                    {notifs.length === 0 ? (
+                      <p className="text-center text-sm text-gray-400 py-8">Tidak ada notifikasi</p>
+                    ) : notifs.map(n => (
+                      <div key={n.id} className="flex items-start gap-3 px-4 py-3 hover:bg-gray-50">
+                        <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-xs
+                          ${n.type === 'habis' ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600'}`}>
+                          {n.type === 'habis' ? '⛔' : '⚠️'}
+                        </div>
+                        <p className="text-xs text-gray-700 pt-1">{n.msg}</p>
+                      </div>
+                    ))}
+                  </div>
+                  {notifs.length > 0 && (
+                    <div className="px-4 py-2.5 border-t border-gray-100">
+                      <a href="/dashboard/stok" onClick={() => setBellOpen(false)}
+                        className="text-xs text-blue-600 font-semibold hover:underline">
+                        Lihat semua stok →
+                      </a>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
             <button
               onClick={() => setProfileOpen(true)}
               className="flex items-center gap-2 pl-2 border-l border-gray-200 hover:bg-gray-50 rounded-lg pr-1 py-1 transition-colors"

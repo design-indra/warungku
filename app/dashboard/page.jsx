@@ -6,10 +6,12 @@ import Icon from '@/components/Icon'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 
 const rp  = (n) => 'Rp ' + Number(n).toLocaleString('id-ID')
-const today = new Date().toISOString().split('T')[0]
-const week  = new Date(Date.now() - 6 * 86400000).toISOString().split('T')[0]
 
 export default function DashboardPage() {
+  // #4 Fix: dihitung saat render agar selalu tanggal hari ini
+  const today = new Date().toISOString().split('T')[0]
+  const week  = new Date(Date.now() - 6 * 86400000).toISOString().split('T')[0]
+
   const [laporan, setLaporan]   = useState(null)
   const [recentTx, setRecentTx] = useState([])
   const [loading, setLoading]   = useState(true)

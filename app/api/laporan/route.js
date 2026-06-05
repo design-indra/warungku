@@ -12,18 +12,29 @@ export async function GET(request) {
     const from   = searchParams.get('from') || new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0]
     const to     = searchParams.get('to')   || new Date().toISOString().split('T')[0]
 
-    // Omzet + laba per hari
+    // #7 Fix: ambil tenant_id untuk filter per tenant
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('tenant_id')
+      .eq('id', user.id)
+      .single()
+    if (!profile?.tenant_id) return NextResponse.json({ error: 'Profil tidak ditemukan' }, { status: 404 })
+    const tenantId = profile.tenant_id
+
+    // Omzet + laba per hari (filter per tenant)
     const { data: trxData } = await supabase
       .from('transaksi')
       .select('created_at, total, status')
+      .eq('tenant_id', tenantId)
       .gte('created_at', from)
       .lte('created_at', to + 'T23:59:59')
       .neq('status', 'batal')
 
-    // Barang terlaris
+    // Barang terlaris (filter via join transaksi.tenant_id)
     const { data: detailData } = await supabase
       .from('detail_transaksi')
       .select('nama_barang, qty, harga_jual, harga_beli, transaksi!inner(created_at, status, tenant_id)')
+      .eq('transaksi.tenant_id', tenantId)
       .gte('transaksi.created_at', from)
       .lte('transaksi.created_at', to + 'T23:59:59')
       .neq('transaksi.status', 'batal')

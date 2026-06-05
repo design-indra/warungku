@@ -42,18 +42,57 @@ export default function LaporanPage() {
     omzet: d.omzet,
   })) || []
 
+  const exportCSV = () => {
+    if (!data) return
+    const p = PERIODS[period]
+    const rows = [
+      ['Laporan Warung', '', '', ''],
+      [`Periode: ${p.label} (${p.from} s/d ${p.to})`, '', '', ''],
+      ['', '', '', ''],
+      ['Total Omzet', data.total_omzet, '', ''],
+      ['Laba Kotor', data.total_laba, '', ''],
+      ['Total Transaksi', data.total_transaksi, '', ''],
+      ['', '', '', ''],
+      ['--- Barang Terlaris ---', '', '', ''],
+      ['No', 'Nama Barang', 'Qty Terjual', ''],
+      ...(data.top_barang || []).map((b, i) => [i + 1, b.nama, b.qty, '']),
+      ['', '', '', ''],
+      ['--- Omzet Per Hari ---', '', '', ''],
+      ['Tanggal', 'Omzet', 'Jumlah Transaksi', ''],
+      ...(data.omzet_per_hari || []).map(d => [d.tgl, d.omzet, d.jumlah_trx || '', '']),
+    ]
+    const csv = rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url  = URL.createObjectURL(blob)
+    const a    = document.createElement('a')
+    a.href     = url
+    a.download = `laporan-${p.label.toLowerCase().replace(' ', '-')}-${p.from}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <div className="page-content space-y-4">
 
-      {/* Period selector */}
-      <div className="card p-1 flex gap-1 max-w-xs">
-        {PERIODS.map((p, i) => (
-          <button key={p.label} onClick={() => setPeriod(i)}
-            className={`flex-1 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors
-              ${period === i ? 'bg-blue-700 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-100'}`}>
-            {p.label}
+      {/* Period selector + Export */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="card p-1 flex gap-1">
+          {PERIODS.map((p, i) => (
+            <button key={p.label} onClick={() => setPeriod(i)}
+              className={`flex-1 py-2 px-3 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors
+                ${period === i ? 'bg-blue-700 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-100'}`}>
+              {p.label}
+            </button>
+          ))}
+        </div>
+        {!loading && data && (
+          <button
+            onClick={exportCSV}
+            className="flex items-center gap-1.5 px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-xs font-bold rounded-xl transition-colors">
+            <Icon name="download" size={13} color="#fff" />
+            Export CSV
           </button>
-        ))}
+        )}
       </div>
 
       {/* Stat cards */}
