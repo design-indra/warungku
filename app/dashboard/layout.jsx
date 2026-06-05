@@ -6,17 +6,22 @@ import { usePathname, useRouter } from 'next/navigation'
 import {
   LayoutDashboard, ShoppingCart, Package, BarChart3,
   Users, Settings, LogOut, Store, Menu, X,
-  Bell, Crown, ChevronRight, Edit3, Receipt
+  Bell, Crown, ChevronRight, Edit3, Receipt,
+  UserRound, ClipboardList, Headphones, Info
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase'
 
 const navItems = [
-  { href: '/dashboard',              label: 'Dashboard',   icon: LayoutDashboard },
-  { href: '/dashboard/kasir',        label: 'Kasir',       icon: ShoppingCart },
-  { href: '/dashboard/stok',         label: 'Stok',        icon: Package },
-  { href: '/dashboard/laporan',      label: 'Laporan',     icon: BarChart3 },
-  { href: '/dashboard/hutang',       label: 'Hutang',      icon: Users },
-  { href: '/dashboard/pengaturan',   label: 'Pengaturan',  icon: Settings },
+  { href: '/dashboard',              label: 'Dashboard',          icon: LayoutDashboard },
+  { href: '/dashboard/kasir',        label: 'Kasir',              icon: ShoppingCart },
+  { href: '/dashboard/stok',         label: 'Stok',               icon: Package },
+  { href: '/dashboard/laporan',      label: 'Laporan',            icon: BarChart3 },
+  { href: '/dashboard/hutang',       label: 'Hutang',             icon: Users },
+  { href: '/dashboard/pelanggan',    label: 'Pelanggan',          icon: UserRound },
+  { href: '/dashboard/riwayat',      label: 'Riwayat Transaksi',  icon: ClipboardList },
+  { href: '/dashboard/cs',           label: 'Customer Service',   icon: Headphones },
+  { href: '/dashboard/pengaturan',   label: 'Pengaturan',         icon: Settings },
+  { href: '/dashboard/info',         label: 'Info & Panduan',     icon: Info },
 ]
 
 // ─── Profile Dropdown Overlay ───────────────────────────────────────────────
