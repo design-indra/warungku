@@ -3,7 +3,7 @@ import { createServerSupabase } from '@/lib/supabase-server'
 
 const PLANS = {
   basic: { label: 'Basic', amount: 49000, duration_days: 30  },
-  pro:   { label: 'Pro',   amount: 99, duration_days: 365 },
+  pro:   { label: 'Pro',   amount: 2000, duration_days: 365 },
 }
 
 // POST /api/subscription/create-order
