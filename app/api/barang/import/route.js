@@ -53,7 +53,7 @@ export async function POST(request) {
           stok:         Math.round(Number(item.stok) || 0),
           stok_minimum: Math.round(Number(item.stok_minimum) || 5),
           kategori_id,
-          emoji:        '📦',
+          emoji:        String(item.emoji || '📦').trim() || '📦',
           is_active:    true,
         }
       })
