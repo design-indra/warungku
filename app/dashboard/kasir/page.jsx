@@ -18,7 +18,7 @@ const today = () => new Date().toLocaleString('id-ID', {
   hour: '2-digit', minute: '2-digit'
 }).replace(',', '')
 
-const CATEGORIES = ['Semua', 'Makanan', 'Minuman', 'Sembako', 'Rokok', 'Lainnya']
+// Kategori diambil dari DB
 const METODE = [
   { id: 'tunai',   label: 'Tunai',              icon: Banknote  },
   { id: 'qris',    label: 'QRIS',               icon: QrCode    },
@@ -345,6 +345,8 @@ function KeranjangPanel({ cart, subtotal, totalItem, diskon, setDiskon, diskonNo
 // ─── KASIR MAIN ───────────────────────────────────────────────────────────────
 export default function KasirPage() {
   const [products, setProducts]   = useState([])
+  const [categories, setCategories] = useState(['Semua'])
+  const [nextNoTrx, setNextNoTrx] = useState('')
   const [loading, setLoading]     = useState(true)
   const [search, setSearch]       = useState('')
   const [activeCategory, setActiveCategory] = useState('Semua')
@@ -357,13 +359,41 @@ export default function KasirPage() {
   const [store, setStore]         = useState({ nama_warung: '', alamat: '', no_hp: '' })
 
   useEffect(() => {
-    fetch('/api/barang?limit=100')
+    // Fetch produk
+    fetch('/api/barang?limit=200')
       .then(r => r.json())
-      .then(j => { setProducts(j.data || []); setLoading(false) })
+      .then(j => {
+        const data = j.data || []
+        setProducts(data)
+        // Ambil kategori unik dari produk
+        const cats = ['Semua', ...new Set(data.map(p => p.kategori?.nama).filter(Boolean))]
+        setCategories(cats)
+        setLoading(false)
+      })
       .catch(() => setLoading(false))
+
+    // Fetch profil warung
     fetch('/api/pengaturan/profil')
       .then(r => r.json())
       .then(j => { if (j.nama_warung) setStore(j) })
+      .catch(() => {})
+
+    // Fetch no transaksi terakhir untuk preview nomor berikutnya
+    fetch('/api/transaksi?limit=1')
+      .then(r => r.json())
+      .then(j => {
+        const last = j.data?.[0]?.nomor_transaksi || ''
+        if (last) {
+          // Format: TRX-YYYYMMDD-XXXX → increment angka terakhir
+          const parts = last.split('-')
+          const num   = parseInt(parts[parts.length - 1] || '0') + 1
+          const today = new Date().toISOString().slice(0,10).replace(/-/g,'')
+          setNextNoTrx(`TRX-${today}-${String(num).padStart(4,'0')}`)
+        } else {
+          const today = new Date().toISOString().slice(0,10).replace(/-/g,'')
+          setNextNoTrx(`TRX-${today}-0001`)
+        }
+      })
       .catch(() => {})
   }, [])
 
@@ -451,7 +481,7 @@ export default function KasirPage() {
       <div className="bg-white border-b border-gray-100 px-4 py-2.5 flex items-center gap-3 flex-shrink-0">
         <div className="flex-1">
           <p className="text-[10px] text-gray-400 uppercase tracking-wide font-medium">No. Transaksi</p>
-          <p className="text-xs font-bold text-gray-600">— akan digenerate —</p>
+          <p className="text-xs font-bold text-gray-600">{nextNoTrx || 'Memuat...'}</p>
         </div>
         <div className="flex-1 text-center">
           <p className="text-[10px] text-gray-400 uppercase tracking-wide font-medium">Tanggal</p>
@@ -483,7 +513,7 @@ export default function KasirPage() {
       {/* Category tabs */}
       <div className="bg-white px-4 pb-3 border-b border-gray-100 flex-shrink-0">
         <div className="flex gap-2 overflow-x-auto pt-2.5 hide-scrollbar">
-          {CATEGORIES.map(c => (
+          {categories.map(c => (
             <button key={c} onClick={() => setActiveCategory(c)}
               className={`whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-bold border transition-colors flex-shrink-0
                 ${activeCategory === c

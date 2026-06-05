@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Icon from '@/components/Icon'
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ReferenceLine } from 'recharts'
 
 const rp  = (n) => 'Rp ' + Number(n).toLocaleString('id-ID')
 
@@ -27,8 +27,13 @@ export default function DashboardPage() {
   }, [])
 
   const chartData = laporan?.omzet_per_hari?.map(d => ({
-    day: d.tgl.slice(5), omzet: d.omzet,
-  })) || []
+    day: d.tgl.slice(5),
+    tgl: d.tgl,
+    omzet: d.omzet,
+    jumlah: d.jumlah_trx || 0,
+  })).sort((a, b) => a.tgl.localeCompare(b.tgl)) || []
+
+  const maxOmzet = Math.max(...chartData.map(d => d.omzet), 1)
 
   const stats = laporan ? [
     { label:'Omzet Hari Ini',  value: rp(laporan.omzet_per_hari?.find(d => d.tgl === today)?.omzet || 0), sub: '7 hari terakhir', icon:'trending',  color:'#2563eb', bg:'#eff6ff' },
@@ -66,14 +71,41 @@ export default function DashboardPage() {
         <div className="card p-4 lg:col-span-2">
           <h3 className="font-semibold text-gray-900 text-sm mb-4">Grafik Omzet (7 Hari)</h3>
           {chartData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={200}>
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="day" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} tickFormatter={v => v >= 1000000 ? v/1000000+'jt' : v/1000+'k'} />
-                <Tooltip formatter={(v) => rp(v)} />
-                <Line type="monotone" dataKey="omzet" stroke="#2563eb" strokeWidth={2} dot={{ r: 4, fill: '#2563eb' }} />
-              </LineChart>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={chartData} barCategoryGap="30%">
+                <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
+                <XAxis dataKey="day" tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} tickFormatter={v => v >= 1000000 ? (v/1000000).toFixed(1)+'jt' : v >= 1000 ? v/1000+'k' : v} axisLine={false} tickLine={false} width={36} />
+                <Tooltip
+                  cursor={{ fill: '#eff6ff', radius: 4 }}
+                  content={({ active, payload, label }) => {
+                    if (!active || !payload?.length) return null
+                    return (
+                      <div className="bg-white border border-gray-100 rounded-xl shadow-lg px-3 py-2 text-xs">
+                        <p className="font-bold text-gray-700 mb-1">{label}</p>
+                        <p className="text-blue-600 font-semibold">{rp(payload[0]?.value || 0)}</p>
+                        {payload[0]?.payload?.jumlah > 0 && (
+                          <p className="text-gray-400">{payload[0].payload.jumlah} transaksi</p>
+                        )}
+                      </div>
+                    )
+                  }}
+                />
+                <Bar dataKey="omzet" radius={[6, 6, 0, 0]} maxBarSize={48}>
+                  {chartData.map((entry, i) => (
+                    <Cell
+                      key={i}
+                      fill={entry.tgl === today
+                        ? '#2563eb'
+                        : entry.omzet >= maxOmzet * 0.8
+                          ? '#3b82f6'
+                          : entry.omzet >= maxOmzet * 0.4
+                            ? '#93c5fd'
+                            : '#dbeafe'}
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
             </ResponsiveContainer>
           ) : (
             <div className="flex items-center justify-center h-48 text-gray-400 text-sm">Belum ada transaksi minggu ini</div>

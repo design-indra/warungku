@@ -143,10 +143,10 @@ export default function LoginPage() {
                   <label className="block text-xs font-semibold text-gray-600 mb-1">Email</label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                      <Icon name="store" size={14} color="#d1d5db" />
+                      <Icon name="mail" size={14} color="#d1d5db" />
                     </span>
                     <input type="email" placeholder="Masukkan email"
-                      className="input-field pl-8 py-2.5 text-sm"
+                      className="input-field pl-10 py-2.5 text-sm"
                       value={form.email}
                       onChange={e => setForm({ ...form, email: e.target.value })}
                       required />
