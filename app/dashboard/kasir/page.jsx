@@ -42,17 +42,6 @@ const METODE = [
 
 // ─── RIWAYAT ─────────────────────────────────────────────────────────────────
 function RiwayatView({ onBack }) {
-  // ... (KODE SAMA, SAYA SKIP DI PREVIEW AGAR SINGKAT, TETAP GUNAKAN KODE ANDA SEBELUMNYA)
-  // PASTIKAN ANDA MENGGUNAKAN FUNGSI RiwayatView DARI FILE SEBELUMNYA
-  // Untuk keperluan output utuh, saya tampilkan semuanya di bawah.
-}
-
-// === CATATAN: KODE UNTUK RIWAYAT, PEMBAYARAN, & KERANJANG PANEL ===
-// (Bagian ini tidak ada perubahan, sama persis seperti versi terakhir yang Vercel-nya sukses. 
-// Saya letakkan komponen utamanya langsung di bawah untuk fokus ke page kasir).
-
-// ... (RiwayatView) ...
-function RiwayatView({ onBack }) {
   const [list, setList] = useState([])
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState('semua')
@@ -164,7 +153,6 @@ function RiwayatView({ onBack }) {
 }
 
 function PembayaranView({ total, diskon, onBack, onBayar, saving }) {
-  // ... (KODE SAMA SEPERTI SEBELUMNYA)
   const [metode, setMetode] = useState('tunai')
   const [bayarStr, setBayarStr] = useState('')
   const [pelangganList, setPelangganList] = useState([])
@@ -266,7 +254,6 @@ function PembayaranView({ total, diskon, onBack, onBayar, saving }) {
 }
 
 function KeranjangPanel({ cart, subtotal, totalItem, diskon, setDiskon, diskonNominal, total, updateQty, removeFromCart, clearCart, onBayar, onClose }) {
-  // ... (KODE SAMA SEPERTI SEBELUMNYA)
   return (
     <>
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 flex-shrink-0">
@@ -322,7 +309,6 @@ function KeranjangPanel({ cart, subtotal, totalItem, diskon, setDiskon, diskonNo
 }
 
 function generateStrukPDF(tx, store, paperWidth = 32) {
-  // ... (FUNGSI CETAK PDF SAMA SEPERTI SEBELUMNYA)
   const namaMetode = METODE.find(m => m.id === tx.metode_bayar)?.label || 'Tunai'
   const mmWidth = paperWidth === 32 ? '58mm' : '80mm'
   const totalItem = tx.items.reduce((s, i) => s + i.qty, 0)
@@ -341,7 +327,6 @@ function generateStrukPDF(tx, store, paperWidth = 32) {
 }
 
 function StrukView({ tx, onSelesai, store }) {
-  // ... (KODE SAMA SEPERTI SEBELUMNYA)
   const [btStatus, setBtStatus] = useState('idle')
   const [btName, setBtName] = useState('')
   const [btError, setBtError] = useState('')
