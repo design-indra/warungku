@@ -13,6 +13,9 @@ import {
 // IMPORT COMPONENT SCANNER
 import BarcodeScanner from '@/lib/scanner'
 
+// IMPORT HELPER PELANGGAN
+import { fetchPelanggan, tambahPelanggan } from '@/lib/pelanggan'
+
 const rp = (n) => 'Rp ' + Number(n || 0).toLocaleString('id-ID')
 
 const fmt = (d) => new Date(d).toLocaleString('id-ID', {
@@ -159,6 +162,14 @@ function PembayaranView({ total, diskon, onBack, onBayar, saving }) {
   const [pelangganId, setPelangganId] = useState('')
   const [loadingPelanggan, setLoadingPelanggan] = useState(false)
 
+  // State untuk form tambah pelanggan inline
+  const [showTambah, setShowTambah] = useState(false)
+  const [namaBaru, setNamaBaru] = useState('')
+  const [noHpBaru, setNoHpBaru] = useState('')
+  const [savingPelanggan, setSavingPelanggan] = useState(false)
+  const [errorTambah, setErrorTambah] = useState('')
+  const [successMsg, setSuccessMsg] = useState('')
+
   const totalAkhir = total - diskon
   const bayarNum = Number(bayarStr.replace(/\D/g, '')) || 0
   const kembalian = bayarNum - totalAkhir
@@ -167,13 +178,46 @@ function PembayaranView({ total, diskon, onBack, onBayar, saving }) {
   useEffect(() => {
     if (metode === 'hutang' && pelangganList.length === 0) {
       setLoadingPelanggan(true)
-      fetch('/api/pelanggan').then(r => r.json()).then(j => setPelangganList(j.data || [])).catch(() => {}).finally(() => setLoadingPelanggan(false))
+      fetchPelanggan().then(data => setPelangganList(data)).catch(() => {}).finally(() => setLoadingPelanggan(false))
     }
   }, [metode, pelangganList.length])
+
+  // Auto-hide notifikasi sukses setelah 3 detik
+  useEffect(() => {
+    if (!successMsg) return
+    const t = setTimeout(() => setSuccessMsg(''), 3000)
+    return () => clearTimeout(t)
+  }, [successMsg])
 
   const handleInput = (v) => {
     const num = v.replace(/\D/g, '')
     setBayarStr(num ? Number(num).toLocaleString('id-ID') : '')
+  }
+
+  const handleTambahPelanggan = async () => {
+    setErrorTambah('')
+    // Validasi
+    if (!namaBaru.trim()) { setErrorTambah('Nama pelanggan wajib diisi.'); return }
+    if (!noHpBaru.trim()) { setErrorTambah('Nomor HP wajib diisi.'); return }
+    const noHpClean = noHpBaru.replace(/\D/g, '')
+    if (noHpClean.length < 10) { setErrorTambah('Nomor HP minimal 10 digit.'); return }
+
+    setSavingPelanggan(true)
+    try {
+      const baru = await tambahPelanggan(namaBaru, noHpBaru.trim())
+      // Tambahkan ke list & langsung pilih otomatis
+      setPelangganList(prev => [...prev, baru].sort((a, b) => a.nama.localeCompare(b.nama)))
+      setPelangganId(baru.id)
+      // Reset form & tutup
+      setNamaBaru('')
+      setNoHpBaru('')
+      setShowTambah(false)
+      setSuccessMsg(`Pelanggan "${baru.nama}" berhasil ditambahkan & dipilih.`)
+    } catch (e) {
+      setErrorTambah(e.message || 'Gagal menyimpan pelanggan.')
+    } finally {
+      setSavingPelanggan(false)
+    }
   }
 
   const quickAmounts = [...new Set([totalAkhir, Math.ceil(totalAkhir / 5000) * 5000, Math.ceil(totalAkhir / 10000) * 10000, 50000, 100000])].filter(v => v >= totalAkhir).slice(0, 4)
@@ -202,9 +246,67 @@ function PembayaranView({ total, diskon, onBack, onBayar, saving }) {
             ))}
           </div>
         </div>
+
         {metode === 'hutang' && (
-          <div>
-            <p className="text-sm font-semibold text-gray-700 mb-2">Pilih Pelanggan <span className="text-red-500">*</span></p>
+          <div className="space-y-2">
+            {/* Header label + tombol tambah */}
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold text-gray-700">Pilih Pelanggan <span className="text-red-500">*</span></p>
+              <button
+                onClick={() => { setShowTambah(v => !v); setErrorTambah('') }}
+                className={`flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition-colors ${showTambah ? 'bg-gray-100 text-gray-600' : 'bg-blue-50 text-blue-600 hover:bg-blue-100'}`}
+              >
+                {showTambah ? <><X className="w-3.5 h-3.5" /> Batal</> : <><Plus className="w-3.5 h-3.5" /> Tambah Pelanggan</>}
+              </button>
+            </div>
+
+            {/* Notifikasi sukses */}
+            {successMsg && (
+              <div className="flex items-center gap-2 px-3 py-2.5 bg-green-50 border border-green-200 rounded-xl">
+                <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0" />
+                <p className="text-xs font-medium text-green-700">{successMsg}</p>
+              </div>
+            )}
+
+            {/* Form tambah pelanggan inline */}
+            {showTambah && (
+              <div className="border-2 border-blue-200 bg-blue-50 rounded-xl p-3 space-y-2.5">
+                <p className="text-xs font-bold text-blue-700">Pelanggan Baru</p>
+                <div className="space-y-2">
+                  <div>
+                    <label className="text-xs font-semibold text-gray-600 mb-1 block">Nama <span className="text-red-500">*</span></label>
+                    <input
+                      value={namaBaru}
+                      onChange={e => setNamaBaru(e.target.value)}
+                      placeholder="Nama lengkap"
+                      className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-lg text-sm font-medium text-gray-900 focus:outline-none focus:border-blue-400 bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-gray-600 mb-1 block">No HP <span className="text-red-500">*</span></label>
+                    <input
+                      value={noHpBaru}
+                      onChange={e => setNoHpBaru(e.target.value)}
+                      placeholder="08xxxxxxxxxx"
+                      inputMode="tel"
+                      className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-lg text-sm font-medium text-gray-900 focus:outline-none focus:border-blue-400 bg-white"
+                    />
+                  </div>
+                </div>
+                {errorTambah && (
+                  <p className="text-xs text-red-500 font-medium">{errorTambah}</p>
+                )}
+                <button
+                  onClick={handleTambahPelanggan}
+                  disabled={savingPelanggan}
+                  className={`w-full py-2.5 rounded-lg text-sm font-bold flex items-center justify-center gap-1.5 transition-colors ${savingPelanggan ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
+                >
+                  {savingPelanggan ? 'Menyimpan...' : <><Plus className="w-4 h-4" /> Simpan & Pilih</>}
+                </button>
+              </div>
+            )}
+
+            {/* Dropdown pilih pelanggan */}
             {loadingPelanggan ? <p className="text-xs text-gray-400">Memuat pelanggan...</p> : (
               <select value={pelangganId} onChange={e => setPelangganId(e.target.value)} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-sm font-medium text-gray-900 focus:outline-none focus:border-blue-400 bg-white">
                 <option value="">— Pilih pelanggan —</option>
@@ -214,6 +316,7 @@ function PembayaranView({ total, diskon, onBack, onBayar, saving }) {
             {!pelangganId && <p className="text-xs text-red-500 mt-1">Pilih pelanggan untuk mencatat hutang.</p>}
           </div>
         )}
+
         {metode === 'tunai' && (
           <div>
             <p className="text-sm font-semibold text-gray-700 mb-2">Dibayar</p>
