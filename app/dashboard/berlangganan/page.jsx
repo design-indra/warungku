@@ -189,7 +189,7 @@ export default function BerlanggananPage() {
                 <div>
                   <p className="font-bold text-gray-900 text-base">Pro</p>
                   <p className="text-2xl font-extrabold text-blue-700 mt-0.5">
-                    Rp 99 <span className="text-sm font-normal text-gray-400">/ bulan</span>
+                    Rp 2.000 <span className="text-sm font-normal text-gray-400">/ bulan</span>
                   </p>
                 </div>
                 <span className="text-3xl">🚀</span>
