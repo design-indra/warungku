@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   Headphones, MessageSquare, ChevronDown, ChevronUp,
   Send, Phone, CheckCircle, Clock, AlertCircle,
   HelpCircle, Zap, ShoppingCart, CreditCard, Package,
-  History, X, Bot
+  History, X, Bot, User
 } from 'lucide-react'
 
 const ADMIN_WA = '6283803888990'
@@ -19,43 +19,94 @@ const FAQ = [
   {
     icon: CreditCard,
     q: 'Bagaimana cara mencatat hutang pelanggan?',
-    a: 'Saat di menu Kasir, pilih pelanggan terlebih dahulu → setelah selesai belanja, pilih metode bayar "Hutang" → klik Proses. Hutang otomatis tercatat di menu Hutang.',
+    a: 'Saat di menu Kasir, pilih pelanggan terlebih dahulu → selesai belanja, pilih metode bayar "Hutang" → klik Proses. Hutang otomatis tercatat di menu Hutang.',
   },
   {
     icon: Package,
     q: 'Bagaimana cara melihat laporan omzet?',
-    a: 'Buka menu Laporan → pilih rentang tanggal → laporan omzet, transaksi, dan produk terlaris akan tampil secara otomatis.',
+    a: 'Buka menu Laporan → pilih rentang tanggal → laporan omzet, transaksi, dan produk terlaris akan tampil otomatis.',
   },
   {
     icon: Zap,
     q: 'Apakah WarungKu bisa dipakai di lebih dari 1 cabang?',
-    a: 'Ya! WarungKu mendukung multi-cabang. Upgrade ke paket Basic atau Pro untuk mengaktifkan fitur multi-cabang. Hubungi admin untuk info lebih lanjut.',
+    a: 'Ya! WarungKu mendukung multi-cabang. Upgrade ke paket Basic atau Pro untuk mengaktifkan fitur ini.',
   },
   {
     icon: HelpCircle,
-    q: 'Data saya aman? Apakah bisa hilang?',
-    a: 'Data tersimpan aman di cloud (Supabase) dengan enkripsi penuh. Selama berlangganan aktif, data Anda tidak akan hilang.',
+    q: 'Apakah data saya aman?',
+    a: 'Data tersimpan aman di cloud dengan enkripsi penuh. Selama berlangganan aktif, data tidak akan hilang.',
   },
   {
     icon: Phone,
     q: 'Bagaimana cara menghubungi admin?',
-    a: 'Kamu bisa kirim pesan lewat form di bawah ini, atau langsung chat WhatsApp admin. Tim kami aktif Senin–Sabtu pukul 08.00–21.00 WIB.',
+    a: 'Bisa chat langsung di sini, kirim pesan via form, atau WhatsApp admin. Tim kami aktif Senin–Sabtu pukul 08.00–21.00 WIB.',
   },
 ]
 
 const TOPIK = ['Umum', 'Laporan Bug', 'Pertanyaan Fitur', 'Upgrade Paket', 'Lainnya']
 
 export default function CSPage() {
-  const [openFaq, setOpenFaq]       = useState(null)
-  const [tab, setTab]               = useState('form') // 'form' | 'riwayat'
-  const [riwayat, setRiwayat]       = useState([])
+  const [openFaq, setOpenFaq]   = useState(null)
+  const [tab, setTab]           = useState('chat') // 'chat' | 'form' | 'riwayat'
+  const [riwayat, setRiwayat]   = useState([])
   const [loadRiwayat, setLoadRiwayat] = useState(false)
 
+  // Chat state
+  const [chatMessages, setChatMessages] = useState([
+    {
+      role: 'assistant',
+      content: 'Halo! Selamat datang di Customer Service WarungKu 👋 Ada yang bisa saya bantu?',
+    }
+  ])
+  const [chatInput, setChatInput]   = useState('')
+  const [chatLoading, setChatLoading] = useState(false)
+  const chatEndRef = useRef(null)
+
   // Form state
-  const [form, setForm] = useState({ nama: '', no_hp: '', topik: 'Umum', pesan: '' })
+  const [form, setForm]     = useState({ nama: '', no_hp: '', topik: 'Umum', pesan: '' })
   const [sending, setSending]   = useState(false)
   const [sent, setSent]         = useState(false)
   const [errMsg, setErrMsg]     = useState('')
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [chatMessages, chatLoading])
+
+  const handleChat = async () => {
+    const text = chatInput.trim()
+    if (!text || chatLoading) return
+
+    const userMsg = { role: 'user', content: text }
+    const newMessages = [...chatMessages, userMsg]
+    setChatMessages(newMessages)
+    setChatInput('')
+    setChatLoading(true)
+
+    try {
+      const res  = await fetch('/api/cs/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: newMessages }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error)
+      setChatMessages(prev => [...prev, { role: 'assistant', content: json.reply }])
+    } catch (e) {
+      setChatMessages(prev => [...prev, {
+        role: 'assistant',
+        content: 'Maaf, saya sedang gangguan teknis. Coba beberapa saat lagi ya 🙏',
+      }])
+    } finally {
+      setChatLoading(false)
+    }
+  }
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleChat()
+    }
+  }
 
   const handleChange = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
@@ -100,13 +151,15 @@ export default function CSPage() {
   }, [tab])
 
   const formatTgl = (iso) =>
-    new Date(iso).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric',
-      hour: '2-digit', minute: '2-digit' })
+    new Date(iso).toLocaleDateString('id-ID', {
+      day: '2-digit', month: 'short', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    })
 
   const statusBadge = (s) => ({
-    baru:     { label: 'Baru',      cls: 'bg-blue-100 text-blue-700' },
-    diproses: { label: 'Diproses',  cls: 'bg-amber-100 text-amber-700' },
-    selesai:  { label: 'Selesai',   cls: 'bg-emerald-100 text-emerald-700' },
+    baru:     { label: 'Baru',     cls: 'bg-blue-100 text-blue-700' },
+    diproses: { label: 'Diproses', cls: 'bg-amber-100 text-amber-700' },
+    selesai:  { label: 'Selesai',  cls: 'bg-emerald-100 text-emerald-700' },
   }[s] || { label: s, cls: 'bg-gray-100 text-gray-600' })
 
   return (
@@ -140,17 +193,6 @@ export default function CSPage() {
         <span className="text-2xl">💬</span>
       </a>
 
-      {/* Placeholder AI Asisten — siap dikembangkan */}
-      <div className="flex items-center gap-3 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100 rounded-2xl p-4 mb-5">
-        <div className="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center flex-shrink-0">
-          <Bot className="w-5 h-5 text-indigo-600" />
-        </div>
-        <div className="flex-1">
-          <p className="font-bold text-sm text-indigo-800">AI Asisten <span className="text-[10px] bg-indigo-200 text-indigo-700 px-1.5 py-0.5 rounded-full font-semibold ml-1">Segera Hadir</span></p>
-          <p className="text-xs text-indigo-500 mt-0.5">Asisten cerdas yang siap menjawab pertanyaan 24 jam</p>
-        </div>
-      </div>
-
       {/* FAQ */}
       <div className="mb-5">
         <p className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
@@ -176,7 +218,7 @@ export default function CSPage() {
                     : <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />}
                 </button>
                 {isOpen && (
-                  <div className="px-4 pb-4 pt-0">
+                  <div className="px-4 pb-4">
                     <div className="bg-teal-50 rounded-xl p-3">
                       <p className="text-sm text-gray-700 leading-relaxed">{item.a}</p>
                     </div>
@@ -188,41 +230,117 @@ export default function CSPage() {
         </div>
       </div>
 
-      {/* Tab Form / Riwayat */}
+      {/* Tab */}
       <div className="flex gap-2 mb-4">
         {[
-          { key: 'form',    label: 'Kirim Pesan',    icon: MessageSquare },
-          { key: 'riwayat', label: 'Riwayat Pesan',  icon: History },
+          { key: 'chat',    label: 'Chat CS',        icon: MessageSquare },
+          { key: 'form',    label: 'Kirim Pesan',    icon: Send },
+          { key: 'riwayat', label: 'Riwayat',        icon: History },
         ].map(t => {
           const Icon = t.icon
           return (
             <button key={t.key} onClick={() => setTab(t.key)}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-colors
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold transition-colors
                 ${tab === t.key ? 'bg-teal-600 text-white' : 'bg-white border border-gray-200 text-gray-600'}`}>
-              <Icon className="w-4 h-4" />
+              <Icon className="w-3.5 h-3.5" />
               {t.label}
             </button>
           )
         })}
       </div>
 
+      {/* Tab: Chat CS */}
+      {tab === 'chat' && (
+        <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden flex flex-col" style={{ height: '460px' }}>
+
+          {/* Header chat */}
+          <div className="flex items-center gap-3 px-4 py-3 bg-teal-600 text-white flex-shrink-0">
+            <div className="relative">
+              <div className="w-9 h-9 bg-white/20 rounded-full flex items-center justify-center">
+                <Headphones className="w-4 h-4" />
+              </div>
+              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-400 border-2 border-teal-600 rounded-full" />
+            </div>
+            <div>
+              <p className="font-bold text-sm">Customer Service</p>
+              <p className="text-[11px] text-teal-100">● Online sekarang</p>
+            </div>
+          </div>
+
+          {/* Pesan */}
+          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 bg-gray-50">
+            {chatMessages.map((msg, i) => {
+              const isUser = msg.role === 'user'
+              return (
+                <div key={i} className={`flex items-end gap-2 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
+                  {!isUser && (
+                    <div className="w-7 h-7 bg-teal-100 rounded-full flex items-center justify-center flex-shrink-0 mb-1">
+                      <Headphones className="w-3.5 h-3.5 text-teal-600" />
+                    </div>
+                  )}
+                  <div className={`max-w-[78%] px-3 py-2 rounded-2xl text-sm leading-relaxed shadow-sm
+                    ${isUser
+                      ? 'bg-teal-600 text-white rounded-br-sm'
+                      : 'bg-white text-gray-800 rounded-bl-sm border border-gray-100'}`}>
+                    {msg.content}
+                  </div>
+                </div>
+              )
+            })}
+
+            {/* Typing indicator */}
+            {chatLoading && (
+              <div className="flex items-end gap-2">
+                <div className="w-7 h-7 bg-teal-100 rounded-full flex items-center justify-center flex-shrink-0">
+                  <Headphones className="w-3.5 h-3.5 text-teal-600" />
+                </div>
+                <div className="bg-white border border-gray-100 rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm">
+                  <div className="flex gap-1 items-center">
+                    <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </div>
+                </div>
+              </div>
+            )}
+            <div ref={chatEndRef} />
+          </div>
+
+          {/* Input */}
+          <div className="flex items-center gap-2 px-3 py-3 border-t border-gray-100 bg-white flex-shrink-0">
+            <textarea
+              rows={1}
+              placeholder="Ketik pesan..."
+              value={chatInput}
+              onChange={e => setChatInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 resize-none"
+              style={{ maxHeight: '80px' }}
+            />
+            <button
+              onClick={handleChat}
+              disabled={!chatInput.trim() || chatLoading}
+              className="w-10 h-10 bg-teal-600 hover:bg-teal-700 disabled:opacity-40 text-white rounded-xl flex items-center justify-center transition-colors flex-shrink-0"
+            >
+              <Send className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Tab: Form Kirim Pesan */}
       {tab === 'form' && (
         <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm space-y-3">
           <p className="text-sm font-bold text-gray-800 flex items-center gap-2">
-            <MessageSquare className="w-4 h-4 text-teal-600" />
+            <Send className="w-4 h-4 text-teal-600" />
             Kirim Pesan ke Admin
           </p>
-
-          {/* Sukses */}
           {sent && (
             <div className="flex items-center gap-2 bg-emerald-50 text-emerald-700 rounded-xl p-3 text-sm">
               <CheckCircle className="w-4 h-4 flex-shrink-0" />
               Pesan terkirim! Admin akan segera menghubungi kamu.
             </div>
           )}
-
-          {/* Error */}
           {errMsg && (
             <div className="flex items-center gap-2 bg-red-50 text-red-600 rounded-xl p-3 text-sm">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
@@ -230,21 +348,18 @@ export default function CSPage() {
               <button onClick={() => setErrMsg('')} className="ml-auto"><X className="w-3.5 h-3.5" /></button>
             </div>
           )}
-
           <div>
             <label className="text-xs font-semibold text-gray-600 mb-1 block">Nama *</label>
-            <input type="text" placeholder="Nama kamu"
-              value={form.nama} onChange={e => handleChange('nama', e.target.value)}
+            <input type="text" placeholder="Nama kamu" value={form.nama}
+              onChange={e => handleChange('nama', e.target.value)}
               className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400" />
           </div>
-
           <div>
             <label className="text-xs font-semibold text-gray-600 mb-1 block">No. WhatsApp <span className="text-gray-400 font-normal">(opsional)</span></label>
-            <input type="tel" placeholder="08xxxxxxxxxx"
-              value={form.no_hp} onChange={e => handleChange('no_hp', e.target.value)}
+            <input type="tel" placeholder="08xxxxxxxxxx" value={form.no_hp}
+              onChange={e => handleChange('no_hp', e.target.value)}
               className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400" />
           </div>
-
           <div>
             <label className="text-xs font-semibold text-gray-600 mb-1 block">Topik</label>
             <select value={form.topik} onChange={e => handleChange('topik', e.target.value)}
@@ -252,50 +367,38 @@ export default function CSPage() {
               {TOPIK.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
           </div>
-
           <div>
             <label className="text-xs font-semibold text-gray-600 mb-1 block">Pesan *</label>
-            <textarea rows={4} placeholder="Tulis pertanyaan atau keluhan kamu di sini..."
+            <textarea rows={4} placeholder="Tulis pertanyaan atau keluhan kamu..."
               value={form.pesan} onChange={e => handleChange('pesan', e.target.value)}
               className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 resize-none" />
           </div>
-
           <button onClick={handleSend} disabled={sending}
             className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 rounded-xl text-sm transition-colors disabled:opacity-60 flex items-center justify-center gap-2">
             {sending ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Mengirim...
-              </>
+              <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Mengirim...</>
             ) : (
-              <>
-                <Send className="w-4 h-4" />
-                Kirim Pesan
-              </>
+              <><Send className="w-4 h-4" /> Kirim Pesan</>
             )}
           </button>
         </div>
       )}
 
-      {/* Tab: Riwayat Pesan */}
+      {/* Tab: Riwayat */}
       {tab === 'riwayat' && (
         <div className="space-y-3">
-          {loadRiwayat && (
-            <div className="space-y-3">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="bg-white rounded-xl p-4 animate-pulse">
-                  <div className="h-3 bg-gray-200 rounded w-1/3 mb-2" />
-                  <div className="h-2.5 bg-gray-100 rounded w-full" />
-                </div>
-              ))}
+          {loadRiwayat && [...Array(3)].map((_, i) => (
+            <div key={i} className="bg-white rounded-xl p-4 animate-pulse">
+              <div className="h-3 bg-gray-200 rounded w-1/3 mb-2" />
+              <div className="h-2.5 bg-gray-100 rounded w-full" />
             </div>
-          )}
+          ))}
           {!loadRiwayat && riwayat.length === 0 && (
             <div className="text-center py-12">
               <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
                 <MessageSquare className="w-7 h-7 text-gray-300" />
               </div>
-              <p className="text-gray-500 text-sm font-medium">Belum ada pesan</p>
+              <p className="text-gray-500 text-sm font-medium">Belum ada pesan terkirim</p>
             </div>
           )}
           {!loadRiwayat && riwayat.map(p => {
@@ -308,8 +411,7 @@ export default function CSPage() {
                 </div>
                 <p className="text-sm text-gray-800 leading-relaxed">{p.pesan}</p>
                 <p className="text-[11px] text-gray-400 mt-2 flex items-center gap-1">
-                  <Clock className="w-3 h-3" />
-                  {formatTgl(p.created_at)}
+                  <Clock className="w-3 h-3" />{formatTgl(p.created_at)}
                 </p>
               </div>
             )
