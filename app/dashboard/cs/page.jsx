@@ -167,7 +167,7 @@ export default function CSPage() {
 
       {/* Header */}
       <div className="flex items-center gap-3 mb-5">
-        <div className="w-10 h-10 bg-teal-600 rounded-xl flex items-center justify-center flex-shrink-0">
+        <div className="w-10 h-10 bg-blue-700 rounded-xl flex items-center justify-center flex-shrink-0">
           <Headphones className="w-5 h-5 text-white" />
         </div>
         <div>
@@ -181,14 +181,14 @@ export default function CSPage() {
         href={`https://wa.me/${ADMIN_WA}?text=${encodeURIComponent('Halo admin WarungKu, saya ingin bertanya...')}`}
         target="_blank"
         rel="noopener noreferrer"
-        className="flex items-center gap-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl p-4 mb-5 transition-colors shadow-sm"
+        className="flex items-center gap-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl p-4 mb-5 transition-colors shadow-sm"
       >
         <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
           <Phone className="w-5 h-5" />
         </div>
         <div className="flex-1">
           <p className="font-bold text-sm">Chat WhatsApp Admin</p>
-          <p className="text-xs text-emerald-100">Aktif Senin–Sabtu · 08.00–21.00 WIB</p>
+          <p className="text-xs text-blue-100">Aktif Senin–Sabtu · 08.00–21.00 WIB</p>
         </div>
         <span className="text-2xl">💬</span>
       </a>
@@ -196,7 +196,7 @@ export default function CSPage() {
       {/* FAQ */}
       <div className="mb-5">
         <p className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
-          <HelpCircle className="w-4 h-4 text-teal-600" />
+          <HelpCircle className="w-4 h-4 text-blue-700" />
           Pertanyaan yang Sering Ditanyakan
         </p>
         <div className="space-y-2">
@@ -209,8 +209,8 @@ export default function CSPage() {
                   className="w-full flex items-center gap-3 p-4 text-left hover:bg-gray-50 transition-colors"
                   onClick={() => setOpenFaq(isOpen ? null : i)}
                 >
-                  <div className="w-8 h-8 bg-teal-50 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Icon className="w-4 h-4 text-teal-600" />
+                  <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Icon className="w-4 h-4 text-blue-700" />
                   </div>
                   <p className="flex-1 text-sm font-semibold text-gray-800 text-left">{item.q}</p>
                   {isOpen
@@ -219,7 +219,7 @@ export default function CSPage() {
                 </button>
                 {isOpen && (
                   <div className="px-4 pb-4">
-                    <div className="bg-teal-50 rounded-xl p-3">
+                    <div className="bg-blue-50 rounded-xl p-3">
                       <p className="text-sm text-gray-700 leading-relaxed">{item.a}</p>
                     </div>
                   </div>
@@ -241,7 +241,7 @@ export default function CSPage() {
           return (
             <button key={t.key} onClick={() => setTab(t.key)}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold transition-colors
-                ${tab === t.key ? 'bg-teal-600 text-white' : 'bg-white border border-gray-200 text-gray-600'}`}>
+                ${tab === t.key ? 'bg-blue-700 text-white' : 'bg-white border border-gray-200 text-gray-600'}`}>
               <Icon className="w-3.5 h-3.5" />
               {t.label}
             </button>
@@ -254,16 +254,16 @@ export default function CSPage() {
         <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden flex flex-col" style={{ height: '460px' }}>
 
           {/* Header chat */}
-          <div className="flex items-center gap-3 px-4 py-3 bg-teal-600 text-white flex-shrink-0">
+          <div className="flex items-center gap-3 px-4 py-3 bg-blue-700 text-white flex-shrink-0">
             <div className="relative">
               <div className="w-9 h-9 bg-white/20 rounded-full flex items-center justify-center">
                 <Headphones className="w-4 h-4" />
               </div>
-              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-400 border-2 border-teal-600 rounded-full" />
+              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-400 border-2 border-blue-700 rounded-full" />
             </div>
             <div>
               <p className="font-bold text-sm">Customer Service</p>
-              <p className="text-[11px] text-teal-100">● Online sekarang</p>
+              <p className="text-[11px] text-blue-100">● Online sekarang</p>
             </div>
           </div>
 
@@ -274,13 +274,13 @@ export default function CSPage() {
               return (
                 <div key={i} className={`flex items-end gap-2 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
                   {!isUser && (
-                    <div className="w-7 h-7 bg-teal-100 rounded-full flex items-center justify-center flex-shrink-0 mb-1">
-                      <Headphones className="w-3.5 h-3.5 text-teal-600" />
+                    <div className="w-7 h-7 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mb-1">
+                      <Headphones className="w-3.5 h-3.5 text-blue-700" />
                     </div>
                   )}
                   <div className={`max-w-[78%] px-3 py-2 rounded-2xl text-sm leading-relaxed shadow-sm
                     ${isUser
-                      ? 'bg-teal-600 text-white rounded-br-sm'
+                      ? 'bg-blue-700 text-white rounded-br-sm'
                       : 'bg-white text-gray-800 rounded-bl-sm border border-gray-100'}`}>
                     {msg.content}
                   </div>
@@ -291,8 +291,8 @@ export default function CSPage() {
             {/* Typing indicator */}
             {chatLoading && (
               <div className="flex items-end gap-2">
-                <div className="w-7 h-7 bg-teal-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <Headphones className="w-3.5 h-3.5 text-teal-600" />
+                <div className="w-7 h-7 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                  <Headphones className="w-3.5 h-3.5 text-blue-700" />
                 </div>
                 <div className="bg-white border border-gray-100 rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm">
                   <div className="flex gap-1 items-center">
@@ -314,13 +314,13 @@ export default function CSPage() {
               value={chatInput}
               onChange={e => setChatInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 resize-none"
+              className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
               style={{ maxHeight: '80px' }}
             />
             <button
               onClick={handleChat}
               disabled={!chatInput.trim() || chatLoading}
-              className="w-10 h-10 bg-teal-600 hover:bg-teal-700 disabled:opacity-40 text-white rounded-xl flex items-center justify-center transition-colors flex-shrink-0"
+              className="w-10 h-10 bg-blue-700 hover:bg-blue-800 disabled:opacity-40 text-white rounded-xl flex items-center justify-center transition-colors flex-shrink-0"
             >
               <Send className="w-4 h-4" />
             </button>
@@ -332,7 +332,7 @@ export default function CSPage() {
       {tab === 'form' && (
         <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm space-y-3">
           <p className="text-sm font-bold text-gray-800 flex items-center gap-2">
-            <Send className="w-4 h-4 text-teal-600" />
+            <Send className="w-4 h-4 text-blue-700" />
             Kirim Pesan ke Admin
           </p>
           {sent && (
@@ -352,18 +352,18 @@ export default function CSPage() {
             <label className="text-xs font-semibold text-gray-600 mb-1 block">Nama *</label>
             <input type="text" placeholder="Nama kamu" value={form.nama}
               onChange={e => handleChange('nama', e.target.value)}
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400" />
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
           <div>
             <label className="text-xs font-semibold text-gray-600 mb-1 block">No. WhatsApp <span className="text-gray-400 font-normal">(opsional)</span></label>
             <input type="tel" placeholder="08xxxxxxxxxx" value={form.no_hp}
               onChange={e => handleChange('no_hp', e.target.value)}
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400" />
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
           <div>
             <label className="text-xs font-semibold text-gray-600 mb-1 block">Topik</label>
             <select value={form.topik} onChange={e => handleChange('topik', e.target.value)}
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400">
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
               {TOPIK.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
           </div>
@@ -371,10 +371,10 @@ export default function CSPage() {
             <label className="text-xs font-semibold text-gray-600 mb-1 block">Pesan *</label>
             <textarea rows={4} placeholder="Tulis pertanyaan atau keluhan kamu..."
               value={form.pesan} onChange={e => handleChange('pesan', e.target.value)}
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 resize-none" />
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
           </div>
           <button onClick={handleSend} disabled={sending}
-            className="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 rounded-xl text-sm transition-colors disabled:opacity-60 flex items-center justify-center gap-2">
+            className="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-3 rounded-xl text-sm transition-colors disabled:opacity-60 flex items-center justify-center gap-2">
             {sending ? (
               <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Mengirim...</>
             ) : (
