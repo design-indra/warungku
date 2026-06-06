@@ -39,9 +39,9 @@ FITUR WARUNGKU YANG PERLU KAMU KETAHUI:
 - PWA: bisa diinstall di HP seperti aplikasi biasa
 
 PAKET BERLANGGANAN:
-- Free: 1 cabang, fitur dasar, maksimal 100 produk
-- Basic: multi-cabang, laporan lanjutan, maksimal 500 produk
-- Pro: semua fitur, tidak ada batas produk, prioritas CS
+- Free: 1 cabang, 1 kasir, fitur dasar, maksimal 250 produk, tanpa manajemen hutang
+- Basic: 3 cabang, 3 kasir, laporan bulanan, maksimal 500 produk, manajemen hutang, chat WA admin
+- Pro: unlimited cabang &amp; kasir, laporan lengkap &amp; analitik, unlimited produk, manajemen hutang, chat WA admin prioritas
 
 ATURAN KETAT:
 - Jika pertanyaan di luar topik WarungKu, tolak dengan sopan.
