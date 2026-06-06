@@ -21,6 +21,32 @@ export async function GET(request, { params }) {
   }
 }
 
+// PUT /api/pelanggan/[id] — edit pelanggan
+export async function PUT(request, { params }) {
+  try {
+    const supabase = createServerSupabase()
+    const { data: { user }, error: authErr } = await supabase.auth.getUser()
+    if (authErr || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const body = await request.json()
+    const { nama, no_hp, alamat } = body
+
+    if (!nama?.trim()) return NextResponse.json({ error: 'Nama wajib diisi' }, { status: 400 })
+
+    const { data, error } = await supabase
+      .from('pelanggan')
+      .update({ nama: nama.trim(), no_hp: no_hp || null, alamat: alamat || null })
+      .eq('id', params.id)
+      .select()
+      .single()
+
+    if (error) throw error
+    return NextResponse.json({ data })
+  } catch (e) {
+    return NextResponse.json({ error: e.message }, { status: 500 })
+  }
+}
+
 // DELETE /api/pelanggan/[id] — hapus pelanggan
 export async function DELETE(request, { params }) {
   try {
