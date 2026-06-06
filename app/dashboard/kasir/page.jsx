@@ -155,7 +155,7 @@ function RiwayatView({ onBack }) {
   )
 }
 
-function PembayaranView({ total, diskon, onBack, onBayar, saving }) {
+function PembayaranView({ total, diskon, onBack, onBayar, saving, canUseHutang = false }) {
   const [metode, setMetode] = useState('tunai')
   const [bayarStr, setBayarStr] = useState('')
   const [pelangganList, setPelangganList] = useState([])
@@ -238,7 +238,7 @@ function PembayaranView({ total, diskon, onBack, onBayar, saving }) {
         <div>
           <p className="text-sm font-semibold text-gray-700 mb-3">Metode Pembayaran</p>
           <div className="space-y-2">
-            {METODE.map(m => (
+            {METODE.filter(m => m.id !== 'hutang' || canUseHutang).map(m => (
               <button key={m.id} onClick={() => setMetode(m.id)} className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl border-2 transition-all ${metode === m.id ? 'border-blue-600 bg-blue-50' : 'border-gray-200 bg-white hover:border-gray-300'}`}>
                 <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${metode === m.id ? 'bg-blue-600' : 'bg-gray-100'}`}><m.icon className={`w-4 h-4 ${metode === m.id ? 'text-white' : 'text-gray-500'}`} /></div>
                 <span className={`flex-1 text-left font-semibold text-sm ${metode === m.id ? 'text-blue-700' : 'text-gray-700'}`}>{m.label}</span>
@@ -247,6 +247,15 @@ function PembayaranView({ total, diskon, onBack, onBayar, saving }) {
               </button>
             ))}
           </div>
+          {!canUseHutang && (
+            <div className="flex items-start gap-2.5 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl mt-2">
+              <AlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-xs font-bold text-amber-700">Fitur Hutang tidak tersedia</p>
+                <p className="text-xs text-amber-600 mt-0.5">Upgrade ke paket <strong>Basic</strong> atau <strong>Pro</strong> untuk mencatat hutang pelanggan.</p>
+              </div>
+            </div>
+          )}
         </div>
 
         {metode === 'hutang' && (
@@ -528,6 +537,10 @@ export default function KasirPage() {
   const [showScanMenu, setShowScanMenu] = useState(false)
   const [showCamera, setShowCamera] = useState(false)
 
+  // === PLAN STATE ===
+  const [plan, setPlan] = useState('free')
+  const canUseHutang = plan === 'basic' || plan === 'pro'
+
   const searchRef = useRef(null)
 
   useEffect(() => {
@@ -539,6 +552,10 @@ export default function KasirPage() {
     }).catch(() => setLoading(false))
 
     fetch('/api/pengaturan/profil').then(r => r.json()).then(j => { if (j.nama_warung) setStore(j) }).catch(() => {})
+
+    fetch('/api/subscription/status').then(r => r.json()).then(j => {
+      setPlan(j.plan || 'free')
+    }).catch(() => {})
 
     fetch('/api/transaksi?limit=1').then(r => r.json()).then(j => {
       const last = j.data?.[0]?.nomor_transaksi || ''
@@ -639,7 +656,7 @@ export default function KasirPage() {
 
   if (screen === 'riwayat') return <RiwayatView onBack={() => setScreen('kasir')} />
   if (screen === 'struk' && lastTx) return <StrukView tx={lastTx} store={store} onSelesai={() => { setLastTx(null); setScreen('kasir') }} />
-  if (screen === 'bayar') return <PembayaranView total={subtotal} diskon={diskonNominal} onBack={() => setScreen('kasir')} onBayar={handleBayar} saving={saving} />
+  if (screen === 'bayar') return <PembayaranView total={subtotal} diskon={diskonNominal} onBack={() => setScreen('kasir')} onBayar={handleBayar} saving={saving} canUseHutang={canUseHutang} />
 
   return (
     <div className="flex flex-col h-full overflow-hidden bg-gray-50">
