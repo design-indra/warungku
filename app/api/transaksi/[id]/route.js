@@ -34,18 +34,18 @@ export async function PATCH(request, { params }) {
 
     // Kembalikan stok barang
     for (const d of trx.detail_transaksi || []) {
-      await supabase.rpc('increment_stok', { p_barang_id: d.barang_id, p_qty: d.qty })
-        .catch(() => {
-          // fallback jika tidak ada RPC: update manual
-          supabase.from('barang').select('stok').eq('id', d.barang_id).single()
-            .then(({ data }) => {
-              if (data) supabase.from('barang').update({ stok: data.stok + d.qty }).eq('id', d.barang_id)
-            })
-        })
+      try {
+        const { error } = await supabase.rpc('increment_stok', { p_barang_id: d.barang_id, p_qty: d.qty })
+        if (error) throw error
+      } catch {
+        // fallback manual jika RPC belum ada
+        const { data: b } = await supabase.from('barang').select('stok').eq('id', d.barang_id).single()
+        if (b) await supabase.from('barang').update({ stok: b.stok + d.qty }).eq('id', d.barang_id)
+      }
     }
 
-    // Jika transaksi hutang, update status hutang juga
-    await supabase.from('hutang').update({ status: 'dibatalkan' }).eq('transaksi_id', id)
+    // Jika transaksi hutang, tandai hutang sebagai lunas (bukan 'dibatalkan' — tidak valid di DB)
+    await supabase.from('hutang').update({ status: 'lunas', sisa: 0 }).eq('transaksi_id', id)
 
     return NextResponse.json({ success: true })
   } catch (e) {
