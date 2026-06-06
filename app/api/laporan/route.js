@@ -9,10 +9,10 @@ export async function GET(request) {
     if (authErr || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { searchParams } = new URL(request.url)
-    const from   = searchParams.get('from') || new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0]
-    const to     = searchParams.get('to')   || new Date().toISOString().split('T')[0]
+    let from   = searchParams.get('from') || new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0]
+    let to     = searchParams.get('to')   || new Date().toISOString().split('T')[0]
 
-    // #7 Fix: ambil tenant_id untuk filter per tenant
+    // Ambil tenant_id + cek plan
     const { data: profile } = await supabase
       .from('user_profiles')
       .select('tenant_id')
@@ -20,6 +20,27 @@ export async function GET(request) {
       .single()
     if (!profile?.tenant_id) return NextResponse.json({ error: 'Profil tidak ditemukan' }, { status: 404 })
     const tenantId = profile.tenant_id
+
+    // Cek plan: free hanya boleh laporan hari ini
+    const { data: tenant } = await supabase
+      .from('tenants')
+      .select('plan, plan_expired_at')
+      .eq('id', tenantId)
+      .single()
+
+    const now = new Date()
+    const isPaidActive =
+      tenant?.plan !== 'free' &&
+      tenant?.plan_expired_at !== null &&
+      new Date(tenant?.plan_expired_at) > now
+
+    const today = new Date().toISOString().split('T')[0]
+
+    // Free user: paksa from & to ke hari ini saja
+    if (!isPaidActive) {
+      from = today
+      to   = today
+    }
 
     // Omzet + laba per hari (filter per tenant)
     const { data: trxData } = await supabase
