@@ -40,6 +40,28 @@ export async function POST(request) {
     const body = await request.json()
     const { data: profile } = await supabase.from('user_profiles').select('tenant_id, cabang_id').eq('id', user.id).single()
 
+    // Validasi: fitur hutang hanya untuk plan basic & pro
+    if (body.metode_bayar === 'hutang') {
+      const { data: tenant } = await supabase
+        .from('tenants')
+        .select('plan, plan_expired_at')
+        .eq('id', profile.tenant_id)
+        .single()
+
+      const now = new Date()
+      const isPaidActive =
+        tenant?.plan !== 'free' &&
+        tenant?.plan_expired_at !== null &&
+        new Date(tenant?.plan_expired_at) > now
+
+      if (!isPaidActive) {
+        return NextResponse.json(
+          { error: 'Fitur hutang hanya tersedia untuk paket Basic dan Pro. Silakan upgrade akun Anda.' },
+          { status: 403 }
+        )
+      }
+    }
+
     // 1. Insert transaksi
     const { data: trx, error: trxErr } = await supabase.from('transaksi').insert({
       tenant_id:    profile.tenant_id,
