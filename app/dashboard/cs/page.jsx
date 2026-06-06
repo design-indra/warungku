@@ -5,7 +5,7 @@ import {
   Headphones, MessageSquare, ChevronDown, ChevronUp,
   Send, Phone, CheckCircle, Clock, AlertCircle,
   HelpCircle, Zap, ShoppingCart, CreditCard, Package,
-  History, X, Bot, User
+  History, X, Lock, Crown
 } from 'lucide-react'
 
 const ADMIN_WA = '6283803888990'
@@ -39,34 +39,41 @@ const FAQ = [
   {
     icon: Phone,
     q: 'Bagaimana cara menghubungi admin?',
-    a: 'Bisa chat langsung di sini, kirim pesan via form, atau WhatsApp admin. Tim kami aktif Senin–Sabtu pukul 08.00–21.00 WIB.',
+    a: 'Bisa chat langsung di sini, kirim pesan via form, atau WhatsApp admin (khusus pelanggan Basic & Pro). Tim kami aktif Senin–Sabtu pukul 08.00–21.00 WIB.',
   },
 ]
 
 const TOPIK = ['Umum', 'Laporan Bug', 'Pertanyaan Fitur', 'Upgrade Paket', 'Lainnya']
 
 export default function CSPage() {
-  const [openFaq, setOpenFaq]   = useState(null)
-  const [tab, setTab]           = useState('chat') // 'chat' | 'form' | 'riwayat'
-  const [riwayat, setRiwayat]   = useState([])
+  const [openFaq, setOpenFaq]         = useState(null)
+  const [tab, setTab]                 = useState('chat')
+  const [riwayat, setRiwayat]         = useState([])
   const [loadRiwayat, setLoadRiwayat] = useState(false)
+  const [plan, setPlan]               = useState(null) // null = loading
+  const isPremium                     = plan === 'basic' || plan === 'pro'
 
   // Chat state
   const [chatMessages, setChatMessages] = useState([
-    {
-      role: 'assistant',
-      content: 'Halo! Selamat datang di Customer Service WarungKu 👋 Ada yang bisa saya bantu?',
-    }
+    { role: 'assistant', content: 'Halo! Selamat datang di Customer Service WarungKu 👋 Ada yang bisa saya bantu?' }
   ])
-  const [chatInput, setChatInput]   = useState('')
+  const [chatInput, setChatInput]     = useState('')
   const [chatLoading, setChatLoading] = useState(false)
   const chatEndRef = useRef(null)
 
   // Form state
-  const [form, setForm]     = useState({ nama: '', no_hp: '', topik: 'Umum', pesan: '' })
-  const [sending, setSending]   = useState(false)
-  const [sent, setSent]         = useState(false)
-  const [errMsg, setErrMsg]     = useState('')
+  const [form, setForm]       = useState({ nama: '', no_hp: '', topik: 'Umum', pesan: '' })
+  const [sending, setSending] = useState(false)
+  const [sent, setSent]       = useState(false)
+  const [errMsg, setErrMsg]   = useState('')
+
+  // Fetch plan user
+  useEffect(() => {
+    fetch('/api/subscription/status')
+      .then(r => r.json())
+      .then(json => setPlan(json.plan || 'free'))
+      .catch(() => setPlan('free'))
+  }, [])
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -75,13 +82,11 @@ export default function CSPage() {
   const handleChat = async () => {
     const text = chatInput.trim()
     if (!text || chatLoading) return
-
     const userMsg = { role: 'user', content: text }
     const newMessages = [...chatMessages, userMsg]
     setChatMessages(newMessages)
     setChatInput('')
     setChatLoading(true)
-
     try {
       const res  = await fetch('/api/cs/chat', {
         method: 'POST',
@@ -91,48 +96,30 @@ export default function CSPage() {
       const json = await res.json()
       if (!res.ok) throw new Error(json.error)
       setChatMessages(prev => [...prev, { role: 'assistant', content: json.reply }])
-    } catch (e) {
-      setChatMessages(prev => [...prev, {
-        role: 'assistant',
-        content: 'Maaf, saya sedang gangguan teknis. Coba beberapa saat lagi ya 🙏',
-      }])
+    } catch {
+      setChatMessages(prev => [...prev, { role: 'assistant', content: 'Maaf, saya sedang gangguan teknis. Coba beberapa saat lagi ya 🙏' }])
     } finally {
       setChatLoading(false)
     }
   }
 
   const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      handleChat()
-    }
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleChat() }
   }
 
   const handleChange = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
   const handleSend = async () => {
-    if (!form.nama.trim() || !form.pesan.trim()) {
-      setErrMsg('Nama dan pesan wajib diisi')
-      return
-    }
-    setSending(true)
-    setErrMsg('')
+    if (!form.nama.trim() || !form.pesan.trim()) { setErrMsg('Nama dan pesan wajib diisi'); return }
+    setSending(true); setErrMsg('')
     try {
-      const res  = await fetch('/api/cs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-      })
+      const res  = await fetch('/api/cs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error)
       setSent(true)
       setForm({ nama: '', no_hp: '', topik: 'Umum', pesan: '' })
       setTimeout(() => setSent(false), 4000)
-    } catch (e) {
-      setErrMsg(e.message)
-    } finally {
-      setSending(false)
-    }
+    } catch (e) { setErrMsg(e.message) } finally { setSending(false) }
   }
 
   const fetchRiwayat = async () => {
@@ -141,20 +128,12 @@ export default function CSPage() {
       const res  = await fetch('/api/cs')
       const json = await res.json()
       setRiwayat(json.data || [])
-    } finally {
-      setLoadRiwayat(false)
-    }
+    } finally { setLoadRiwayat(false) }
   }
 
-  useEffect(() => {
-    if (tab === 'riwayat') fetchRiwayat()
-  }, [tab])
+  useEffect(() => { if (tab === 'riwayat') fetchRiwayat() }, [tab])
 
-  const formatTgl = (iso) =>
-    new Date(iso).toLocaleDateString('id-ID', {
-      day: '2-digit', month: 'short', year: 'numeric',
-      hour: '2-digit', minute: '2-digit'
-    })
+  const formatTgl = (iso) => new Date(iso).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 
   const statusBadge = (s) => ({
     baru:     { label: 'Baru',     cls: 'bg-blue-100 text-blue-700' },
@@ -174,68 +153,21 @@ export default function CSPage() {
           <h1 className="text-lg font-bold text-gray-900">Customer Service</h1>
           <p className="text-xs text-gray-400">Kami siap membantu kamu</p>
         </div>
-      </div>
-
-      {/* Tombol WA Admin */}
-      <a
-        href={`https://wa.me/${ADMIN_WA}?text=${encodeURIComponent('Halo admin WarungKu, saya ingin bertanya...')}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex items-center gap-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl p-4 mb-5 transition-colors shadow-sm"
-      >
-        <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
-          <Phone className="w-5 h-5" />
-        </div>
-        <div className="flex-1">
-          <p className="font-bold text-sm">Chat WhatsApp Admin</p>
-          <p className="text-xs text-blue-100">Aktif Senin–Sabtu · 08.00–21.00 WIB</p>
-        </div>
-        <span className="text-2xl">💬</span>
-      </a>
-
-      {/* FAQ */}
-      <div className="mb-5">
-        <p className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
-          <HelpCircle className="w-4 h-4 text-blue-700" />
-          Pertanyaan yang Sering Ditanyakan
-        </p>
-        <div className="space-y-2">
-          {FAQ.map((item, i) => {
-            const Icon = item.icon
-            const isOpen = openFaq === i
-            return (
-              <div key={i} className="bg-white border border-gray-100 rounded-xl overflow-hidden shadow-sm">
-                <button
-                  className="w-full flex items-center gap-3 p-4 text-left hover:bg-gray-50 transition-colors"
-                  onClick={() => setOpenFaq(isOpen ? null : i)}
-                >
-                  <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Icon className="w-4 h-4 text-blue-700" />
-                  </div>
-                  <p className="flex-1 text-sm font-semibold text-gray-800 text-left">{item.q}</p>
-                  {isOpen
-                    ? <ChevronUp className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                    : <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />}
-                </button>
-                {isOpen && (
-                  <div className="px-4 pb-4">
-                    <div className="bg-blue-50 rounded-xl p-3">
-                      <p className="text-sm text-gray-700 leading-relaxed">{item.a}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
+        {/* Badge plan */}
+        {plan && (
+          <span className={`ml-auto text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1
+            ${isPremium ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-500'}`}>
+            {isPremium ? <><Crown className="w-3 h-3" /> {plan.toUpperCase()}</> : 'FREE'}
+          </span>
+        )}
       </div>
 
       {/* Tab */}
       <div className="flex gap-2 mb-4">
         {[
-          { key: 'chat',    label: 'Chat CS',        icon: MessageSquare },
-          { key: 'form',    label: 'Kirim Pesan',    icon: Send },
-          { key: 'riwayat', label: 'Riwayat',        icon: History },
+          { key: 'chat',    label: 'Chat CS',     icon: MessageSquare },
+          { key: 'form',    label: 'Kirim Pesan', icon: Send },
+          { key: 'riwayat', label: 'Riwayat',     icon: History },
         ].map(t => {
           const Icon = t.icon
           return (
@@ -251,9 +183,7 @@ export default function CSPage() {
 
       {/* Tab: Chat CS */}
       {tab === 'chat' && (
-        <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden flex flex-col" style={{ height: '460px' }}>
-
-          {/* Header chat */}
+        <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden flex flex-col mb-5" style={{ height: '460px' }}>
           <div className="flex items-center gap-3 px-4 py-3 bg-blue-700 text-white flex-shrink-0">
             <div className="relative">
               <div className="w-9 h-9 bg-white/20 rounded-full flex items-center justify-center">
@@ -266,8 +196,6 @@ export default function CSPage() {
               <p className="text-[11px] text-blue-100">● Online sekarang</p>
             </div>
           </div>
-
-          {/* Pesan */}
           <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 bg-gray-50">
             {chatMessages.map((msg, i) => {
               const isUser = msg.role === 'user'
@@ -279,16 +207,12 @@ export default function CSPage() {
                     </div>
                   )}
                   <div className={`max-w-[78%] px-3 py-2 rounded-2xl text-sm leading-relaxed shadow-sm
-                    ${isUser
-                      ? 'bg-blue-700 text-white rounded-br-sm'
-                      : 'bg-white text-gray-800 rounded-bl-sm border border-gray-100'}`}>
+                    ${isUser ? 'bg-blue-700 text-white rounded-br-sm' : 'bg-white text-gray-800 rounded-bl-sm border border-gray-100'}`}>
                     {msg.content}
                   </div>
                 </div>
               )
             })}
-
-            {/* Typing indicator */}
             {chatLoading && (
               <div className="flex items-end gap-2">
                 <div className="w-7 h-7 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
@@ -305,23 +229,13 @@ export default function CSPage() {
             )}
             <div ref={chatEndRef} />
           </div>
-
-          {/* Input */}
           <div className="flex items-center gap-2 px-3 py-3 border-t border-gray-100 bg-white flex-shrink-0">
-            <textarea
-              rows={1}
-              placeholder="Ketik pesan..."
-              value={chatInput}
-              onChange={e => setChatInput(e.target.value)}
-              onKeyDown={handleKeyDown}
+            <textarea rows={1} placeholder="Ketik pesan..."
+              value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={handleKeyDown}
               className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-              style={{ maxHeight: '80px' }}
-            />
-            <button
-              onClick={handleChat}
-              disabled={!chatInput.trim() || chatLoading}
-              className="w-10 h-10 bg-blue-700 hover:bg-blue-800 disabled:opacity-40 text-white rounded-xl flex items-center justify-center transition-colors flex-shrink-0"
-            >
+              style={{ maxHeight: '80px' }} />
+            <button onClick={handleChat} disabled={!chatInput.trim() || chatLoading}
+              className="w-10 h-10 bg-blue-700 hover:bg-blue-800 disabled:opacity-40 text-white rounded-xl flex items-center justify-center transition-colors flex-shrink-0">
               <Send className="w-4 h-4" />
             </button>
           </div>
@@ -330,34 +244,29 @@ export default function CSPage() {
 
       {/* Tab: Form Kirim Pesan */}
       {tab === 'form' && (
-        <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm space-y-3">
+        <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm space-y-3 mb-5">
           <p className="text-sm font-bold text-gray-800 flex items-center gap-2">
-            <Send className="w-4 h-4 text-blue-700" />
-            Kirim Pesan ke Admin
+            <Send className="w-4 h-4 text-blue-700" /> Kirim Pesan ke Admin
           </p>
           {sent && (
             <div className="flex items-center gap-2 bg-emerald-50 text-emerald-700 rounded-xl p-3 text-sm">
-              <CheckCircle className="w-4 h-4 flex-shrink-0" />
-              Pesan terkirim! Admin akan segera menghubungi kamu.
+              <CheckCircle className="w-4 h-4 flex-shrink-0" /> Pesan terkirim! Admin akan segera menghubungi kamu.
             </div>
           )}
           {errMsg && (
             <div className="flex items-center gap-2 bg-red-50 text-red-600 rounded-xl p-3 text-sm">
-              <AlertCircle className="w-4 h-4 flex-shrink-0" />
-              {errMsg}
+              <AlertCircle className="w-4 h-4 flex-shrink-0" /> {errMsg}
               <button onClick={() => setErrMsg('')} className="ml-auto"><X className="w-3.5 h-3.5" /></button>
             </div>
           )}
           <div>
             <label className="text-xs font-semibold text-gray-600 mb-1 block">Nama *</label>
-            <input type="text" placeholder="Nama kamu" value={form.nama}
-              onChange={e => handleChange('nama', e.target.value)}
+            <input type="text" placeholder="Nama kamu" value={form.nama} onChange={e => handleChange('nama', e.target.value)}
               className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
           <div>
             <label className="text-xs font-semibold text-gray-600 mb-1 block">No. WhatsApp <span className="text-gray-400 font-normal">(opsional)</span></label>
-            <input type="tel" placeholder="08xxxxxxxxxx" value={form.no_hp}
-              onChange={e => handleChange('no_hp', e.target.value)}
+            <input type="tel" placeholder="08xxxxxxxxxx" value={form.no_hp} onChange={e => handleChange('no_hp', e.target.value)}
               className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
           <div>
@@ -375,18 +284,14 @@ export default function CSPage() {
           </div>
           <button onClick={handleSend} disabled={sending}
             className="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-3 rounded-xl text-sm transition-colors disabled:opacity-60 flex items-center justify-center gap-2">
-            {sending ? (
-              <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Mengirim...</>
-            ) : (
-              <><Send className="w-4 h-4" /> Kirim Pesan</>
-            )}
+            {sending ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Mengirim...</> : <><Send className="w-4 h-4" /> Kirim Pesan</>}
           </button>
         </div>
       )}
 
       {/* Tab: Riwayat */}
       {tab === 'riwayat' && (
-        <div className="space-y-3">
+        <div className="space-y-3 mb-5">
           {loadRiwayat && [...Array(3)].map((_, i) => (
             <div key={i} className="bg-white rounded-xl p-4 animate-pulse">
               <div className="h-3 bg-gray-200 rounded w-1/3 mb-2" />
@@ -418,6 +323,74 @@ export default function CSPage() {
           })}
         </div>
       )}
+
+      {/* Tombol WA Admin — hanya untuk Basic & Pro */}
+      {plan !== null && (
+        isPremium ? (
+          <a
+            href={`https://wa.me/${ADMIN_WA}?text=${encodeURIComponent('Halo admin WarungKu, saya ingin bertanya...')}`}
+            target="_blank" rel="noopener noreferrer"
+            className="flex items-center gap-3 bg-blue-700 hover:bg-blue-800 text-white rounded-2xl p-4 mb-5 transition-colors shadow-sm"
+          >
+            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
+              <Phone className="w-5 h-5" />
+            </div>
+            <div className="flex-1">
+              <p className="font-bold text-sm">Chat WhatsApp Admin</p>
+              <p className="text-xs text-blue-100">Aktif Senin–Sabtu · 08.00–21.00 WIB</p>
+            </div>
+            <span className="text-2xl">💬</span>
+          </a>
+        ) : (
+          <div className="flex items-center gap-3 bg-gray-100 border border-gray-200 rounded-2xl p-4 mb-5">
+            <div className="w-10 h-10 bg-gray-200 rounded-xl flex items-center justify-center flex-shrink-0">
+              <Lock className="w-5 h-5 text-gray-400" />
+            </div>
+            <div className="flex-1">
+              <p className="font-semibold text-sm text-gray-500">Chat WhatsApp Admin</p>
+              <p className="text-xs text-gray-400">Khusus pelanggan Basic & Pro</p>
+            </div>
+            <a href="/dashboard/berlangganan"
+              className="flex items-center gap-1 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold px-3 py-2 rounded-xl transition-colors flex-shrink-0">
+              <Crown className="w-3.5 h-3.5" /> Upgrade
+            </a>
+          </div>
+        )
+      )}
+
+      {/* FAQ */}
+      <div className="mb-5">
+        <p className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
+          <HelpCircle className="w-4 h-4 text-blue-700" />
+          Pertanyaan yang Sering Ditanyakan
+        </p>
+        <div className="space-y-2">
+          {FAQ.map((item, i) => {
+            const Icon = item.icon
+            const isOpen = openFaq === i
+            return (
+              <div key={i} className="bg-white border border-gray-100 rounded-xl overflow-hidden shadow-sm">
+                <button className="w-full flex items-center gap-3 p-4 text-left hover:bg-gray-50 transition-colors"
+                  onClick={() => setOpenFaq(isOpen ? null : i)}>
+                  <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Icon className="w-4 h-4 text-blue-700" />
+                  </div>
+                  <p className="flex-1 text-sm font-semibold text-gray-800 text-left">{item.q}</p>
+                  {isOpen ? <ChevronUp className="w-4 h-4 text-gray-400 flex-shrink-0" /> : <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />}
+                </button>
+                {isOpen && (
+                  <div className="px-4 pb-4">
+                    <div className="bg-blue-50 rounded-xl p-3">
+                      <p className="text-sm text-gray-700 leading-relaxed">{item.a}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
     </div>
   )
 }
