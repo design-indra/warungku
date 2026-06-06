@@ -172,7 +172,7 @@ export default function BerlanggananPage() {
                 onClick={() => handleBuPaket('basic')}
                 disabled={payingPlan !== null || subStatus?.plan === 'basic' || subStatus?.plan === 'pro'}
                 className={`w-full py-2.5 rounded-xl font-bold text-sm transition-colors
-                  ${payingPlan !== null || subStatus?.plan === 'basic' || subStatus?.plan === 'pro'
+                  ${payingPlan === 'basic' || subStatus?.plan === 'basic' || subStatus?.plan === 'pro'
                     ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                     : 'bg-blue-700 hover:bg-blue-800 text-white'}`}
               >
@@ -205,7 +205,7 @@ export default function BerlanggananPage() {
                 onClick={() => handleBuPaket('pro')}
                 disabled={payingPlan !== null || subStatus?.plan === 'pro'}
                 className={`w-full py-2.5 rounded-xl font-bold text-sm transition-colors
-                  ${payingPlan !== null || subStatus?.plan === 'pro'
+                  ${payingPlan === 'pro' || subStatus?.plan === 'pro'
                     ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                     : 'bg-blue-700 hover:bg-blue-800 text-white'}`}
               >
