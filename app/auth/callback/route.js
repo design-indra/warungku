@@ -5,7 +5,7 @@ import { NextResponse } from 'next/server'
 export async function GET(request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
-  // 'next' bisa dipakai untuk redirect ke halaman tertentu setelah login
+  const type = searchParams.get('type')           // Supabase menyertakan ?type=recovery untuk reset password
   const next = searchParams.get('next') ?? '/dashboard'
 
   if (code) {
@@ -33,6 +33,10 @@ export async function GET(request) {
 
     const { error } = await supabase.auth.exchangeCodeForSession(code)
     if (!error) {
+      // Jika ini adalah flow reset password, arahkan ke halaman reset-password
+      if (type === 'recovery') {
+        return NextResponse.redirect(`${origin}/auth/reset-password`)
+      }
       return NextResponse.redirect(`${origin}${next}`)
     }
   }
