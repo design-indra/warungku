@@ -1,6 +1,25 @@
 import { NextResponse } from 'next/server'
 import { createServerSupabase } from '@/lib/supabase-server'
 
+// Helper: ambil plan aktif tenant
+async function getTenantPlan(supabase, tenantId) {
+  const { data: tenant } = await supabase
+    .from('tenants')
+    .select('plan, plan_expired_at')
+    .eq('id', tenantId)
+    .single()
+
+  if (!tenant) return 'free'
+  const isActive =
+    tenant.plan !== 'free' &&
+    tenant.plan_expired_at !== null &&
+    new Date(tenant.plan_expired_at) > new Date()
+  return isActive ? tenant.plan : 'free'
+}
+
+// Batas barang per plan
+const BARANG_LIMIT = { free: 250, basic: 500, pro: 999999 }
+
 // GET /api/barang
 export async function GET(request) {
   try {
@@ -9,12 +28,12 @@ export async function GET(request) {
     if (authErr || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { searchParams } = new URL(request.url)
-    const search      = searchParams.get('search') || ''
-    const kategori    = searchParams.get('kategori') || ''
-    const stokFilter  = searchParams.get('stok') || ''
-    const page        = Number(searchParams.get('page')) || 1
-    const limit       = Number(searchParams.get('limit')) || 25
-    const offset      = (page - 1) * limit
+    const search     = searchParams.get('search') || ''
+    const kategori   = searchParams.get('kategori') || ''
+    const stokFilter = searchParams.get('stok') || ''
+    const page       = Number(searchParams.get('page')) || 1
+    const limit      = Number(searchParams.get('limit')) || 25
+    const offset     = (page - 1) * limit
 
     let query = supabase
       .from('barang')
@@ -25,8 +44,8 @@ export async function GET(request) {
 
     if (search)   query = query.ilike('nama', `%${search}%`)
     if (kategori) query = query.eq('kategori_id', kategori)
-    if (stokFilter === 'rendah')  query = query.lte('stok', 10).gt('stok', 0)
-    if (stokFilter === 'habis')   query = query.eq('stok', 0)
+    if (stokFilter === 'rendah') query = query.lte('stok', 10).gt('stok', 0)
+    if (stokFilter === 'habis')  query = query.eq('stok', 0)
 
     const { data, error, count } = await query
     if (error) throw error
@@ -43,8 +62,33 @@ export async function POST(request) {
     const { data: { user }, error: authErr } = await supabase.auth.getUser()
     if (authErr || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+    const { data: profile } = await supabase
+      .from('user_profiles').select('tenant_id').eq('id', user.id).single()
+
+    // ── Cek kuota barang ────────────────────────────────────
+    const plan = await getTenantPlan(supabase, profile.tenant_id)
+    const maxBarang = BARANG_LIMIT[plan] ?? 250
+
+    if (maxBarang < 999999) {
+      const { count } = await supabase
+        .from('barang')
+        .select('id', { count: 'exact', head: true })
+        .eq('tenant_id', profile.tenant_id)
+        .eq('is_active', true)
+
+      if (count >= maxBarang) {
+        return NextResponse.json({
+          error: `Paket ${plan.toUpperCase()} hanya mengizinkan ${maxBarang} barang. Upgrade paket untuk menambah lebih banyak.`,
+          limit_reached: true,
+          plan,
+          max: maxBarang,
+          used: count,
+        }, { status: 403 })
+      }
+    }
+    // ────────────────────────────────────────────────────────
+
     const body = await request.json()
-    const { data: profile } = await supabase.from('user_profiles').select('tenant_id').eq('id', user.id).single()
 
     // Auto-generate kode jika tidak diisi
     let kode = body.kode_barang?.trim() || null
