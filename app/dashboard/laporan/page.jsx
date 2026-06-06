@@ -23,8 +23,19 @@ export default function LaporanPage() {
   const [period, setPeriod]     = useState(1)
   const [data, setData]         = useState(null)
   const [loading, setLoading]   = useState(true)
+  const [plan, setPlan]         = useState(null) // null = loading
+  const canFullReport = plan === 'basic' || plan === 'pro'
+
+  // Fetch plan user
+  useEffect(() => {
+    fetch('/api/subscription/status')
+      .then(r => r.json())
+      .then(j => setPlan(j.plan || 'free'))
+      .catch(() => setPlan('free'))
+  }, [])
 
   const fetchData = useCallback(async () => {
+    if (!plan) return // tunggu plan selesai load
     setLoading(true)
     const p = PERIODS[period]
     try {
@@ -33,7 +44,7 @@ export default function LaporanPage() {
       setData(json.data)
     } catch {}
     finally { setLoading(false) }
-  }, [period])
+  }, [period, plan])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -71,21 +82,46 @@ export default function LaporanPage() {
     URL.revokeObjectURL(url)
   }
 
+  // Free: hanya periode "Hari Ini" yang boleh
+  const allowedPeriods = canFullReport ? PERIODS : [PERIODS[0]]
+  // Reset ke index 0 kalau plan free
+  const safePeriod = canFullReport ? period : 0
+
   return (
     <div className="page-content space-y-4">
+
+      {/* Upgrade wall untuk free user */}
+      {plan === 'free' && (
+        <div className="card p-4 flex items-start gap-3 border-l-4 border-amber-400 bg-amber-50">
+          <div className="text-2xl">🔒</div>
+          <div className="flex-1">
+            <p className="font-bold text-amber-800 text-sm">Laporan terbatas — Paket Free</p>
+            <p className="text-xs text-amber-700 mt-0.5">Kamu hanya bisa melihat laporan <strong>Hari Ini</strong>. Upgrade ke <strong>Basic</strong> atau <strong>Pro</strong> untuk laporan 7 hari, 30 hari, dan ekspor CSV.</p>
+            <a href="/dashboard/berlangganan"
+              className="inline-block mt-2 px-4 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-lg transition-colors">
+              Upgrade Sekarang →
+            </a>
+          </div>
+        </div>
+      )}
 
       {/* Period selector + Export */}
       <div className="flex items-center gap-3 flex-wrap">
         <div className="card p-1 flex gap-1">
-          {PERIODS.map((p, i) => (
-            <button key={p.label} onClick={() => setPeriod(i)}
+          {allowedPeriods.map((p, i) => (
+            <button key={p.label} onClick={() => canFullReport ? setPeriod(i) : null}
               className={`flex-1 py-2 px-3 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors
-                ${period === i ? 'bg-blue-700 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-100'}`}>
+                ${safePeriod === i ? 'bg-blue-700 text-white shadow-sm' : 'text-gray-500 hover:bg-gray-100'}`}>
               {p.label}
             </button>
           ))}
+          {!canFullReport && ['7 Hari','30 Hari','Bulan Ini'].map(l => (
+            <div key={l} className="flex-1 py-2 px-3 rounded-lg text-xs font-semibold whitespace-nowrap text-gray-300 cursor-not-allowed flex items-center gap-1">
+              🔒 {l}
+            </div>
+          ))}
         </div>
-        {!loading && data && (
+        {!loading && data && canFullReport && (
           <button
             onClick={exportCSV}
             className="flex items-center gap-1.5 px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-xs font-bold rounded-xl transition-colors">
