@@ -17,6 +17,8 @@ export default function RegisterPage() {
   const [loadingGoogle, setLoadingGoogle] = useState(false)
   const [error, setError] = useState('')
   const [step, setStep] = useState(1)
+  // State untuk tampilkan pesan "cek email konfirmasi"
+  const [emailSent, setEmailSent] = useState(false)
 
   const handleNext = (e) => {
     e.preventDefault()
@@ -40,7 +42,32 @@ export default function RegisterPage() {
           data: { full_name: form.namaLengkap, nama_warung: form.namaWarung, no_hp: form.noHp }
         }
       })
-      if (signUpError) throw signUpError
+
+      if (signUpError) {
+        // Error eksplisit dari Supabase
+        if (signUpError.message.toLowerCase().includes('already registered') ||
+            signUpError.message.toLowerCase().includes('user already registered')) {
+          setError('Email ini sudah terdaftar. Silakan login atau gunakan email lain.')
+        } else {
+          setError(signUpError.message || 'Terjadi kesalahan. Silakan coba lagi.')
+        }
+        return
+      }
+
+      // Supabase kadang return user tapi identities kosong = email sudah ada tapi belum verifikasi
+      if (data?.user && data.user.identities && data.user.identities.length === 0) {
+        setError('Email ini sudah terdaftar. Silakan login atau gunakan "Lupa Password" jika lupa sandi.')
+        return
+      }
+
+      // Jika email confirmation aktif di Supabase, session akan null
+      // Tampilkan pesan "cek email" alih-alih langsung redirect
+      if (!data?.session) {
+        setEmailSent(true)
+        return
+      }
+
+      // Jika konfirmasi email dimatikan (auto-confirm), langsung masuk
       router.push('/dashboard')
     } catch (err) {
       setError(err.message || 'Terjadi kesalahan. Silakan coba lagi.')
@@ -65,6 +92,37 @@ export default function RegisterPage() {
       setError('Gagal daftar dengan Google. Silakan coba lagi.')
       setLoadingGoogle(false)
     }
+  }
+
+  // ── Tampilan setelah daftar sukses, menunggu verifikasi email
+  if (emailSent) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+        <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8 text-center">
+          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-blue-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Cek Email Kamu!</h2>
+          <p className="text-gray-500 text-sm mb-1 leading-relaxed">
+            Kami kirim link konfirmasi ke:
+          </p>
+          <p className="font-semibold text-blue-700 text-sm mb-4">{form.email}</p>
+          <p className="text-gray-400 text-xs leading-relaxed mb-6">
+            Klik link di email untuk mengaktifkan akun kamu. Setelah itu bisa langsung login.
+            Cek juga folder <strong>Spam / Junk</strong> jika tidak muncul.
+          </p>
+          <button
+            onClick={() => router.push('/auth/login')}
+            className="w-full bg-blue-700 hover:bg-blue-800 text-white py-3 rounded-xl font-bold text-sm transition-colors"
+          >
+            Ke Halaman Login
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (
