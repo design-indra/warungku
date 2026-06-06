@@ -6,35 +6,51 @@ import {
   Users, AlertCircle, RefreshCw, X, Plus, Save, Pencil
 } from 'lucide-react'
 
+const rp = (n) => 'Rp ' + Number(n || 0).toLocaleString('id-ID')
+
 export default function PelangganPage() {
-  const [list, setList]           = useState([])
-  const [loading, setLoading]     = useState(true)
-  const [search, setSearch]       = useState('')
-  const [delTarget, setDelTarget] = useState(null)
-  const [deleting, setDeleting]   = useState(false)
-  const [error, setError]         = useState('')
-  const [toast, setToast]         = useState('')
+  const [list, setList]             = useState([])
+  const [hutangMap, setHutangMap]   = useState({}) // { pelanggan_id: total_sisa }
+  const [loading, setLoading]       = useState(true)
+  const [search, setSearch]         = useState('')
+  const [delTarget, setDelTarget]   = useState(null)
+  const [deleting, setDeleting]     = useState(false)
+  const [error, setError]           = useState('')
+  const [toast, setToast]           = useState('')
 
   // Modal tambah/edit
-  const [showModal, setShowModal] = useState(false)
-  const [editTarget, setEditTarget] = useState(null) // null = mode tambah
-  const [form, setForm]           = useState({ nama: '', no_hp: '', alamat: '' })
-  const [saving, setSaving]       = useState(false)
-  const [formErr, setFormErr]     = useState('')
+  const [showModal, setShowModal]   = useState(false)
+  const [editTarget, setEditTarget] = useState(null)
+  const [form, setForm]             = useState({ nama: '', no_hp: '', alamat: '' })
+  const [saving, setSaving]         = useState(false)
+  const [formErr, setFormErr]       = useState('')
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000) }
 
-  const fetchPelanggan = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true); setError('')
     try {
-      const res  = await fetch('/api/pelanggan')
-      const json = await res.json()
-      if (!res.ok) throw new Error(json.error || 'Gagal memuat data')
-      setList(json.data || [])
+      const [pelRes, hutRes] = await Promise.all([
+        fetch('/api/pelanggan'),
+        fetch('/api/hutang'),
+      ])
+      const pelJson = await pelRes.json()
+      const hutJson = await hutRes.json()
+
+      setList(pelJson.data || [])
+
+      // Buat map: pelanggan_id → total sisa hutang
+      const map = {}
+      for (const h of hutJson.data || []) {
+        if (h.pelanggan?.id && h.sisa > 0) {
+          map[h.pelanggan.id] = (map[h.pelanggan.id] || 0) + h.sisa
+        }
+      }
+      setHutangMap(map)
     } catch (e) { setError(e.message) } finally { setLoading(false) }
   }, [])
 
-  useEffect(() => { fetchPelanggan() }, [fetchPelanggan])
+  useEffect(() => { fetchData() }, [fetchData])
 
   const filtered = useMemo(() => {
     if (!search.trim()) return list
@@ -49,15 +65,13 @@ export default function PelangganPage() {
   const openTambah = () => {
     setEditTarget(null)
     setForm({ nama: '', no_hp: '', alamat: '' })
-    setFormErr('')
-    setShowModal(true)
+    setFormErr(''); setShowModal(true)
   }
 
   const openEdit = (p) => {
     setEditTarget(p)
     setForm({ nama: p.nama || '', no_hp: p.no_hp || '', alamat: p.alamat || '' })
-    setFormErr('')
-    setShowModal(true)
+    setFormErr(''); setShowModal(true)
   }
 
   const handleSimpan = async () => {
@@ -67,15 +81,13 @@ export default function PelangganPage() {
       const isEdit = !!editTarget
       const url    = isEdit ? `/api/pelanggan/${editTarget.id}` : '/api/pelanggan'
       const method = isEdit ? 'PUT' : 'POST'
-
-      const res  = await fetch(url, {
+      const res    = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error || 'Gagal menyimpan')
-
       if (isEdit) {
         setList(prev => prev.map(p => p.id === editTarget.id ? json.data : p))
         showToast(`${json.data.nama} berhasil diperbarui`)
@@ -83,9 +95,7 @@ export default function PelangganPage() {
         setList(prev => [...prev, json.data].sort((a, b) => a.nama.localeCompare(b.nama)))
         showToast(`${json.data.nama} berhasil ditambahkan`)
       }
-
-      setShowModal(false)
-      setEditTarget(null)
+      setShowModal(false); setEditTarget(null)
       setForm({ nama: '', no_hp: '', alamat: '' })
     } catch (e) { setFormErr(e.message) } finally { setSaving(false) }
   }
@@ -101,6 +111,17 @@ export default function PelangganPage() {
       showToast(`${delTarget.nama} berhasil dihapus`)
       setDelTarget(null)
     } catch (e) { showToast('⚠️ ' + e.message); setDelTarget(null) } finally { setDeleting(false) }
+  }
+
+  const buildWaText = (p) => {
+    const sisa = hutangMap[p.id] || 0
+    const jumlah = sisa > 0 ? rp(sisa) : '[belum ada hutang]'
+    return encodeURIComponent(
+      `Halo Kak ${p.nama}, saya dari Warungku Digital 🙏\n\n` +
+      `Mohon maaf mengganggu waktunya ya kak. Kami ingin mengingatkan bahwa masih ada tagihan belanja sebesar *${jumlah}* yang belum sempat diselesaikan.\n\n` +
+      `Tidak ada paksaan ya kak, kami hanya mengingatkan dengan hormat 😊\n\n` +
+      `Terima kasih banyak atas perhatiannya 🙏`
+    )
   }
 
   const inisial    = (nama) => (nama || 'X')[0].toUpperCase()
@@ -127,8 +148,7 @@ export default function PelangganPage() {
           </p>
         </div>
         <div className="ml-auto flex items-center gap-2">
-          <button onClick={fetchPelanggan}
-            className="p-2 rounded-lg hover:bg-gray-100 transition-colors">
+          <button onClick={fetchData} className="p-2 rounded-lg hover:bg-gray-100 transition-colors">
             <RefreshCw className={`w-4 h-4 text-gray-500 ${loading ? 'animate-spin' : ''}`} />
           </button>
           <button onClick={openTambah}
@@ -197,50 +217,69 @@ export default function PelangganPage() {
       {/* List */}
       {!loading && filtered.length > 0 && (
         <div className="space-y-3">
-          {filtered.map((p, idx) => (
-            <div key={p.id}
-              className="bg-white rounded-xl border border-gray-100 p-4 flex items-center gap-3 shadow-sm hover:shadow-md transition-shadow">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0 ${warnaBadge(idx)}`}>
-                {inisial(p.nama)}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-gray-900 text-sm truncate">{p.nama}</p>
-                <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5">
+          {filtered.map((p, idx) => {
+            const sisaHutang = hutangMap[p.id] || 0
+            return (
+              <div key={p.id}
+                className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm hover:shadow-md transition-shadow">
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0 ${warnaBadge(idx)}`}>
+                    {inisial(p.nama)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-gray-900 text-sm truncate">{p.nama}</p>
+                    <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5">
+                      {p.no_hp && (
+                        <span className="flex items-center gap-1 text-xs text-gray-500">
+                          <Phone className="w-3 h-3" />{p.no_hp}
+                        </span>
+                      )}
+                      {p.alamat && (
+                        <span className="flex items-center gap-1 text-xs text-gray-400 truncate max-w-[160px]">
+                          <MapPin className="w-3 h-3 flex-shrink-0" />{p.alamat}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Tombol WA */}
                   {p.no_hp && (
-                    <span className="flex items-center gap-1 text-xs text-gray-500">
-                      <Phone className="w-3 h-3" />{p.no_hp}
-                    </span>
+                    <a href={`https://wa.me/${p.no_hp.replace(/^0/, '62').replace(/\D/g, '')}?text=${buildWaText(p)}`}
+                      target="_blank" rel="noopener noreferrer"
+                      className="p-2 rounded-lg bg-emerald-50 hover:bg-emerald-100 transition-colors flex-shrink-0"
+                      title="Tagih via WhatsApp">
+                      <Phone className="w-4 h-4 text-emerald-600" />
+                    </a>
                   )}
-                  {p.alamat && (
-                    <span className="flex items-center gap-1 text-xs text-gray-400 truncate max-w-[180px]">
-                      <MapPin className="w-3 h-3 flex-shrink-0" />{p.alamat}
-                    </span>
-                  )}
+
+                  {/* Tombol Edit */}
+                  <button onClick={() => openEdit(p)}
+                    className="p-2 rounded-lg bg-blue-50 hover:bg-blue-100 transition-colors flex-shrink-0">
+                    <Pencil className="w-4 h-4 text-blue-600" />
+                  </button>
+
+                  {/* Tombol Hapus */}
+                  <button onClick={() => setDelTarget(p)}
+                    className="p-2 rounded-lg bg-red-50 hover:bg-red-100 transition-colors flex-shrink-0">
+                    <Trash2 className="w-4 h-4 text-red-500" />
+                  </button>
                 </div>
+
+                {/* Badge hutang */}
+                {sisaHutang > 0 && (
+                  <div className="mt-2.5 flex items-center justify-between bg-red-50 border border-red-100 rounded-xl px-3 py-2">
+                    <span className="text-xs text-red-500 font-semibold">💳 Sisa Hutang</span>
+                    <span className="text-xs font-bold text-red-600">{rp(sisaHutang)}</span>
+                  </div>
+                )}
+                {sisaHutang === 0 && (
+                  <div className="mt-2.5 flex items-center justify-between bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2">
+                    <span className="text-xs text-emerald-600 font-semibold">✅ Tidak ada hutang</span>
+                  </div>
+                )}
               </div>
-
-              {/* Tombol WA */}
-              {p.no_hp && (
-                <a href={`https://wa.me/${p.no_hp.replace(/^0/, '62').replace(/\D/g, '')}`}
-                  target="_blank" rel="noopener noreferrer"
-                  className="p-2 rounded-lg bg-emerald-50 hover:bg-emerald-100 transition-colors flex-shrink-0">
-                  <Phone className="w-4 h-4 text-emerald-600" />
-                </a>
-              )}
-
-              {/* Tombol Edit */}
-              <button onClick={() => openEdit(p)}
-                className="p-2 rounded-lg bg-blue-50 hover:bg-blue-100 transition-colors flex-shrink-0">
-                <Pencil className="w-4 h-4 text-blue-600" />
-              </button>
-
-              {/* Tombol Hapus */}
-              <button onClick={() => setDelTarget(p)}
-                className="p-2 rounded-lg bg-red-50 hover:bg-red-100 transition-colors flex-shrink-0">
-                <Trash2 className="w-4 h-4 text-red-500" />
-              </button>
-            </div>
-          ))}
+            )
+          })}
           {search && (
             <p className="text-center text-xs text-gray-400 pt-2">
               Menampilkan {filtered.length} dari {list.length} pelanggan
@@ -249,7 +288,7 @@ export default function PelangganPage() {
         </div>
       )}
 
-      {/* Modal Tambah / Edit Pelanggan */}
+      {/* Modal Tambah / Edit */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.4)' }}>
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-5">
@@ -262,39 +301,35 @@ export default function PelangganPage() {
                   {editTarget ? 'Edit Pelanggan' : 'Tambah Pelanggan'}
                 </p>
               </div>
-              <button onClick={() => setShowModal(false)}
-                className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
+              <button onClick={() => setShowModal(false)} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
                 <X className="w-4 h-4 text-gray-400" />
               </button>
             </div>
-
             {formErr && (
               <div className="flex items-center gap-2 bg-red-50 text-red-600 rounded-xl p-3 text-xs mb-3">
                 <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" /> {formErr}
               </div>
             )}
-
             <div className="space-y-3">
               <div>
                 <label className="text-xs font-semibold text-gray-600 mb-1 block">Nama *</label>
-                <input type="text" placeholder="Nama pelanggan"
-                  value={form.nama} onChange={e => setForm(f => ({ ...f, nama: e.target.value }))}
+                <input type="text" placeholder="Nama pelanggan" value={form.nama}
+                  onChange={e => setForm(f => ({ ...f, nama: e.target.value }))}
                   className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
               <div>
                 <label className="text-xs font-semibold text-gray-600 mb-1 block">No. HP <span className="text-gray-400 font-normal">(opsional)</span></label>
-                <input type="tel" placeholder="08xxxxxxxxxx"
-                  value={form.no_hp} onChange={e => setForm(f => ({ ...f, no_hp: e.target.value }))}
+                <input type="tel" placeholder="08xxxxxxxxxx" value={form.no_hp}
+                  onChange={e => setForm(f => ({ ...f, no_hp: e.target.value }))}
                   className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
               <div>
                 <label className="text-xs font-semibold text-gray-600 mb-1 block">Alamat <span className="text-gray-400 font-normal">(opsional)</span></label>
-                <input type="text" placeholder="Alamat pelanggan"
-                  value={form.alamat} onChange={e => setForm(f => ({ ...f, alamat: e.target.value }))}
+                <input type="text" placeholder="Alamat pelanggan" value={form.alamat}
+                  onChange={e => setForm(f => ({ ...f, alamat: e.target.value }))}
                   className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
             </div>
-
             <div className="flex gap-2 mt-4">
               <button onClick={() => setShowModal(false)}
                 className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors">
