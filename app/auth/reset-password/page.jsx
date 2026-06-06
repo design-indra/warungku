@@ -7,26 +7,41 @@ import Icon from '@/components/Icon'
 
 export default function ResetPasswordPage() {
   const router = useRouter()
-  const [password, setPassword]   = useState('')
+  const [password, setPassword]     = useState('')
   const [konfirmasi, setKonfirmasi] = useState('')
-  const [showPass, setShowPass]   = useState(false)
-  const [loading, setLoading]     = useState(false)
-  const [error, setError]         = useState('')
-  const [success, setSuccess]     = useState(false)
+  const [showPass, setShowPass]     = useState(false)
+  const [loading, setLoading]       = useState(false)
+  const [error, setError]           = useState('')
+  const [success, setSuccess]       = useState(false)
   const [validSession, setValidSession] = useState(false)
-  const [checking, setChecking]   = useState(true)
+  const [checking, setChecking]     = useState(true)
 
   useEffect(() => {
-    // Supabase otomatis set session dari URL hash setelah klik link email
     const supabase = createClient()
-    supabase.auth.onAuthStateChange((event) => {
+
+    // onAuthStateChange bisa fire beberapa event saat halaman dibuka:
+    // INITIAL_SESSION, SIGNED_IN, PASSWORD_RECOVERY, dsb.
+    // Kita harus tunggu sampai PASSWORD_RECOVERY muncul, bukan langsung
+    // set checking=false saat event pertama apapun masuk.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'PASSWORD_RECOVERY') {
         setValidSession(true)
+        setChecking(false)
+      } else if (event === 'SIGNED_IN') {
+        // SIGNED_IN saja tanpa PASSWORD_RECOVERY berarti user login biasa,
+        // bukan dari link reset — anggap tidak valid
+        setChecking(false)
       }
-      setChecking(false)
     })
-    // Timeout fallback
-    setTimeout(() => setChecking(false), 3000)
+
+    // Timeout fallback: jika 5 detik tidak ada event yang relevan, anggap expired
+    const timeout = setTimeout(() => setChecking(false), 5000)
+
+    // Cleanup: unsubscribe listener & clear timeout saat komponen unmount
+    return () => {
+      subscription.unsubscribe()
+      clearTimeout(timeout)
+    }
   }, [])
 
   const handleReset = async (e) => {
