@@ -35,13 +35,11 @@ export async function POST(request) {
     const base64 = Buffer.from(arrayBuffer).toString('base64')
     const dataUri = `data:${file.type};base64,${base64}`
 
-    // Upload ke Cloudinary (unsigned preset)
+    // Upload ke Cloudinary (unsigned preset — tanpa transformation)
     const cloudForm = new FormData()
     cloudForm.append('file', dataUri)
     cloudForm.append('upload_preset', process.env.CLOUDINARY_UPLOAD_PRESET)
     cloudForm.append('folder', `warungku/${profile.tenant_id}`)
-    // Auto kompresi & resize via Cloudinary
-    cloudForm.append('transformation', 'w_800,h_800,c_limit,q_auto:good,f_auto')
 
     const res = await fetch(CLOUDINARY_URL, {
       method: 'POST',
