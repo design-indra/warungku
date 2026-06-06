@@ -162,7 +162,7 @@ export default function BerlanggananPage() {
                 <span className="text-3xl">📦</span>
               </div>
               <ul className="space-y-1.5 mb-4">
-                {['1 Cabang', 'Max 3 Kasir', 'Laporan bulanan', 'Manajemen stok'].map(f => (
+                {['3 Cabang', 'Max 3 Kasir', 'Laporan bulanan', 'Manajemen stok & hutang', 'Chat WA Admin'].map(f => (
                   <li key={f} className="flex items-center gap-2 text-sm text-gray-600">
                     <span className="text-green-500 font-bold">✓</span> {f}
                   </li>
@@ -170,13 +170,13 @@ export default function BerlanggananPage() {
               </ul>
               <button
                 onClick={() => handleBuPaket('basic')}
-                disabled={paying || subStatus?.active}
+                disabled={paying || subStatus?.plan === 'basic' || subStatus?.plan === 'pro'}
                 className={`w-full py-2.5 rounded-xl font-bold text-sm transition-colors
-                  ${paying || subStatus?.active
+                  ${paying || subStatus?.plan === 'basic' || subStatus?.plan === 'pro'
                     ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                     : 'bg-blue-700 hover:bg-blue-800 text-white'}`}
               >
-                {paying ? 'Memproses...' : subStatus?.active ? 'Sudah Aktif' : 'Pilih Basic'}
+                {paying ? 'Memproses...' : subStatus?.plan === 'basic' ? 'Sudah Aktif' : subStatus?.plan === 'pro' ? 'Tidak Bisa Downgrade' : 'Pilih Basic'}
               </button>
             </div>
 
@@ -203,13 +203,13 @@ export default function BerlanggananPage() {
               </ul>
               <button
                 onClick={() => handleBuPaket('pro')}
-                disabled={paying || subStatus?.active}
+                disabled={paying || subStatus?.plan === 'pro'}
                 className={`w-full py-2.5 rounded-xl font-bold text-sm transition-colors
-                  ${paying || subStatus?.active
+                  ${paying || subStatus?.plan === 'pro'
                     ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                     : 'bg-blue-700 hover:bg-blue-800 text-white'}`}
               >
-                {paying ? 'Memproses...' : subStatus?.active ? 'Sudah Aktif' : 'Pilih Pro'}
+                {paying ? 'Memproses...' : subStatus?.plan === 'pro' ? 'Sudah Aktif' : 'Pilih Pro'}
               </button>
             </div>
 
