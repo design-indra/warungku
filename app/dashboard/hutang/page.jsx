@@ -14,6 +14,15 @@ export default function HutangPage() {
   const [bayarForm, setBayarForm]   = useState({ jumlah: '', catatan: '' })
   const [saving, setSaving]         = useState(false)
   const [activeHutangId, setActiveHutangId] = useState(null)
+  const [plan, setPlan]             = useState(null) // null = loading
+
+  // Cek plan user
+  useEffect(() => {
+    fetch('/api/subscription/status')
+      .then(r => r.json())
+      .then(j => setPlan(j.plan || 'free'))
+      .catch(() => setPlan('free'))
+  }, [])
 
   const fetchHutang = useCallback(async () => {
     setLoading(true)
@@ -38,7 +47,10 @@ export default function HutangPage() {
     finally { setLoading(false) }
   }, [])
 
-  useEffect(() => { fetchHutang() }, [fetchHutang])
+  useEffect(() => {
+    if (plan && plan !== 'free') fetchHutang()
+    else if (plan === 'free') setLoading(false)
+  }, [fetchHutang, plan])
 
   const filtered = useMemo(() =>
     hutangList.filter(p => p.nama.toLowerCase().includes(search.toLowerCase())),
@@ -67,6 +79,23 @@ export default function HutangPage() {
 
   return (
     <div className="page-content space-y-4">
+
+      {/* Upgrade wall untuk free user */}
+      {plan === 'free' && (
+        <div className="card p-6 text-center space-y-3">
+          <div className="text-4xl">🔒</div>
+          <p className="font-bold text-gray-900">Fitur Khusus Basic & Pro</p>
+          <p className="text-sm text-gray-500">Manajemen hutang pelanggan hanya tersedia untuk paket Basic dan Pro.</p>
+          <a href="/dashboard/berlangganan"
+            className="inline-block mt-2 px-5 py-2.5 bg-blue-700 hover:bg-blue-800 text-white text-sm font-bold rounded-xl transition-colors">
+            Upgrade Sekarang
+          </a>
+        </div>
+      )}
+
+      {/* Konten hutang — hanya tampil jika bukan free */}
+      {plan !== 'free' && plan !== null && (
+      <div className="space-y-4">
       {/* Search */}
       <div className="relative">
         <span className="absolute left-3 top-1/2 -translate-y-1/2"><Icon name="search" size={16} color="#9ca3af" /></span>
@@ -200,6 +229,8 @@ export default function HutangPage() {
           </div>
         </div>
       )}
+      </div>
+      )} {/* end plan !== 'free' */}
     </div>
   )
 }
