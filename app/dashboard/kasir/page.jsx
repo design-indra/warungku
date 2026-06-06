@@ -166,6 +166,7 @@ function PembayaranView({ total, diskon, onBack, onBayar, saving }) {
   const [showTambah, setShowTambah] = useState(false)
   const [namaBaru, setNamaBaru] = useState('')
   const [noHpBaru, setNoHpBaru] = useState('')
+  const [alamatBaru, setAlamatBaru] = useState('')
   const [savingPelanggan, setSavingPelanggan] = useState(false)
   const [errorTambah, setErrorTambah] = useState('')
   const [successMsg, setSuccessMsg] = useState('')
@@ -204,13 +205,14 @@ function PembayaranView({ total, diskon, onBack, onBayar, saving }) {
 
     setSavingPelanggan(true)
     try {
-      const baru = await tambahPelanggan(namaBaru, noHpBaru.trim())
+      const baru = await tambahPelanggan(namaBaru, noHpBaru.trim(), alamatBaru)
       // Tambahkan ke list & langsung pilih otomatis
       setPelangganList(prev => [...prev, baru].sort((a, b) => a.nama.localeCompare(b.nama)))
       setPelangganId(baru.id)
       // Reset form & tutup
       setNamaBaru('')
       setNoHpBaru('')
+      setAlamatBaru('')
       setShowTambah(false)
       setSuccessMsg(`Pelanggan "${baru.nama}" berhasil ditambahkan & dipilih.`)
     } catch (e) {
@@ -289,6 +291,15 @@ function PembayaranView({ total, diskon, onBack, onBayar, saving }) {
                       onChange={e => setNoHpBaru(e.target.value)}
                       placeholder="08xxxxxxxxxx"
                       inputMode="tel"
+                      className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-lg text-sm font-medium text-gray-900 focus:outline-none focus:border-blue-400 bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-gray-600 mb-1 block">Alamat <span className="text-gray-400 font-normal">(opsional)</span></label>
+                    <input
+                      value={alamatBaru}
+                      onChange={e => setAlamatBaru(e.target.value)}
+                      placeholder="Jl. Contoh No. 1, Kota"
                       className="w-full px-3 py-2.5 border-2 border-gray-200 rounded-lg text-sm font-medium text-gray-900 focus:outline-none focus:border-blue-400 bg-white"
                     />
                   </div>
