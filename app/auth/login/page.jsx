@@ -16,6 +16,13 @@ export default function LoginPage() {
   const [loadingGoogle, setLoadingGoogle] = useState(false)
   const [error, setError]       = useState('')
 
+  // ── State untuk modal lupa password
+  const [showForgot, setShowForgot]         = useState(false)
+  const [forgotEmail, setForgotEmail]       = useState('')
+  const [forgotLoading, setForgotLoading]   = useState(false)
+  const [forgotError, setForgotError]       = useState('')
+  const [forgotSuccess, setForgotSuccess]   = useState(false)
+
   const handleLogin = async (e) => {
     e.preventDefault()
     setLoading(true)
@@ -28,8 +35,13 @@ export default function LoginPage() {
       })
       if (error) throw error
       router.push('/dashboard')
-    } catch {
-      setError('Email atau password salah. Silakan coba lagi.')
+    } catch (err) {
+      // Bedakan error "email belum dikonfirmasi" vs "password salah"
+      if (err.message?.toLowerCase().includes('email not confirmed')) {
+        setError('Email belum dikonfirmasi. Cek kotak masuk email kamu dan klik link verifikasi.')
+      } else {
+        setError('Email atau password salah. Silakan coba lagi.')
+      }
     } finally {
       setLoading(false)
     }
@@ -53,18 +65,44 @@ export default function LoginPage() {
     }
   }
 
+  // ── Kirim email reset password
+  const handleForgotPassword = async (e) => {
+    e.preventDefault()
+    setForgotLoading(true)
+    setForgotError('')
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
+        redirectTo: `https://warungku-one.vercel.app/auth/reset-password`,
+      })
+      if (error) throw error
+      setForgotSuccess(true)
+    } catch (err) {
+      setForgotError(err.message || 'Gagal mengirim email. Coba beberapa saat lagi.')
+    } finally {
+      setForgotLoading(false)
+    }
+  }
+
+  const closeForgot = () => {
+    setShowForgot(false)
+    setForgotEmail('')
+    setForgotError('')
+    setForgotSuccess(false)
+  }
+
   return (
     <div className="h-screen flex flex-col overflow-hidden" style={{
       background: 'linear-gradient(160deg, #1d4ed8 0%, #1e40af 60%, #1e3a8a 100%)',
     }}>
 
-      {/* ── Brand header (ringkas) ── */}
+      {/* ── Brand header ── */}
       <div className="text-center pt-5 pb-3 flex-shrink-0">
         <h1 className="text-2xl font-extrabold text-white tracking-tight">WarungKu</h1>
         <p className="text-blue-200 text-xs mt-0.5">Aplikasi manajemen warung mudah &amp; lengkap</p>
       </div>
 
-      {/* ── Card utama (flex-1, tidak overflow) ── */}
+      {/* ── Card utama ── */}
       <div className="flex-1 flex flex-col px-4 pb-4 min-h-0">
         <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm mx-auto flex flex-col overflow-hidden h-full">
 
@@ -79,10 +117,8 @@ export default function LoginPage() {
             />
           </div>
 
-          {/* Konten scrollable jika perlu, tapi dirancang muat */}
           <div className="flex-1 overflow-y-auto px-5 py-4">
 
-            {/* Feature list — horizontal compact */}
             <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 mb-4">
               {[
                 'Kelola stok barang',
@@ -180,7 +216,14 @@ export default function LoginPage() {
                       className="w-3.5 h-3.5 rounded border-gray-300 text-blue-600" />
                     <span className="text-xs text-gray-600">Ingat saya</span>
                   </label>
-                  <a href="#" className="text-xs text-blue-600 font-semibold hover:underline">Lupa password?</a>
+                  {/* FIXED: sekarang membuka modal lupa password */}
+                  <button
+                    type="button"
+                    onClick={() => setShowForgot(true)}
+                    className="text-xs text-blue-600 font-semibold hover:underline"
+                  >
+                    Lupa password?
+                  </button>
                 </div>
 
                 <button type="submit" disabled={loading || loadingGoogle}
@@ -244,6 +287,90 @@ export default function LoginPage() {
         </div>
       </div>
 
+      {/* ── MODAL LUPA PASSWORD ── */}
+      {showForgot && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl p-6">
+
+            {forgotSuccess ? (
+              // Tampilan setelah email terkirim
+              <div className="text-center py-2">
+                <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <svg className="w-7 h-7 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                      d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-bold text-gray-900 mb-1">Email Terkirim!</h3>
+                <p className="text-gray-500 text-sm mb-1">Link reset password dikirim ke:</p>
+                <p className="font-semibold text-blue-700 text-sm mb-3">{forgotEmail}</p>
+                <p className="text-gray-400 text-xs leading-relaxed mb-5">
+                  Cek kotak masuk email kamu dan klik link di dalamnya.
+                  Cek juga folder <strong>Spam</strong> jika tidak muncul.
+                  Link berlaku <strong>1 jam</strong>.
+                </p>
+                <button
+                  onClick={closeForgot}
+                  className="w-full bg-blue-700 hover:bg-blue-800 text-white py-3 rounded-xl font-bold text-sm transition-colors"
+                >
+                  Tutup
+                </button>
+              </div>
+            ) : (
+              // Form input email
+              <>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold text-gray-900">Lupa Password?</h3>
+                  <button
+                    onClick={closeForgot}
+                    className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <p className="text-gray-500 text-sm mb-4 leading-relaxed">
+                  Masukkan email akun kamu. Kami akan kirim link untuk reset password.
+                </p>
+
+                {forgotError && (
+                  <div className="bg-red-50 border border-red-200 text-red-600 px-3 py-2 rounded-xl text-xs mb-3">
+                    ⚠️ {forgotError}
+                  </div>
+                )}
+
+                <form onSubmit={handleForgotPassword} className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Email</label>
+                    <input
+                      type="email"
+                      placeholder="email@contoh.com"
+                      className="input-field text-sm"
+                      value={forgotEmail}
+                      onChange={e => setForgotEmail(e.target.value)}
+                      required
+                      autoFocus
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={forgotLoading}
+                    className="w-full bg-blue-700 hover:bg-blue-800 text-white py-3 rounded-xl font-bold text-sm transition-colors disabled:opacity-60"
+                  >
+                    {forgotLoading ? 'Mengirim...' : 'Kirim Link Reset'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={closeForgot}
+                    className="w-full border border-gray-200 text-gray-600 py-2.5 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors"
+                  >
+                    Batal
+                  </button>
+                </form>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
