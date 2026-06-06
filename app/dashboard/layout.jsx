@@ -173,18 +173,18 @@ export default function DashboardLayout({ children }) {
         if (profile?.cabang?.nama) setCabang(profile.cabang.nama)
       } catch {}
 
-      // #3 Fix: fetch notifikasi stok rendah
+      // #3 Fix: fetch notifikasi stok rendah (API sudah filter stok <= stok_minimum)
       try {
-        const res  = await fetch('/api/barang?stok=rendah&limit=50')
+        const res  = await fetch('/api/barang?stok=rendah')
         const json = await res.json()
-        const stokRendah = (json.data || []).filter(b => b.stok <= b.stok_minimum)
+        const stokRendah = json.data || []
         if (stokRendah.length > 0) {
           setNotifs(stokRendah.map(b => ({
             id:   b.id,
             type: b.stok === 0 ? 'habis' : 'rendah',
             msg:  b.stok === 0
               ? `${b.nama} — stok habis!`
-              : `${b.nama} — sisa ${b.stok} ${b.satuan}`,
+              : `${b.nama} — sisa ${b.stok} ${b.satuan || 'pcs'} (min. ${b.stok_minimum})`,
           })))
         }
       } catch {}
