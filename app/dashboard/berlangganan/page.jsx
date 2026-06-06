@@ -8,7 +8,7 @@ export default function BerlanggananPage() {
   const [subStatus, setSubStatus]     = useState(null)   // { active, plan, expired_at }
   const [subLoading, setSubLoading]   = useState(false)
   const [orderData, setOrderData]     = useState(null)   // { qr_url, order_id, amount, expires_at }
-  const [paying, setPaying]           = useState(false)
+  const [payingPlan, setPayingPlan]   = useState(null) // 'basic' | 'pro' | null
   const [pollMsg, setPollMsg]         = useState('')
   const pollRef = useRef(null)
 
@@ -29,7 +29,7 @@ export default function BerlanggananPage() {
   }, [])
 
   const handleBuPaket = async (plan) => {
-    setPaying(true)
+    setPayingPlan(plan)
     setOrderData(null)
     setPollMsg('')
     try {
@@ -43,7 +43,7 @@ export default function BerlanggananPage() {
       setOrderData(json)
       startPolling(json.order_id)
     } catch { alert('Gagal terhubung ke server') }
-    finally { setPaying(false) }
+    finally { setPayingPlan(null) }
   }
 
   const startPolling = (orderId) => {
@@ -170,13 +170,13 @@ export default function BerlanggananPage() {
               </ul>
               <button
                 onClick={() => handleBuPaket('basic')}
-                disabled={paying || subStatus?.plan === 'basic' || subStatus?.plan === 'pro'}
+                disabled={payingPlan !== null || subStatus?.plan === 'basic' || subStatus?.plan === 'pro'}
                 className={`w-full py-2.5 rounded-xl font-bold text-sm transition-colors
-                  ${paying || subStatus?.plan === 'basic' || subStatus?.plan === 'pro'
+                  ${payingPlan !== null || subStatus?.plan === 'basic' || subStatus?.plan === 'pro'
                     ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                     : 'bg-blue-700 hover:bg-blue-800 text-white'}`}
               >
-                {paying ? 'Memproses...' : subStatus?.plan === 'basic' ? 'Sudah Aktif' : subStatus?.plan === 'pro' ? 'Tidak Bisa Downgrade' : 'Pilih Basic'}
+                {payingPlan === 'basic' ? 'Memproses...' : subStatus?.plan === 'basic' ? 'Sudah Aktif' : subStatus?.plan === 'pro' ? 'Tidak Bisa Downgrade' : 'Pilih Basic'}
               </button>
             </div>
 
@@ -203,13 +203,13 @@ export default function BerlanggananPage() {
               </ul>
               <button
                 onClick={() => handleBuPaket('pro')}
-                disabled={paying || subStatus?.plan === 'pro'}
+                disabled={payingPlan !== null || subStatus?.plan === 'pro'}
                 className={`w-full py-2.5 rounded-xl font-bold text-sm transition-colors
-                  ${paying || subStatus?.plan === 'pro'
+                  ${payingPlan !== null || subStatus?.plan === 'pro'
                     ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                     : 'bg-blue-700 hover:bg-blue-800 text-white'}`}
               >
-                {paying ? 'Memproses...' : subStatus?.plan === 'pro' ? 'Sudah Aktif' : 'Pilih Pro'}
+                {payingPlan === 'pro' ? 'Memproses...' : subStatus?.plan === 'pro' ? 'Sudah Aktif' : 'Pilih Pro'}
               </button>
             </div>
 
