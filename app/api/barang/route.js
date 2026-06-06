@@ -44,7 +44,17 @@ export async function GET(request) {
 
     if (search)   query = query.ilike('nama', `%${search}%`)
     if (kategori) query = query.eq('kategori_id', kategori)
-    if (stokFilter === 'rendah') query = query.lte('stok', 10).gt('stok', 0)
+    // stok=rendah: fetch semua tanpa pagination lalu filter server-side stok <= stok_minimum
+    if (stokFilter === 'rendah') {
+      const { data: semua, error: errSemua } = await supabase
+        .from('barang')
+        .select('*, kategori(id, nama)')
+        .eq('is_active', true)
+        .gt('stok', 0)
+      if (errSemua) throw errSemua
+      const rendah = (semua || []).filter(b => b.stok <= (b.stok_minimum ?? 5))
+      return NextResponse.json({ data: rendah, total: rendah.length, page: 1, limit: rendah.length })
+    }
     if (stokFilter === 'habis')  query = query.eq('stok', 0)
 
     const { data, error, count } = await query
