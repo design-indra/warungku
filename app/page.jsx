@@ -1,13 +1,10 @@
-'use client'
-
-import React from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 
 const FEATURES = [
-  { icon: '🛒', title: 'Kasir POS', desc: 'Proses transaksi cepat, hitung kembalian otomatis, cetak atau share struk lewat WhatsApp.' },
-  { icon: '📦', title: 'Manajemen Stok', desc: 'CRUD barang lengkap, scan barcode pabrikan, alert stok menipis, import CSV/XLS.' },
-  { icon: '📊', title: 'Laporan Lengkap', desc: 'Omzet harian, mingguan, bulanan. Laba kotor & barang terlaris setiap saat.' },
+  { icon: '🛒', title: 'Kasir POS', desc: 'Proses transaksi cepat, hitung kembalian otomatis, share struk lewat WhatsApp.' },
+  { icon: '📦', title: 'Manajemen Stok', desc: 'CRUD barang lengkap, alert stok menipis, import CSV/XLS.' },
+  { icon: '📊', title: 'Laporan Lengkap', desc: 'Omzet harian, mingguan, bulanan. Laba kotor & barang terlaris.' },
   { icon: '👥', title: 'Hutang Pelanggan', desc: 'Catat hutang, bayar sebagian, riwayat per pelanggan secara rapi.' },
   { icon: '🏪', title: 'Multi Cabang', desc: 'Kelola lebih dari satu cabang warung dari satu akun terpusat.' },
   { icon: '📱', title: 'Install di HP', desc: 'Bisa diinstall seperti aplikasi native di Android dan iOS (PWA).' },
@@ -51,15 +48,15 @@ const PLANS = [
 
 const REVIEWS = [
   { name: 'Sari Dewi', role: 'Warung Sembako, Surabaya', avatar: 'SD', stars: 5,
-    text: 'WarungKu beneran ngebantu banget! Dulu nyatat hutang pelanggan di buku, sering kelewat. Sekarang semua tercatat rapi dan bisa dicek kapan aja dari HP.' },
+    text: 'WarungKu beneran ngebantu banget! Dulu nyatat hutang pelanggan di buku, sering kelewat. Sekarang semua tercatat rapi dari HP.' },
   { name: 'Budi Santoso', role: 'Toko Kelontong, Malang', avatar: 'BS', stars: 5,
-    text: 'Laporan hariannya keren, langsung tahu untung berapa. Fitur kasirnya simpel, karyawan saya langsung bisa pakai tanpa diajari lama.' },
+    text: 'Laporan hariannya keren, langsung tahu untung berapa. Fitur kasirnya simpel, karyawan langsung bisa pakai tanpa diajari lama.' },
   { name: 'Rina Marlina', role: 'Warung Makan, Bandung', avatar: 'RM', stars: 5,
-    text: 'Paket Basic harganya terjangkau banget untuk fitur selengkap ini. Manajemen stok bumbu jadi jauh lebih gampang, ga pernah kehabisan stok lagi.' },
+    text: 'Paket Basic harganya terjangkau banget untuk fitur selengkap ini. Manajemen stok bumbu jadi jauh lebih gampang.' },
   { name: 'Hendra Wijaya', role: 'Mini Market, Jakarta', avatar: 'HW', stars: 5,
-    text: 'Sudah coba beberapa aplikasi kasir lain, WarungKu yang paling ringan dan mudah dipakai. Bisa install di HP juga jadi praktis banget buat usaha saya.' },
+    text: 'Sudah coba beberapa aplikasi kasir lain, WarungKu yang paling ringan dan mudah dipakai. Bisa install di HP juga praktis!' },
   { name: 'Fitri Handayani', role: 'Toko Sembako, Yogyakarta', avatar: 'FH', stars: 5,
-    text: 'Awalnya ragu karena gratis, tapi ternyata fiturnya lengkap! Upgrade ke Basic setelah sebulan pakai, dan tidak menyesal sama sekali. Recommended!' },
+    text: 'Awalnya ragu karena gratis, tapi ternyata fiturnya lengkap! Upgrade ke Basic setelah sebulan pakai, tidak menyesal!' },
 ]
 
 const STATS = [
@@ -71,422 +68,383 @@ const STATS = [
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen" style={{ fontFamily: "'Instrument Sans', 'DM Sans', sans-serif", background: '#0a0a0f', color: '#e8e6f0' }}>
+    <div style={{ fontFamily: "'DM Sans', sans-serif", background: '#EFF6FF', color: '#1e3a5f', minHeight: '100vh', overflowX: 'hidden' }}>
 
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap');
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
 
         :root {
-          --gold: #c9a84c;
-          --gold-light: #e8c97a;
-          --gold-dim: #7a6130;
-          --surface: #13121a;
-          --surface-2: #1a1826;
-          --surface-3: #211f2e;
-          --border: rgba(201,168,76,0.15);
-          --border-soft: rgba(255,255,255,0.07);
-          --text-muted: #7c7a8e;
-          --text-dim: #4a4860;
-          --radius: 16px;
-          --radius-sm: 10px;
+          --blue-900: #1e3a8a;
+          --blue-800: #1e40af;
+          --blue-700: #1d4ed8;
+          --blue-600: #2563eb;
+          --blue-500: #3b82f6;
+          --blue-100: #dbeafe;
+          --blue-50:  #eff6ff;
+          --white:    #ffffff;
+          --gray-50:  #f8fafc;
+          --gray-100: #f1f5f9;
+          --gray-400: #94a3b8;
+          --gray-600: #475569;
+          --gray-800: #1e293b;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-
-        /* Noise overlay */
-        body::before {
-          content: '';
-          position: fixed; inset: 0; z-index: 0;
-          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.035'/%3E%3C/svg%3E");
-          pointer-events: none;
-        }
-
-        .serif { font-family: 'Instrument Serif', Georgia, serif; }
-        .serif-italic { font-family: 'Instrument Serif', Georgia, serif; font-style: italic; }
-
-        /* Glow orbs */
-        .orb {
-          position: absolute; border-radius: 50%;
-          filter: blur(120px); pointer-events: none;
-        }
-
-        /* Glass card */
-        .glass {
-          background: rgba(255,255,255,0.03);
-          border: 0.5px solid var(--border-soft);
-          backdrop-filter: blur(20px);
-          -webkit-backdrop-filter: blur(20px);
-        }
-
-        .glass-gold {
-          background: linear-gradient(135deg, rgba(201,168,76,0.06), rgba(201,168,76,0.02));
-          border: 0.5px solid var(--border);
-        }
-
-        /* Gold gradient text */
-        .text-gold {
-          background: linear-gradient(135deg, #e8c97a 0%, #c9a84c 50%, #a07d2a 100%);
-          -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-          background-clip: text;
-        }
-
-        /* Premium button */
-        .btn-gold {
-          background: linear-gradient(135deg, #c9a84c, #a07d2a);
-          color: #0a0a0f;
-          font-weight: 700;
-          border: none;
-          position: relative;
-          overflow: hidden;
-          transition: all 0.3s ease;
-        }
-        .btn-gold::before {
-          content: '';
-          position: absolute; inset: 0;
-          background: linear-gradient(135deg, #e8c97a, #c9a84c);
-          opacity: 0; transition: opacity 0.3s;
-        }
-        .btn-gold:hover::before { opacity: 1; }
-        .btn-gold:hover { transform: translateY(-1px); box-shadow: 0 12px 32px rgba(201,168,76,0.35); }
-
-        .btn-outline {
-          background: transparent;
-          border: 0.5px solid var(--border);
-          color: var(--gold-light);
-          transition: all 0.3s;
-        }
-        .btn-outline:hover {
-          background: rgba(201,168,76,0.08);
-          border-color: var(--gold);
-          transform: translateY(-1px);
-        }
-
-        /* Divider line */
-        .divider {
-          width: 48px; height: 1px;
-          background: linear-gradient(90deg, transparent, var(--gold), transparent);
-        }
-
-        /* Shimmer badge */
-        .badge-premium {
-          background: linear-gradient(135deg, rgba(201,168,76,0.15), rgba(201,168,76,0.05));
-          border: 0.5px solid var(--border);
-          color: var(--gold-light);
-          font-size: 11px;
-          font-weight: 600;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-          padding: 6px 16px;
-          border-radius: 100px;
-        }
-
-        /* Feature card */
-        .feature-card {
-          background: var(--surface);
-          border: 0.5px solid var(--border-soft);
-          border-radius: var(--radius);
-          padding: 28px;
-          transition: all 0.3s ease;
-          position: relative;
-          overflow: hidden;
-        }
-        .feature-card::before {
-          content: '';
-          position: absolute; top: 0; left: 0; right: 0; height: 1px;
-          background: linear-gradient(90deg, transparent, rgba(201,168,76,0.4), transparent);
-          opacity: 0; transition: opacity 0.3s;
-        }
-        .feature-card:hover {
-          border-color: var(--border);
-          background: var(--surface-2);
-          transform: translateY(-3px);
-        }
-        .feature-card:hover::before { opacity: 1; }
-
-        /* Stat separator */
-        .stat-sep { width: 1px; background: var(--border-soft); align-self: stretch; }
-
-        /* Review card */
-        .review-card {
-          background: var(--surface);
-          border: 0.5px solid var(--border-soft);
-          border-radius: var(--radius);
-          padding: 24px;
-          transition: border-color 0.3s;
-        }
-        .review-card:hover { border-color: var(--border); }
-
-        /* Pricing card */
-        .plan-card {
-          background: var(--surface);
-          border: 0.5px solid var(--border-soft);
-          border-radius: 20px;
-          padding: 32px 28px;
-          transition: all 0.3s;
-        }
-        .plan-card:hover { border-color: var(--border); }
-        .plan-popular {
-          background: linear-gradient(160deg, #1c1a2a 0%, #14121e 100%);
-          border: 1px solid var(--gold-dim);
-          position: relative;
-          overflow: hidden;
-        }
-        .plan-popular::before {
-          content: '';
-          position: absolute; top: 0; left: 0; right: 0; height: 1px;
-          background: linear-gradient(90deg, transparent, var(--gold), transparent);
-        }
-
-        /* Avatar ring */
-        .avatar {
-          width: 40px; height: 40px; border-radius: 50%;
-          background: linear-gradient(135deg, var(--gold-dim), #2a2518);
-          border: 1px solid var(--border);
-          display: flex; align-items: center; justify-content: center;
-          font-size: 12px; font-weight: 700;
-          color: var(--gold-light);
-          flex-shrink: 0;
-        }
-
-        /* Nav */
+        /* NAVBAR */
         .navbar {
           position: sticky; top: 0; z-index: 100;
-          background: rgba(10,10,15,0.85);
-          border-bottom: 0.5px solid var(--border-soft);
-          backdrop-filter: blur(24px);
-          -webkit-backdrop-filter: blur(24px);
+          background: rgba(255,255,255,0.9);
+          border-bottom: 1px solid #dbeafe;
+          backdrop-filter: blur(16px);
+          -webkit-backdrop-filter: blur(16px);
+        }
+        .nav-inner {
+          max-width: 1100px; margin: 0 auto;
+          padding: 0 20px;
+          display: flex; align-items: center; justify-content: space-between;
+          height: 60px;
         }
 
-        /* Section label */
-        .section-eyebrow {
+        /* BUTTONS */
+        .btn-primary {
+          background: var(--blue-700);
+          color: #fff;
+          font-weight: 700;
+          font-size: 14px;
+          padding: 12px 28px;
+          border-radius: 100px;
+          text-decoration: none;
+          display: inline-block;
+          transition: all 0.2s;
+          border: none; cursor: pointer;
+          white-space: nowrap;
+        }
+        .btn-primary:hover { background: var(--blue-800); transform: translateY(-1px); box-shadow: 0 8px 24px rgba(29,78,216,0.3); }
+
+        .btn-secondary {
+          background: transparent;
+          color: var(--blue-700);
+          font-weight: 600;
+          font-size: 14px;
+          padding: 12px 24px;
+          border-radius: 100px;
+          text-decoration: none;
+          display: inline-block;
+          border: 1.5px solid var(--blue-700);
+          transition: all 0.2s;
+          white-space: nowrap;
+        }
+        .btn-secondary:hover { background: var(--blue-50); }
+
+        .btn-ghost {
+          color: var(--gray-600);
+          font-size: 14px;
+          font-weight: 500;
+          padding: 8px 16px;
+          border-radius: 100px;
+          text-decoration: none;
+          transition: all 0.2s;
+        }
+        .btn-ghost:hover { color: var(--blue-700); background: var(--blue-50); }
+
+        /* SECTION */
+        .section { padding: 80px 20px; }
+        .section-sm { padding: 48px 20px; }
+        .container { max-width: 1100px; margin: 0 auto; }
+        .container-sm { max-width: 760px; margin: 0 auto; }
+
+        /* EYEBROW */
+        .eyebrow {
           display: inline-flex; align-items: center; gap: 8px;
-          font-size: 11px; font-weight: 600;
-          letter-spacing: 0.12em; text-transform: uppercase;
-          color: var(--gold);
+          font-size: 11px; font-weight: 700;
+          letter-spacing: 0.1em; text-transform: uppercase;
+          color: var(--blue-600);
+          background: var(--blue-100);
+          padding: 5px 14px; border-radius: 100px;
           margin-bottom: 16px;
         }
-        .section-eyebrow::before, .section-eyebrow::after {
-          content: ''; display: block;
-          width: 24px; height: 0.5px;
-          background: var(--gold-dim);
+
+        /* SECTION TITLE */
+        .section-title {
+          font-size: clamp(1.8rem, 4vw, 2.6rem);
+          font-weight: 800;
+          color: var(--gray-800);
+          letter-spacing: -0.03em;
+          line-height: 1.15;
+          margin-bottom: 16px;
+        }
+        .section-title span { color: var(--blue-700); }
+        .section-sub {
+          color: var(--gray-600);
+          font-size: 15px;
+          line-height: 1.7;
+          max-width: 520px;
         }
 
-        /* Scroll reviews */
-        .reviews-grid {
+        /* CARDS */
+        .card {
+          background: #fff;
+          border: 1px solid #e2e8f0;
+          border-radius: 20px;
+          padding: 28px;
+          transition: all 0.2s;
+        }
+        .card:hover { border-color: var(--blue-500); box-shadow: 0 8px 32px rgba(37,99,235,0.1); transform: translateY(-2px); }
+
+        /* FEATURE GRID */
+        .feature-grid {
           display: grid;
           grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
           gap: 16px;
         }
 
-        /* Footer */
-        .footer-link { color: var(--text-muted); font-size: 13px; text-decoration: none; transition: color 0.2s; }
-        .footer-link:hover { color: var(--gold-light); }
-
-        /* Floating animation */
-        @keyframes floatY { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
-        @keyframes rotateSlow { from{transform:rotate(0)} to{transform:rotate(360deg)} }
-        @keyframes pulseGlow { 0%,100%{opacity:0.3} 50%{opacity:0.6} }
-        .float-anim { animation: floatY 7s ease-in-out infinite; }
-        .pulse-orb { animation: pulseGlow 4s ease-in-out infinite; }
-
-        /* Mock card shine */
-        @keyframes shimmer {
-          0% { transform: translateX(-100%) skewX(-15deg); }
-          100% { transform: translateX(200%) skewX(-15deg); }
+        /* PRICING GRID */
+        .pricing-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 16px;
+          align-items: start;
         }
-        .shimmer-line {
+        .plan-card {
+          background: #fff;
+          border: 1.5px solid #e2e8f0;
+          border-radius: 24px;
+          padding: 28px 24px;
+          transition: all 0.2s;
+        }
+        .plan-card:hover { border-color: var(--blue-500); box-shadow: 0 8px 32px rgba(37,99,235,0.1); }
+        .plan-popular {
+          background: var(--blue-700);
+          border-color: var(--blue-700);
+          color: #fff;
+          position: relative;
+        }
+        .plan-popular:hover { box-shadow: 0 12px 40px rgba(29,78,216,0.35); }
+
+        /* REVIEW GRID */
+        .review-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+          gap: 16px;
+        }
+        .review-card {
+          background: #fff;
+          border: 1px solid #e2e8f0;
+          border-radius: 20px;
+          padding: 24px;
+        }
+
+        /* AVATAR */
+        .avatar {
+          width: 40px; height: 40px; border-radius: 50%;
+          background: var(--blue-100);
+          border: 2px solid var(--blue-200, #bfdbfe);
+          display: flex; align-items: center; justify-content: center;
+          font-size: 12px; font-weight: 800;
+          color: var(--blue-700);
+          flex-shrink: 0;
+        }
+
+        /* STATS */
+        .stats-row {
+          display: flex; justify-content: center;
+          flex-wrap: wrap; gap: 0;
+        }
+        .stat-item { flex: 1; min-width: 140px; text-align: center; padding: 20px 24px; }
+        .stat-sep { width: 1px; background: #dbeafe; align-self: stretch; }
+
+        /* HERO MOCK */
+        .hero-mock {
+          background: #fff;
+          border: 1.5px solid #dbeafe;
+          border-radius: 24px;
+          padding: 24px;
+          box-shadow: 0 24px 64px rgba(29,78,216,0.12);
+        }
+
+        /* HERO */
+        .hero-section {
+          background: linear-gradient(160deg, #1e3a8a 0%, #1d4ed8 50%, #2563eb 100%);
+          position: relative;
+          overflow: hidden;
+          padding: 80px 20px 100px;
+        }
+        .hero-section::before {
+          content: '';
           position: absolute; inset: 0;
-          background: linear-gradient(90deg, transparent 30%, rgba(201,168,76,0.07) 50%, transparent 70%);
-          animation: shimmer 3s infinite;
-          pointer-events: none;
+          background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
         }
 
-        @media (max-width: 640px) {
-          .hero-title { font-size: 2.4rem !important; }
-          .stats-row { flex-wrap: wrap; }
+        @keyframes floatY { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+        .float-anim { animation: floatY 6s ease-in-out infinite; }
+
+        /* MOBILE */
+        @media (max-width: 768px) {
+          .hero-grid { grid-template-columns: 1fr !important; }
+          .hero-mock-wrap { display: none; }
+          .pricing-grid { grid-template-columns: 1fr !important; }
+          .nav-links { display: none; }
+          .section { padding: 60px 20px; }
+          .hero-section { padding: 60px 20px 80px; }
           .stat-sep { display: none; }
-          .plan-popular { transform: none !important; }
+        }
+
+        @media (max-width: 480px) {
+          .section { padding: 48px 16px; }
+          .hero-section { padding: 48px 16px 64px; }
+          .btn-primary, .btn-secondary { font-size: 13px; padding: 11px 22px; }
+          .card { padding: 20px; }
+          .plan-card { padding: 24px 20px; }
         }
       `}</style>
 
       {/* ── NAVBAR ── */}
       <nav className="navbar">
-        <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 64 }}>
+        <div className="nav-inner">
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <Image src="/assets/logo.png" alt="WarungKu" width={32} height={32} style={{ borderRadius: 8 }} />
-            <span style={{ fontSize: 17, fontWeight: 700, color: '#fff', letterSpacing: '-0.02em' }}>WarungKu</span>
+            <span style={{ fontSize: 17, fontWeight: 800, color: 'var(--blue-800)', letterSpacing: '-0.02em' }}>WarungKu</span>
+          </div>
+          <div className="nav-links" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <a href="#fitur" className="btn-ghost">Fitur</a>
+            <a href="#harga" className="btn-ghost">Harga</a>
+            <a href="#ulasan" className="btn-ghost">Ulasan</a>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Link href="/auth/login" style={{ padding: '8px 18px', borderRadius: 100, fontSize: 13, fontWeight: 500, color: 'var(--text-muted)', textDecoration: 'none', transition: 'color 0.2s' }}
-              onMouseEnter={e => e.target.style.color='var(--gold-light)'}
-              onMouseLeave={e => e.target.style.color='var(--text-muted)'}>
-              Masuk
-            </Link>
-            <Link href="/auth/register" className="btn-gold" style={{ padding: '9px 22px', borderRadius: 100, fontSize: 13, textDecoration: 'none', display: 'inline-block', position: 'relative', zIndex: 1 }}>
-              <span style={{ position: 'relative', zIndex: 1 }}>Daftar Gratis →</span>
-            </Link>
+            <Link href="/auth/login" className="btn-ghost">Masuk</Link>
+            <Link href="/auth/register" className="btn-primary" style={{ padding: '9px 20px', fontSize: 13 }}>Daftar Gratis →</Link>
           </div>
         </div>
       </nav>
 
       {/* ── HERO ── */}
-      <section style={{ position: 'relative', minHeight: '100vh', display: 'flex', alignItems: 'center', overflow: 'hidden', padding: '80px 24px' }}>
-        {/* Orbs */}
-        <div className="orb pulse-orb" style={{ width: 600, height: 600, background: 'radial-gradient(circle, rgba(201,168,76,0.12), transparent 70%)', top: '-150px', left: '-150px' }} />
-        <div className="orb pulse-orb" style={{ width: 500, height: 500, background: 'radial-gradient(circle, rgba(99,76,201,0.1), transparent 70%)', bottom: '-100px', right: '-100px', animationDelay: '2s' }} />
-        <div className="orb" style={{ width: 300, height: 300, background: 'radial-gradient(circle, rgba(201,168,76,0.06), transparent 70%)', top: '40%', left: '55%' }} />
+      <section className="hero-section">
+        {/* Dekorasi bulatan */}
+        <div style={{ position: 'absolute', width: 500, height: 500, borderRadius: '50%', background: 'rgba(255,255,255,0.04)', top: -150, right: -100, pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', width: 300, height: 300, borderRadius: '50%', background: 'rgba(255,255,255,0.03)', bottom: -80, left: -60, pointerEvents: 'none' }} />
 
-        <div style={{ maxWidth: 1100, margin: '0 auto', width: '100%', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 60, alignItems: 'center', position: 'relative', zIndex: 1 }}>
+        <div className="container">
+          <div className="hero-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 60, alignItems: 'center', position: 'relative', zIndex: 1 }}>
 
-          {/* Left: Text */}
-          <div>
-            <div className="section-eyebrow">Manajemen Warung Modern</div>
-            <h1 className="hero-title serif" style={{ fontSize: '3.6rem', lineHeight: 1.1, fontWeight: 400, color: '#f5f3ff', marginBottom: 20, letterSpacing: '-0.02em' }}>
-              Warungmu Makin<br />
-              <span className="serif-italic text-gold">Maju & Cerdas</span>
-            </h1>
-            <p style={{ fontSize: 16, color: 'var(--text-muted)', lineHeight: 1.75, marginBottom: 36, maxWidth: 440 }}>
-              Kasir POS, stok barang, hutang pelanggan, laporan lengkap — semua dalam satu aplikasi premium. Bisa install di HP kamu!
-            </p>
-            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 48 }}>
-              <Link href="/auth/register" className="btn-gold" style={{ padding: '14px 32px', borderRadius: 100, fontSize: 14, textDecoration: 'none', display: 'inline-block', position: 'relative', zIndex: 1 }}>
-                <span style={{ position: 'relative', zIndex: 1 }}>Mulai Gratis Sekarang →</span>
-              </Link>
-              <Link href="/auth/login" className="btn-outline" style={{ padding: '14px 28px', borderRadius: 100, fontSize: 14, fontWeight: 500, textDecoration: 'none', display: 'inline-block' }}>
-                Sudah punya akun
-              </Link>
+            {/* Left */}
+            <div>
+              <div className="eyebrow" style={{ background: 'rgba(255,255,255,0.15)', color: '#fff' }}>
+                🏪 Manajemen Warung Modern
+              </div>
+              <h1 style={{ fontSize: 'clamp(2.2rem, 5vw, 3.4rem)', fontWeight: 800, color: '#fff', lineHeight: 1.1, letterSpacing: '-0.03em', marginBottom: 20 }}>
+                Warungmu Makin<br />
+                <span style={{ color: '#93c5fd' }}>Maju & Cerdas</span>
+              </h1>
+              <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.75)', lineHeight: 1.75, marginBottom: 36, maxWidth: 440 }}>
+                Kasir POS, stok barang, hutang pelanggan, laporan lengkap — semua dalam satu aplikasi. Bisa install di HP kamu!
+              </p>
+              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 36 }}>
+                <Link href="/auth/register" style={{ background: '#fff', color: 'var(--blue-700)', fontWeight: 800, fontSize: 14, padding: '13px 28px', borderRadius: 100, textDecoration: 'none', transition: 'all 0.2s', display: 'inline-block', whiteSpace: 'nowrap' }}>
+                  Mulai Gratis →
+                </Link>
+                <Link href="/auth/login" style={{ background: 'rgba(255,255,255,0.12)', color: '#fff', fontWeight: 600, fontSize: 14, padding: '13px 24px', borderRadius: 100, textDecoration: 'none', border: '1.5px solid rgba(255,255,255,0.25)', display: 'inline-block', whiteSpace: 'nowrap' }}>
+                  Sudah punya akun
+                </Link>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
+                {['✓ Gratis selamanya', '✓ Tanpa kartu kredit', '✓ Setup 2 menit'].map(t => (
+                  <span key={t} style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}>{t}</span>
+                ))}
+              </div>
             </div>
-            {/* Trust badges */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
-              {['✓ Gratis selamanya', '✓ Tanpa kartu kredit', '✓ Setup 2 menit'].map(t => (
-                <span key={t} style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 500 }}>{t}</span>
-              ))}
-            </div>
-          </div>
 
-          {/* Right: Mock dashboard */}
-          <div className="float-anim" style={{ position: 'relative' }}>
-            <div className="glass-gold" style={{ borderRadius: 24, padding: 24, position: 'relative', overflow: 'hidden' }}>
-              <div className="shimmer-line" />
-
-              {/* Dashboard header */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                <div>
-                  <p style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 4 }}>Total Omzet Hari Ini</p>
-                  <p className="serif text-gold" style={{ fontSize: '2rem', fontWeight: 400 }}>Rp 1.250.000</p>
+            {/* Right: Mock dashboard */}
+            <div className="hero-mock-wrap float-anim">
+              <div className="hero-mock">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                  <div>
+                    <p style={{ fontSize: 11, color: 'var(--gray-400)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Total Omzet Hari Ini</p>
+                    <p style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--blue-700)', letterSpacing: '-0.02em' }}>Rp 1.250.000</p>
+                  </div>
+                  <div style={{ padding: 12, borderRadius: 14, background: 'var(--blue-50)', fontSize: 22 }}>📈</div>
                 </div>
-                <div style={{ padding: 12, borderRadius: 12, background: 'rgba(201,168,76,0.1)', border: '0.5px solid var(--border)', fontSize: 22 }}>📈</div>
-              </div>
-
-              {/* Stats row */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10, marginBottom: 20 }}>
-                {[['42', 'Transaksi', '↑ 12%'], ['18', 'Produk Terjual', '↑ 8%'], ['3', 'Hutang Baru', '→ Sama']].map(([v, l, ch]) => (
-                  <div key={l} style={{ background: 'rgba(255,255,255,0.03)', border: '0.5px solid var(--border-soft)', borderRadius: 12, padding: '12px 14px' }}>
-                    <p style={{ fontSize: 20, fontWeight: 700, color: '#f5f3ff', lineHeight: 1 }}>{v}</p>
-                    <p style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 3 }}>{l}</p>
-                    <p style={{ fontSize: 10, color: 'var(--gold)', marginTop: 2, fontWeight: 600 }}>{ch}</p>
-                  </div>
-                ))}
-              </div>
-
-              {/* Recent transactions */}
-              <div style={{ borderTop: '0.5px solid var(--border-soft)', paddingTop: 16 }}>
-                <p style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 12 }}>Transaksi Terbaru</p>
-                {[
-                  ['Indomie Goreng', '2x', 'Rp 7.000'],
-                  ['Aqua 600ml', '1x', 'Rp 4.000'],
-                  ['Rokok Surya 12', '1x', 'Rp 24.000'],
-                ].map(([name, qty, price]) => (
-                  <div key={name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '0.5px solid var(--border-soft)' }}>
-                    <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                      <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--gold)' }} />
-                      <span style={{ fontSize: 12, color: '#ccc' }}>{name}</span>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10, marginBottom: 20 }}>
+                  {[['42', 'Transaksi', '↑ 12%'], ['18', 'Terjual', '↑ 8%'], ['3', 'Hutang', '→']].map(([v, l, ch]) => (
+                    <div key={l} style={{ background: 'var(--blue-50)', border: '1px solid #dbeafe', borderRadius: 12, padding: '12px' }}>
+                      <p style={{ fontSize: 20, fontWeight: 800, color: 'var(--blue-800)', lineHeight: 1 }}>{v}</p>
+                      <p style={{ fontSize: 10, color: 'var(--gray-400)', marginTop: 3 }}>{l}</p>
+                      <p style={{ fontSize: 10, color: 'var(--blue-600)', marginTop: 2, fontWeight: 700 }}>{ch}</p>
                     </div>
-                    <div style={{ display: 'flex', gap: 16 }}>
-                      <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{qty}</span>
-                      <span style={{ fontSize: 12, color: 'var(--gold-light)', fontWeight: 600 }}>{price}</span>
+                  ))}
+                </div>
+                <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 16 }}>
+                  <p style={{ fontSize: 11, color: 'var(--gray-400)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>Transaksi Terbaru</p>
+                  {[['Indomie Goreng', '2x', 'Rp 7.000'], ['Aqua 600ml', '1x', 'Rp 4.000'], ['Rokok Surya 12', '1x', 'Rp 24.000']].map(([name, qty, price]) => (
+                    <div key={name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--blue-500)', flexShrink: 0 }} />
+                        <span style={{ fontSize: 12, color: 'var(--gray-800)', fontWeight: 500 }}>{name}</span>
+                      </div>
+                      <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                        <span style={{ fontSize: 11, color: 'var(--gray-400)' }}>{qty}</span>
+                        <span style={{ fontSize: 12, color: 'var(--blue-700)', fontWeight: 700 }}>{price}</span>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
 
-            {/* Floating badge */}
-            <div className="glass-gold" style={{ position: 'absolute', top: -18, right: -18, borderRadius: 14, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 16 }}>⚡</span>
-              <div>
-                <p style={{ fontSize: 11, fontWeight: 700, color: '#f5f3ff' }}>Stok Rendah</p>
-                <p style={{ fontSize: 10, color: 'var(--gold)' }}>5 produk perlu restock</p>
-              </div>
-            </div>
-
-            {/* Floating scan badge */}
-            <div className="glass" style={{ position: 'absolute', bottom: -16, left: -16, borderRadius: 14, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 16 }}>📷</span>
-              <div>
-                <p style={{ fontSize: 11, fontWeight: 700, color: '#f5f3ff' }}>Scan Barcode</p>
-                <p style={{ fontSize: 10, color: 'var(--text-muted)' }}>Auto-isi nama produk</p>
-              </div>
-            </div>
           </div>
-
         </div>
       </section>
 
       {/* ── STATS ── */}
-      <section style={{ borderTop: '0.5px solid var(--border-soft)', borderBottom: '0.5px solid var(--border-soft)', padding: '40px 24px', position: 'relative', overflow: 'hidden' }}>
-        <div style={{ maxWidth: 800, margin: '0 auto', display: 'flex', justifyContent: 'center', gap: 0 }} className="stats-row">
-          {STATS.map((s, i) => (
-            <React.Fragment key={s.label}>
-              <div style={{ flex: 1, textAlign: 'center', padding: '0 32px' }}>
-                <p className="serif text-gold" style={{ fontSize: '2rem', fontWeight: 400, marginBottom: 6 }}>{s.value}</p>
-                <p style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase' }}>{s.label}</p>
-              </div>
-              {i < STATS.length - 1 && <div className="stat-sep" />}
-            </React.Fragment>
-          ))}
+      <section style={{ background: '#fff', borderTop: '1px solid #dbeafe', borderBottom: '1px solid #dbeafe' }}>
+        <div className="container">
+          <div className="stats-row">
+            {STATS.map((s, i) => (
+              <>
+                <div key={s.label} className="stat-item">
+                  <p style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--blue-700)', marginBottom: 4, letterSpacing: '-0.02em' }}>{s.value}</p>
+                  <p style={{ fontSize: 12, color: 'var(--gray-400)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{s.label}</p>
+                </div>
+                {i < STATS.length - 1 && <div className="stat-sep" key={`sep-${i}`} />}
+              </>
+            ))}
+          </div>
         </div>
       </section>
 
       {/* ── FEATURES ── */}
-      <section style={{ padding: '100px 24px', position: 'relative', overflow: 'hidden' }}>
-        <div className="orb" style={{ width: 500, height: 500, background: 'radial-gradient(circle, rgba(201,168,76,0.07), transparent 70%)', top: '10%', right: '-100px' }} />
-        <div style={{ maxWidth: 1100, margin: '0 auto', position: 'relative', zIndex: 1 }}>
-          <div style={{ textAlign: 'center', marginBottom: 64 }}>
-            <div className="section-eyebrow" style={{ justifyContent: 'center' }}>Fitur Lengkap</div>
-            <h2 className="serif" style={{ fontSize: '2.6rem', fontWeight: 400, color: '#f5f3ff', marginBottom: 16, letterSpacing: '-0.02em' }}>
-              Semua yang kamu<br /><span className="serif-italic text-gold">butuhkan</span>
-            </h2>
-            <p style={{ color: 'var(--text-muted)', maxWidth: 480, margin: '0 auto', lineHeight: 1.7, fontSize: 15 }}>
+      <section className="section" id="fitur" style={{ background: 'var(--blue-50)' }}>
+        <div className="container">
+          <div style={{ textAlign: 'center', marginBottom: 56 }}>
+            <div className="eyebrow" style={{ display: 'inline-flex' }}>Fitur Lengkap</div>
+            <h2 className="section-title">Semua yang kamu <span>butuhkan</span></h2>
+            <p className="section-sub" style={{ margin: '0 auto' }}>
               Dirancang khusus untuk warung sembako, toko kelontong, dan UMKM Indonesia
             </p>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
-            {FEATURES.map((f, i) => (
-              <div key={f.title} className="feature-card">
-                <div style={{ fontSize: 28, marginBottom: 16 }}>{f.icon}</div>
-                <h3 style={{ fontSize: 15, fontWeight: 600, color: '#f5f3ff', marginBottom: 8 }}>{f.title}</h3>
-                <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.7 }}>{f.desc}</p>
+          <div className="feature-grid">
+            {FEATURES.map(f => (
+              <div key={f.title} className="card">
+                <div style={{ fontSize: 28, marginBottom: 14 }}>{f.icon}</div>
+                <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--gray-800)', marginBottom: 8 }}>{f.title}</h3>
+                <p style={{ fontSize: 13, color: 'var(--gray-600)', lineHeight: 1.7 }}>{f.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── SCREENSHOT / APP PREVIEW ── */}
-      <section style={{ padding: '80px 24px', borderTop: '0.5px solid var(--border-soft)' }}>
-        <div style={{ maxWidth: 900, margin: '0 auto', textAlign: 'center' }}>
-          <div className="section-eyebrow" style={{ justifyContent: 'center' }}>Tampilan Aplikasi</div>
-          <h2 className="serif" style={{ fontSize: '2.4rem', fontWeight: 400, color: '#f5f3ff', marginBottom: 48, letterSpacing: '-0.02em' }}>
-            Desain yang <span className="serif-italic text-gold">intuitif</span> & cepat
-          </h2>
-          <div style={{ position: 'relative', borderRadius: 24, overflow: 'hidden', border: '0.5px solid var(--border)' }}>
-            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 60%, rgba(10,10,15,0.9) 100%)', zIndex: 1, pointerEvents: 'none' }} />
+      {/* ── APP PREVIEW ── */}
+      <section className="section" style={{ background: '#fff' }}>
+        <div className="container-sm" style={{ textAlign: 'center' }}>
+          <div className="eyebrow" style={{ display: 'inline-flex' }}>Tampilan Aplikasi</div>
+          <h2 className="section-title">Desain yang <span>intuitif</span> & cepat</h2>
+          <div style={{ borderRadius: 24, overflow: 'hidden', border: '1.5px solid #dbeafe', boxShadow: '0 16px 48px rgba(29,78,216,0.1)', marginTop: 32 }}>
             <Image
               src="/assets/login.png"
               alt="WarungKu App Preview"
-              width={900}
-              height={500}
+              width={900} height={500}
               style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'cover' }}
             />
           </div>
@@ -494,43 +452,46 @@ export default function LandingPage() {
       </section>
 
       {/* ── PRICING ── */}
-      <section style={{ padding: '100px 24px', position: 'relative', overflow: 'hidden' }}>
-        <div className="orb" style={{ width: 600, height: 400, background: 'radial-gradient(circle, rgba(99,76,201,0.08), transparent 70%)', bottom: '0', left: '-100px' }} />
-        <div style={{ maxWidth: 1000, margin: '0 auto', position: 'relative', zIndex: 1 }}>
-          <div style={{ textAlign: 'center', marginBottom: 64 }}>
-            <div className="section-eyebrow" style={{ justifyContent: 'center' }}>Harga Transparan</div>
-            <h2 className="serif" style={{ fontSize: '2.6rem', fontWeight: 400, color: '#f5f3ff', marginBottom: 16, letterSpacing: '-0.02em' }}>
-              Mulai gratis,<br /><span className="serif-italic text-gold">upgrade kapan saja</span>
-            </h2>
-            <p style={{ color: 'var(--text-muted)', fontSize: 15 }}>Harga terjangkau, fitur lengkap untuk semua skala usaha</p>
+      <section className="section" id="harga" style={{ background: 'var(--blue-50)' }}>
+        <div className="container">
+          <div style={{ textAlign: 'center', marginBottom: 56 }}>
+            <div className="eyebrow" style={{ display: 'inline-flex' }}>Harga Transparan</div>
+            <h2 className="section-title">Mulai gratis, <span>upgrade kapan saja</span></h2>
+            <p className="section-sub" style={{ margin: '0 auto' }}>Harga terjangkau, fitur lengkap untuk semua skala usaha</p>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, alignItems: 'start' }}>
-            {PLANS.map((plan) => (
+          <div className="pricing-grid">
+            {PLANS.map(plan => (
               <div key={plan.name} className={`plan-card ${plan.highlight ? 'plan-popular' : ''}`} style={{ position: 'relative' }}>
                 {plan.badge && (
-                  <div style={{ position: 'absolute', top: -13, left: '50%', transform: 'translateX(-50%)', background: 'linear-gradient(135deg, #c9a84c, #a07d2a)', color: '#0a0a0f', fontSize: 10, fontWeight: 700, padding: '4px 14px', borderRadius: 100, letterSpacing: '0.05em', whiteSpace: 'nowrap', textTransform: 'uppercase' }}>
+                  <div style={{ position: 'absolute', top: -13, left: '50%', transform: 'translateX(-50%)', background: '#fff', color: 'var(--blue-700)', fontSize: 10, fontWeight: 800, padding: '4px 14px', borderRadius: 100, letterSpacing: '0.05em', whiteSpace: 'nowrap', textTransform: 'uppercase', border: '1.5px solid var(--blue-700)' }}>
                     ⭐ {plan.badge}
                   </div>
                 )}
-                <h3 style={{ fontSize: 13, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: plan.highlight ? 'var(--gold-light)' : 'var(--text-muted)', marginBottom: 20 }}>{plan.name}</h3>
+                <h3 style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: plan.highlight ? 'rgba(255,255,255,0.7)' : 'var(--gray-400)', marginBottom: 16 }}>{plan.name}</h3>
                 <div style={{ marginBottom: 8 }}>
-                  <span className={plan.highlight ? 'text-gold' : ''} style={{ fontSize: '2.2rem', fontWeight: 700, color: plan.highlight ? '' : '#f5f3ff', fontFamily: 'inherit' }}>{plan.price}</span>
-                  <span style={{ fontSize: 13, color: 'var(--text-muted)', marginLeft: 4 }}>{plan.period}</span>
+                  <span style={{ fontSize: '2rem', fontWeight: 800, color: plan.highlight ? '#fff' : 'var(--blue-700)', letterSpacing: '-0.02em' }}>{plan.price}</span>
+                  <span style={{ fontSize: 13, color: plan.highlight ? 'rgba(255,255,255,0.6)' : 'var(--gray-400)', marginLeft: 4 }}>{plan.period}</span>
                 </div>
-                <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 28, lineHeight: 1.5 }}>{plan.desc}</p>
-                <div className="divider" style={{ marginBottom: 24 }} />
-                <ul style={{ listStyle: 'none', marginBottom: 32, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <p style={{ fontSize: 13, color: plan.highlight ? 'rgba(255,255,255,0.7)' : 'var(--gray-600)', marginBottom: 24, lineHeight: 1.5 }}>{plan.desc}</p>
+                <div style={{ height: 1, background: plan.highlight ? 'rgba(255,255,255,0.15)' : '#e2e8f0', marginBottom: 20 }} />
+                <ul style={{ listStyle: 'none', marginBottom: 28, display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {plan.features.map(f => (
-                    <li key={f.text} style={{ display: 'flex', alignItems: 'center', gap: 10, opacity: f.ok ? 1 : 0.3 }}>
-                      <span style={{ width: 18, height: 18, borderRadius: '50%', background: f.ok ? (plan.highlight ? 'rgba(201,168,76,0.2)' : 'rgba(201,168,76,0.1)') : 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: f.ok ? 'var(--gold)' : 'var(--text-dim)', flexShrink: 0 }}>
+                    <li key={f.text} style={{ display: 'flex', alignItems: 'center', gap: 10, opacity: f.ok ? 1 : 0.35 }}>
+                      <span style={{ width: 18, height: 18, borderRadius: '50%', background: f.ok ? (plan.highlight ? 'rgba(255,255,255,0.2)' : 'var(--blue-100)') : 'rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: f.ok ? (plan.highlight ? '#fff' : 'var(--blue-700)') : 'var(--gray-400)', flexShrink: 0, fontWeight: 800 }}>
                         {f.ok ? '✓' : '✗'}
                       </span>
-                      <span style={{ fontSize: 13, color: plan.highlight ? (f.ok ? '#e8e6f0' : 'var(--text-muted)') : (f.ok ? '#ccc' : 'var(--text-dim)') }}>{f.text}</span>
+                      <span style={{ fontSize: 13, color: plan.highlight ? (f.ok ? '#fff' : 'rgba(255,255,255,0.5)') : (f.ok ? 'var(--gray-800)' : 'var(--gray-400)') }}>{f.text}</span>
                     </li>
                   ))}
                 </ul>
-                <Link href={plan.href} className={plan.highlight ? 'btn-gold' : 'btn-outline'} style={{ display: 'block', textAlign: 'center', padding: '13px', borderRadius: 12, fontSize: 13, fontWeight: 600, textDecoration: 'none', position: 'relative', zIndex: 1 }}>
-                  <span style={{ position: 'relative', zIndex: 1 }}>{plan.cta}</span>
+                <Link href={plan.href} style={{
+                  display: 'block', textAlign: 'center', padding: '13px',
+                  borderRadius: 14, fontSize: 13, fontWeight: 700, textDecoration: 'none',
+                  background: plan.highlight ? '#fff' : 'var(--blue-700)',
+                  color: plan.highlight ? 'var(--blue-700)' : '#fff',
+                  transition: 'all 0.2s',
+                }}>
+                  {plan.cta}
                 </Link>
               </div>
             ))}
@@ -539,30 +500,28 @@ export default function LandingPage() {
       </section>
 
       {/* ── REVIEWS ── */}
-      <section style={{ padding: '100px 24px', borderTop: '0.5px solid var(--border-soft)' }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: 64 }}>
-            <div className="section-eyebrow" style={{ justifyContent: 'center' }}>Testimoni</div>
-            <h2 className="serif" style={{ fontSize: '2.6rem', fontWeight: 400, color: '#f5f3ff', marginBottom: 16, letterSpacing: '-0.02em' }}>
-              Dipercaya ribuan warung<br /><span className="serif-italic text-gold">di seluruh Indonesia</span>
-            </h2>
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 4, marginBottom: 6 }}>
-              {'★★★★★'.split('').map((s, i) => <span key={i} style={{ color: 'var(--gold)', fontSize: 18 }}>{s}</span>)}
-              <span style={{ marginLeft: 8, fontSize: 13, color: 'var(--text-muted)' }}>4.9 dari 5 · 10.000+ ulasan</span>
+      <section className="section" id="ulasan" style={{ background: '#fff' }}>
+        <div className="container">
+          <div style={{ textAlign: 'center', marginBottom: 56 }}>
+            <div className="eyebrow" style={{ display: 'inline-flex' }}>Testimoni</div>
+            <h2 className="section-title">Dipercaya ribuan warung <span>di seluruh Indonesia</span></h2>
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 4 }}>
+              {'★★★★★'.split('').map((s, i) => <span key={i} style={{ color: '#f59e0b', fontSize: 18 }}>{s}</span>)}
+              <span style={{ marginLeft: 8, fontSize: 13, color: 'var(--gray-400)' }}>4.9 dari 5 · 10.000+ ulasan</span>
             </div>
           </div>
-          <div className="reviews-grid">
+          <div className="review-grid">
             {REVIEWS.map(r => (
               <div key={r.name} className="review-card">
-                <div style={{ display: 'flex', gap: 4, marginBottom: 14 }}>
-                  {'★'.repeat(r.stars).split('').map((s, i) => <span key={i} style={{ color: 'var(--gold)', fontSize: 13 }}>{s}</span>)}
+                <div style={{ display: 'flex', gap: 4, marginBottom: 12 }}>
+                  {'★'.repeat(r.stars).split('').map((s, i) => <span key={i} style={{ color: '#f59e0b', fontSize: 13 }}>{s}</span>)}
                 </div>
-                <p style={{ fontSize: 13, color: '#9e9cb0', lineHeight: 1.8, marginBottom: 20, fontStyle: 'italic' }}>"{r.text}"</p>
+                <p style={{ fontSize: 13, color: 'var(--gray-600)', lineHeight: 1.8, marginBottom: 18, fontStyle: 'italic' }}>"{r.text}"</p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <div className="avatar">{r.avatar}</div>
                   <div>
-                    <p style={{ fontSize: 13, fontWeight: 600, color: '#f5f3ff' }}>{r.name}</p>
-                    <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>{r.role}</p>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--gray-800)' }}>{r.name}</p>
+                    <p style={{ fontSize: 11, color: 'var(--gray-400)' }}>{r.role}</p>
                   </div>
                 </div>
               </div>
@@ -571,40 +530,40 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── CTA BANNER ── */}
-      <section style={{ padding: '100px 24px', position: 'relative', overflow: 'hidden', borderTop: '0.5px solid var(--border-soft)' }}>
-        <div className="orb pulse-orb" style={{ width: 700, height: 400, background: 'radial-gradient(circle, rgba(201,168,76,0.1), transparent 70%)', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }} />
-        <div style={{ maxWidth: 640, margin: '0 auto', textAlign: 'center', position: 'relative', zIndex: 1 }}>
-          <div className="divider" style={{ margin: '0 auto 32px' }} />
-          <h2 className="serif" style={{ fontSize: '3rem', fontWeight: 400, color: '#f5f3ff', marginBottom: 20, letterSpacing: '-0.02em', lineHeight: 1.15 }}>
-            Siap kelola warungmu<br />lebih <span className="serif-italic text-gold">profesional?</span>
+      {/* ── CTA ── */}
+      <section className="section" style={{ background: 'linear-gradient(160deg, #1e3a8a 0%, #1d4ed8 100%)', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', width: 400, height: 400, borderRadius: '50%', background: 'rgba(255,255,255,0.04)', top: -100, right: -80, pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', width: 300, height: 300, borderRadius: '50%', background: 'rgba(255,255,255,0.03)', bottom: -80, left: -60, pointerEvents: 'none' }} />
+        <div className="container-sm" style={{ position: 'relative', zIndex: 1 }}>
+          <div className="eyebrow" style={{ display: 'inline-flex', background: 'rgba(255,255,255,0.15)', color: '#fff' }}>Mulai Sekarang</div>
+          <h2 style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', fontWeight: 800, color: '#fff', letterSpacing: '-0.03em', lineHeight: 1.15, marginBottom: 20 }}>
+            Siap kelola warungmu lebih <span style={{ color: '#93c5fd' }}>profesional?</span>
           </h2>
-          <p style={{ color: 'var(--text-muted)', marginBottom: 40, fontSize: 15, lineHeight: 1.7 }}>
+          <p style={{ color: 'rgba(255,255,255,0.7)', marginBottom: 40, fontSize: 15, lineHeight: 1.7 }}>
             Daftar sekarang, gratis untuk selamanya.<br />Tidak perlu kartu kredit.
           </p>
-          <Link href="/auth/register" className="btn-gold" style={{ padding: '16px 44px', borderRadius: 100, fontSize: 15, textDecoration: 'none', display: 'inline-block', position: 'relative', zIndex: 1 }}>
-            <span style={{ position: 'relative', zIndex: 1 }}>Mulai Gratis Sekarang →</span>
+          <Link href="/auth/register" style={{ background: '#fff', color: 'var(--blue-700)', fontWeight: 800, fontSize: 15, padding: '16px 44px', borderRadius: 100, textDecoration: 'none', display: 'inline-block', transition: 'all 0.2s' }}>
+            Mulai Gratis Sekarang →
           </Link>
-          <div className="divider" style={{ margin: '40px auto 0' }} />
         </div>
       </section>
 
       {/* ── FOOTER ── */}
-      <footer style={{ borderTop: '0.5px solid var(--border-soft)', padding: '40px 24px' }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 24, marginBottom: 32 }}>
+      <footer style={{ background: '#0f172a', padding: '40px 20px' }}>
+        <div className="container">
+          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 20, marginBottom: 28 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <Image src="/assets/logo.png" alt="WarungKu" width={28} height={28} style={{ borderRadius: 6, opacity: 0.8 }} />
-              <span style={{ fontSize: 15, fontWeight: 700, color: '#f5f3ff' }}>WarungKu</span>
+              <Image src="/assets/logo.png" alt="WarungKu" width={28} height={28} style={{ borderRadius: 6, opacity: 0.9 }} />
+              <span style={{ fontSize: 15, fontWeight: 800, color: '#fff' }}>WarungKu</span>
             </div>
-            <p style={{ fontSize: 12, color: 'var(--text-dim)', textAlign: 'center' }}>Aplikasi manajemen warung untuk Indonesia 🇮🇩</p>
-            <div style={{ display: 'flex', gap: 24 }}>
-              <Link href="/auth/login" className="footer-link">Masuk</Link>
-              <Link href="/auth/register" className="footer-link">Daftar</Link>
+            <p style={{ fontSize: 12, color: '#475569', textAlign: 'center' }}>Aplikasi manajemen warung untuk Indonesia 🇮🇩</p>
+            <div style={{ display: 'flex', gap: 20 }}>
+              <Link href="/auth/login" style={{ color: '#475569', fontSize: 13, textDecoration: 'none' }}>Masuk</Link>
+              <Link href="/auth/register" style={{ color: '#475569', fontSize: 13, textDecoration: 'none' }}>Daftar</Link>
             </div>
           </div>
-          <div style={{ borderTop: '0.5px solid var(--border-soft)', paddingTop: 24, textAlign: 'center' }}>
-            <p style={{ fontSize: 11, color: 'var(--text-dim)' }}>© 2026 WarungKu. Semua hak dilindungi.</p>
+          <div style={{ borderTop: '1px solid #1e293b', paddingTop: 20, textAlign: 'center' }}>
+            <p style={{ fontSize: 11, color: '#334155' }}>© 2026 WarungKu. Semua hak dilindungi.</p>
           </div>
         </div>
       </footer>
