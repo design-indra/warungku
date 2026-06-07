@@ -356,7 +356,26 @@ export default function LandingPage() {
             </div>
 
             {/* Right: Mock dashboard */}
-            <div className="hero-mock-wrap float-anim">
+            <div className="hero-mock-wrap float-anim" style={{ position: 'relative' }}>
+
+              {/* Floating badge Stok Rendah */}
+              <div style={{ position: 'absolute', top: -18, right: -18, zIndex: 2, background: '#fff', border: '1.5px solid #dbeafe', borderRadius: 14, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 8, boxShadow: '0 8px 24px rgba(29,78,216,0.12)' }}>
+                <span style={{ fontSize: 16 }}>⚡</span>
+                <div>
+                  <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--gray-800)' }}>Stok Rendah</p>
+                  <p style={{ fontSize: 10, color: 'var(--blue-600)' }}>5 produk perlu restock</p>
+                </div>
+              </div>
+
+              {/* Floating badge Scan Barcode */}
+              <div style={{ position: 'absolute', bottom: -16, left: -16, zIndex: 2, background: '#fff', border: '1.5px solid #dbeafe', borderRadius: 14, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 8, boxShadow: '0 8px 24px rgba(29,78,216,0.12)' }}>
+                <span style={{ fontSize: 16 }}>📷</span>
+                <div>
+                  <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--gray-800)' }}>Scan Barcode</p>
+                  <p style={{ fontSize: 10, color: 'var(--blue-600)' }}>Auto-isi nama produk</p>
+                </div>
+              </div>
+
               <div className="hero-mock">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
                   <div>
