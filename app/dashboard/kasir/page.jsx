@@ -154,12 +154,172 @@ function RiwayatView({ onBack }) {
   )
 }
 
+function ModalUangDiterima({ totalAkhir, diskon, subtotal, onKonfirmasi, onKembali, saving }) {
+  const [bayarStr, setBayarStr] = useState('')
+
+  const bayarNum = Number(bayarStr.replace(/\D/g, '')) || 0
+  const kembalian = bayarNum - totalAkhir
+
+  const handleNumpad = (val) => {
+    if (val === 'del') {
+      setBayarStr(prev => {
+        const raw = prev.replace(/\D/g, '')
+        const next = raw.slice(0, -1)
+        return next ? Number(next).toLocaleString('id-ID') : ''
+      })
+    } else if (val === '000') {
+      setBayarStr(prev => {
+        const raw = prev.replace(/\D/g, '') + '000'
+        return Number(raw).toLocaleString('id-ID')
+      })
+    } else {
+      setBayarStr(prev => {
+        const raw = prev.replace(/\D/g, '') + val
+        return Number(raw).toLocaleString('id-ID')
+      })
+    }
+  }
+
+  const handleUangPas = () => {
+    setBayarStr(totalAkhir.toLocaleString('id-ID'))
+  }
+
+  const quickAmounts = [...new Set([
+    Math.ceil(totalAkhir / 5000) * 5000,
+    Math.ceil(totalAkhir / 10000) * 10000,
+    50000,
+    100000
+  ])].filter(v => v >= totalAkhir).slice(0, 3)
+
+  const canKonfirmasi = bayarNum >= totalAkhir
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={onKembali}>
+      <div
+        className="w-full max-w-md bg-white rounded-t-2xl pb-6 pt-2 shadow-2xl"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Handle bar */}
+        <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-4" />
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
+              <Banknote className="w-5 h-5 text-blue-600" />
+            </div>
+            <span className="font-bold text-gray-900 text-base">Uang Diterima</span>
+          </div>
+          <button onClick={onKembali} className="p-1.5 hover:bg-gray-100 rounded-lg">
+            <X className="w-5 h-5 text-gray-500" />
+          </button>
+        </div>
+
+        {/* Summary Box */}
+        <div className="mx-5 bg-gray-50 rounded-xl px-4 py-3 mb-4 space-y-1.5">
+          <div className="flex justify-between text-sm text-gray-500">
+            <span>Total Tagihan</span>
+            <span>{rp(subtotal)}</span>
+          </div>
+          {diskon > 0 && (
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-500">Diskon</span>
+              <span className="text-red-500 font-semibold">- {rp(diskon)}</span>
+            </div>
+          )}
+          <div className="flex justify-between font-bold text-blue-600 text-base border-t border-gray-200 pt-1.5 mt-1">
+            <span className="text-gray-700">Total Akhir</span>
+            <span>{rp(totalAkhir)}</span>
+          </div>
+          <div className="flex justify-between text-sm text-gray-600">
+            <span>Bayar</span>
+            <span>{bayarNum > 0 ? rp(bayarNum) : '-'}</span>
+          </div>
+          {bayarNum >= totalAkhir && (
+            <div className="flex justify-between font-bold text-green-600 text-sm">
+              <span>Kembali</span>
+              <span>{rp(kembalian)}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Input + Uang Pas */}
+        <div className="flex gap-2 px-5 mb-3">
+          <div className="flex-1 flex items-center border-2 border-gray-200 rounded-xl px-3 py-3 bg-white">
+            <span className="text-gray-500 font-semibold mr-2 text-sm">Rp</span>
+            <span className="flex-1 text-xl font-bold text-gray-900">
+              {bayarStr || <span className="text-gray-300">0</span>}
+            </span>
+            {bayarStr && (
+              <button onClick={() => setBayarStr('')} className="ml-1">
+                <X className="w-4 h-4 text-gray-400" />
+              </button>
+            )}
+          </div>
+          <button
+            onClick={handleUangPas}
+            className="px-4 py-3 bg-blue-700 hover:bg-blue-800 text-white font-bold rounded-xl text-sm whitespace-nowrap"
+          >
+            Uang Pas
+          </button>
+        </div>
+
+        {/* Quick Amount Buttons */}
+        <div className="flex gap-2 px-5 mb-3">
+          {quickAmounts.map(v => (
+            <button
+              key={v}
+              onClick={() => setBayarStr(v.toLocaleString('id-ID'))}
+              className={`flex-1 py-2 rounded-xl text-sm font-semibold border-2 transition-colors ${bayarNum === v ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-gray-200 bg-white text-gray-700 hover:border-blue-300'}`}
+            >
+              {rp(v)}
+            </button>
+          ))}
+        </div>
+
+        {/* Numpad */}
+        <div className="grid grid-cols-3 gap-2 px-5 mb-4">
+          {['1','2','3','4','5','6','7','8','9','000','0','del'].map(k => (
+            <button
+              key={k}
+              onClick={() => handleNumpad(k)}
+              className={`py-3 rounded-xl text-lg font-bold transition-colors flex items-center justify-center ${k === 'del' ? 'bg-red-50 hover:bg-red-100 text-red-500' : 'bg-gray-50 hover:bg-gray-100 text-gray-800'}`}
+            >
+              {k === 'del'
+                ? <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/><line x1="18" y1="9" x2="12" y2="15"/><line x1="12" y1="9" x2="18" y2="15"/></svg>
+                : k
+              }
+            </button>
+          ))}
+        </div>
+
+        {/* Footer Buttons */}
+        <div className="flex gap-3 px-5">
+          <button
+            onClick={onKembali}
+            className="flex-1 py-3.5 rounded-xl border-2 border-gray-200 font-bold text-gray-700 hover:bg-gray-50"
+          >
+            Kembali
+          </button>
+          <button
+            onClick={() => canKonfirmasi && onKonfirmasi(bayarNum, kembalian)}
+            disabled={!canKonfirmasi || saving}
+            className={`flex-1 py-3.5 rounded-xl font-bold text-base transition-colors ${canKonfirmasi && !saving ? 'bg-blue-700 hover:bg-blue-800 text-white' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
+          >
+            {saving ? 'Memproses...' : 'Konfirmasi'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function PembayaranView({ total, diskon, onBack, onBayar, saving, canUseHutang = false }) {
   const [metode, setMetode] = useState('tunai')
-  const [bayarStr, setBayarStr] = useState('')
   const [pelangganList, setPelangganList] = useState([])
   const [pelangganId, setPelangganId] = useState('')
   const [loadingPelanggan, setLoadingPelanggan] = useState(false)
+  const [showUangDiterima, setShowUangDiterima] = useState(false)
 
   // State untuk form tambah pelanggan inline
   const [showTambah, setShowTambah] = useState(false)
@@ -171,9 +331,7 @@ function PembayaranView({ total, diskon, onBack, onBayar, saving, canUseHutang =
   const [successMsg, setSuccessMsg] = useState('')
 
   const totalAkhir = total - diskon
-  const bayarNum = Number(bayarStr.replace(/\D/g, '')) || 0
-  const kembalian = bayarNum - totalAkhir
-  const canBayar = metode === 'hutang' ? !!pelangganId : (metode !== 'tunai' || bayarNum >= totalAkhir)
+  const canBayar = metode === 'hutang' ? !!pelangganId : true
 
   useEffect(() => {
     if (metode === 'hutang' && pelangganList.length === 0) {
@@ -188,11 +346,6 @@ function PembayaranView({ total, diskon, onBack, onBayar, saving, canUseHutang =
     const t = setTimeout(() => setSuccessMsg(''), 3000)
     return () => clearTimeout(t)
   }, [successMsg])
-
-  const handleInput = (v) => {
-    const num = v.replace(/\D/g, '')
-    setBayarStr(num ? Number(num).toLocaleString('id-ID') : '')
-  }
 
   const handleTambahPelanggan = async () => {
     setErrorTambah('')
@@ -220,8 +373,6 @@ function PembayaranView({ total, diskon, onBack, onBayar, saving, canUseHutang =
       setSavingPelanggan(false)
     }
   }
-
-  const quickAmounts = [...new Set([totalAkhir, Math.ceil(totalAkhir / 5000) * 5000, Math.ceil(totalAkhir / 10000) * 10000, 50000, 100000])].filter(v => v >= totalAkhir).slice(0, 4)
 
   return (
     <div className="flex flex-col h-full bg-white">
@@ -336,26 +487,6 @@ function PembayaranView({ total, diskon, onBack, onBayar, saving, canUseHutang =
           </div>
         )}
 
-        {metode === 'tunai' && (
-          <div>
-            <p className="text-sm font-semibold text-gray-700 mb-2">Dibayar</p>
-            <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-semibold">Rp</span>
-              <input value={bayarStr} onChange={e => handleInput(e.target.value)} placeholder="0" inputMode="numeric" className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 rounded-xl text-xl font-bold text-gray-900 focus:outline-none focus:border-blue-400" />
-            </div>
-            <div className="flex gap-2 mt-2 flex-wrap">
-              {quickAmounts.map(v => (
-                <button key={v} onClick={() => setBayarStr(v.toLocaleString('id-ID'))} className="px-3 py-1.5 bg-gray-100 hover:bg-blue-100 hover:text-blue-700 text-gray-700 text-xs font-semibold rounded-lg transition-colors">{rp(v)}</button>
-              ))}
-            </div>
-          </div>
-        )}
-        {metode === 'tunai' && bayarNum >= totalAkhir && (
-          <div className="flex justify-between items-center py-3 px-4 bg-green-50 rounded-xl border border-green-200">
-            <span className="font-semibold text-green-700">Kembalian</span><span className="font-extrabold text-xl text-green-600">{rp(kembalian)}</span>
-          </div>
-        )}
-
         {/* Info hutang — panel kuning */}
         {metode === 'hutang' && pelangganId && (
           <div className="flex items-start gap-2 px-4 py-3 bg-yellow-50 rounded-xl border border-yellow-200">
@@ -367,10 +498,35 @@ function PembayaranView({ total, diskon, onBack, onBayar, saving, canUseHutang =
         )}
       </div>
       <div className="p-4 border-t border-gray-100 flex-shrink-0">
-        <button onClick={() => onBayar({ metode, bayar: metode === 'tunai' ? bayarNum : totalAkhir, kembalian: metode === 'tunai' ? kembalian : 0, pelanggan_id: metode === 'hutang' ? pelangganId : null })} disabled={!canBayar || saving} className={`w-full py-4 rounded-xl font-bold text-base flex items-center justify-center gap-2 transition-colors ${canBayar && !saving ? 'bg-blue-700 hover:bg-blue-800 text-white' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}>
+        <button
+          onClick={() => {
+            if (metode === 'tunai') {
+              setShowUangDiterima(true)
+            } else {
+              onBayar({ metode, bayar: totalAkhir, kembalian: 0, pelanggan_id: metode === 'hutang' ? pelangganId : null })
+            }
+          }}
+          disabled={!canBayar || saving}
+          className={`w-full py-4 rounded-xl font-bold text-base flex items-center justify-center gap-2 transition-colors ${canBayar && !saving ? 'bg-blue-700 hover:bg-blue-800 text-white' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
+        >
           <Receipt className="w-5 h-5" />{saving ? 'Memproses...' : metode === 'hutang' ? 'CATAT HUTANG' : 'BAYAR'}
         </button>
       </div>
+
+      {/* Modal Uang Diterima (Tunai) */}
+      {showUangDiterima && (
+        <ModalUangDiterima
+          totalAkhir={totalAkhir}
+          diskon={diskon}
+          subtotal={total}
+          saving={saving}
+          onKembali={() => setShowUangDiterima(false)}
+          onKonfirmasi={(bayarNum, kembalian) => {
+            setShowUangDiterima(false)
+            onBayar({ metode: 'tunai', bayar: bayarNum, kembalian, pelanggan_id: null })
+          }}
+        />
+      )}
     </div>
   )
 }
