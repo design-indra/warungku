@@ -36,11 +36,10 @@ const today = () => new Date().toLocaleString('id-ID', {
 
 // ─── METODE BAYAR (+ Hutang) ──────────────────────────────────────────────────
 const METODE = [
-  { id: 'tunai', label: 'Tunai', icon: Banknote },
-  { id: 'qris', label: 'QRIS', icon: QrCode },
-  { id: 'debit', label: 'Kartu Debit/Kredit', icon: CreditCard },
-  { id: 'ewallet', label: 'E-Wallet', icon: Wallet },
-  { id: 'hutang', label: 'Hutang', icon: Users },
+  { id: 'tunai',    label: 'Tunai',           icon: Banknote   },
+  { id: 'qris',     label: 'QRIS / E-Wallet', icon: QrCode     },
+  { id: 'transfer', label: 'Transfer Bank',   icon: CreditCard },
+  { id: 'hutang',   label: 'Hutang',          icon: Users      },
 ]
 
 // ─── RIWAYAT ─────────────────────────────────────────────────────────────────
