@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServerSupabase } from '@/lib/supabase-server'
 
-const BUCKET = 'logos' // nama bucket di Supabase Storage
+const BUCKET = 'barang-foto' // bucket existing di Supabase Storage
 
 // POST /api/pengaturan/upload-logo
 // Body: FormData dengan field "file"
