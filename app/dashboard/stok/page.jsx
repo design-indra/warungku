@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import Icon from '@/components/Icon'
 import { createClient } from '@/lib/supabase'
+import BarcodeScanner from '@/lib/scanner'
 
 const TABS             = ['Semua', 'Stok Rendah', 'Hampir Habis', 'Stok Habis']
 const KATEGORI_OPTIONS = ['Makanan', 'Minuman', 'Sembako', 'Rokok', 'Kebutuhan', 'Lainnya']
@@ -219,6 +220,7 @@ function BarangModal({ editData, onClose, onSaved }) {
   const [error, setError]       = useState('')
   const [fotoFile, setFotoFile] = useState(null)
   const [uploading, setUploading] = useState(false)
+  const [showBarcodeScanner, setShowBarcodeScanner] = useState(false)
 
   const handleFotoChange = (file, localPreview) => {
     setFotoFile(file)
@@ -422,15 +424,42 @@ function BarangModal({ editData, onClose, onSaved }) {
           {/* Barcode (opsional) */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1.5">Barcode <span className="text-gray-400 font-normal">(opsional)</span></label>
-            <input
-              type="text"
-              placeholder="Scan atau ketik kode barcode"
-              value={form.barcode}
-              onChange={e => f('barcode', e.target.value)}
-              className="input-field font-mono"
-            />
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Scan atau ketik kode barcode pabrikan"
+                value={form.barcode}
+                onChange={e => f('barcode', e.target.value)}
+                className="input-field font-mono flex-1"
+              />
+              <button
+                type="button"
+                onClick={() => setShowBarcodeScanner(true)}
+                title="Scan barcode dengan kamera"
+                className="flex-shrink-0 flex items-center justify-center w-11 h-11 rounded-xl border border-gray-200 bg-gray-50 hover:bg-blue-50 hover:border-blue-400 transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/>
+                  <line x1="7" y1="12" x2="7" y2="12.01"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="17" y1="12" x2="17" y2="12.01"/>
+                </svg>
+              </button>
+            </div>
+            {form.barcode && (
+              <p className="text-xs text-green-600 mt-1">✓ Barcode tersimpan: <span className="font-mono">{form.barcode}</span></p>
+            )}
           </div>
         </div>
+
+        {/* BarcodeScanner Modal */}
+        {showBarcodeScanner && (
+          <BarcodeScanner
+            onDetected={(code) => {
+              f('barcode', code)
+              setShowBarcodeScanner(false)
+            }}
+            onClose={() => setShowBarcodeScanner(false)}
+          />
+        )}
 
         {/* Footer */}
         <div className="flex gap-3 px-5 py-4 border-t border-gray-100 flex-shrink-0">
