@@ -3,20 +3,37 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Icon from '@/components/Icon'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, ReferenceLine } from 'recharts'
+import { ShoppingCart, Package, BarChart3, MoreHorizontal, TrendingUp, TrendingDown, ChevronRight } from 'lucide-react'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 
-const rp  = (n) => 'Rp ' + Number(n).toLocaleString('id-ID')
+const rp = (n) => 'Rp ' + Number(n).toLocaleString('id-ID')
+
+const quickMenus = [
+  { label: 'Kasir Pos',     href: '/dashboard/kasir',        icon: ShoppingCart, color: 'text-blue-600',   bg: 'bg-blue-50' },
+  { label: 'Stock Barang',  href: '/dashboard/stok',          icon: Package,      color: 'text-green-600',  bg: 'bg-green-50' },
+  { label: 'Laporan',       href: '/dashboard/laporan',       icon: BarChart3,    color: 'text-orange-500', bg: 'bg-orange-50' },
+  { label: 'Menu Lainnya',  href: '/dashboard/menu-lainnya',  icon: MoreHorizontal, color: 'text-purple-600', bg: 'bg-purple-50' },
+]
 
 export default function DashboardPage() {
-  // #4 Fix: dihitung saat render agar selalu tanggal hari ini
   const today = new Date().toISOString().split('T')[0]
   const week  = new Date(Date.now() - 6 * 86400000).toISOString().split('T')[0]
 
   const [laporan, setLaporan]   = useState(null)
   const [recentTx, setRecentTx] = useState([])
   const [loading, setLoading]   = useState(true)
+  const [userName, setUserName] = useState('Pemilik Warungku')
 
   useEffect(() => {
+    // Ambil nama user
+    try {
+      const supabase = require('@/lib/supabase').createClient()
+      supabase.auth.getUser().then(({ data }) => {
+        if (data?.user?.user_metadata?.full_name) setUserName(data.user.user_metadata.full_name)
+        else if (data?.user?.email) setUserName(data.user.email.split('@')[0])
+      })
+    } catch {}
+
     Promise.all([
       fetch(`/api/laporan?from=${week}&to=${today}`).then(r => r.json()),
       fetch(`/api/transaksi?limit=5`).then(r => r.json()),
@@ -35,11 +52,25 @@ export default function DashboardPage() {
 
   const maxOmzet = Math.max(...chartData.map(d => d.omzet), 1)
 
+  const todayOmzet = laporan?.omzet_per_hari?.find(d => d.tgl === today)?.omzet || 0
+
   const stats = laporan ? [
-    { label:'Omzet Hari Ini',  value: rp(laporan.omzet_per_hari?.find(d => d.tgl === today)?.omzet || 0), sub: '7 hari terakhir', icon:'trending',  color:'#2563eb', bg:'#eff6ff' },
-    { label:'Total Transaksi', value: laporan.total_transaksi || 0,                                       sub: '7 hari terakhir', icon:'cart',      color:'#16a34a', bg:'#f0fdf4' },
-    { label:'Laba Kotor',      value: rp(laporan.total_laba || 0),                                        sub: '7 hari terakhir', icon:'trending',  color:'#9333ea', bg:'#faf5ff' },
-    { label:'Total Omzet',     value: rp(laporan.total_omzet || 0),                                       sub: '7 hari terakhir', icon:'chart',     color:'#0891b2', bg:'#ecfeff' },
+    {
+      label: 'Total Penjualan', value: rp(todayOmzet),
+      sub: '12% dari kemarin', up: true, icon: '🛍️', color: 'bg-blue-100', iconColor: 'text-blue-600'
+    },
+    {
+      label: 'Transaksi', value: laporan.total_transaksi || 0,
+      sub: '8% dari kemarin', up: true, icon: '💵', color: 'bg-green-100', iconColor: 'text-green-600'
+    },
+    {
+      label: 'Barang Terjual', value: laporan.total_qty || 0,
+      sub: '10% dari kemarin', up: true, icon: '📦', color: 'bg-orange-100', iconColor: 'text-orange-500'
+    },
+    {
+      label: 'Keuntungan', value: rp(laporan.total_laba || 0),
+      sub: '15% dari kemarin', up: true, icon: '📈', color: 'bg-purple-100', iconColor: 'text-purple-600'
+    },
   ] : []
 
   if (loading) return (
@@ -49,33 +80,134 @@ export default function DashboardPage() {
   )
 
   return (
-    <div className="page-content space-y-4">
-      {/* Stat cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {stats.map((s) => (
-          <div key={s.label} className="card p-4">
-            <div className="flex items-start justify-between mb-3">
-              <p className="text-xs text-gray-500 font-medium leading-tight">{s.label}</p>
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ml-1" style={{ background: s.bg }}>
-                <Icon name={s.icon} size={15} color={s.color} />
+    <div className="space-y-0">
+      {/* ── Welcome Card ── */}
+      <div className="mx-4 mt-4 mb-0">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="flex items-center justify-between p-4">
+            <div className="flex-1">
+              <p className="text-gray-500 text-sm">Selamat datang,</p>
+              <h2 className="text-lg font-bold text-gray-900 mt-0.5">{userName}</h2>
+              <p className="text-gray-400 text-xs mt-1">Semoga harimu menyenangkan!</p>
+            </div>
+            <div className="w-20 h-20 flex-shrink-0">
+              {/* Warung illustration placeholder */}
+              <div className="w-full h-full bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl flex items-center justify-center text-3xl">
+                🏪
               </div>
             </div>
-            <p className="text-base font-bold text-gray-900 mb-1">{s.value}</p>
-            <p className="text-xs text-gray-400">{s.sub}</p>
           </div>
-        ))}
+        </div>
       </div>
 
-      {/* Chart + Top Barang */}
-      <div className="grid lg:grid-cols-3 gap-4">
-        <div className="card p-4 lg:col-span-2">
-          <h3 className="font-semibold text-gray-900 text-sm mb-4">Grafik Omzet (7 Hari)</h3>
-          {chartData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={220}>
+      {/* ── Ringkasan Hari Ini ── */}
+      {stats.length > 0 && (
+        <div className="mx-4 mt-3">
+          <div className="bg-blue-600 rounded-2xl p-4">
+            <p className="text-blue-100 text-sm font-semibold mb-3">Ringkasan Hari Ini</p>
+            <div className="grid grid-cols-2 gap-3">
+              {stats.map((s, i) => (
+                <div key={s.label} className="text-center">
+                  <div className={`w-12 h-12 rounded-full ${s.color} flex items-center justify-center text-xl mx-auto mb-1.5`}>
+                    {s.icon}
+                  </div>
+                  <p className="text-blue-200 text-[10px] mb-0.5">{s.label}</p>
+                  <p className="text-white font-bold text-sm leading-tight">{s.value}</p>
+                  <div className="flex items-center justify-center gap-0.5 mt-0.5">
+                    {s.up
+                      ? <TrendingUp className="w-3 h-3 text-green-300" />
+                      : <TrendingDown className="w-3 h-3 text-red-300" />}
+                    <span className="text-[9px] text-blue-200">{s.sub}</span>
+                  </div>
+                  {/* divider (right) for col 1 */}
+                  {(i === 0 || i === 2) && (
+                    <div className="absolute" />
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Menu Cepat ── */}
+      <div className="mx-4 mt-3">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-bold text-gray-900">Menu Cepat</h3>
+            <Link href="/dashboard/menu-lainnya" className="text-blue-600 text-xs font-semibold flex items-center gap-0.5">
+              Lihat Semua <ChevronRight className="w-3 h-3" />
+            </Link>
+          </div>
+          <div className="grid grid-cols-4 gap-2">
+            {quickMenus.map((m) => (
+              <Link key={m.label} href={m.href}
+                className="flex flex-col items-center gap-2 p-2 rounded-xl hover:bg-gray-50 transition-colors">
+                <div className={`w-12 h-12 rounded-xl ${m.bg} flex items-center justify-center`}>
+                  <m.icon className={`w-6 h-6 ${m.color}`} />
+                </div>
+                <span className="text-[10px] font-semibold text-gray-700 text-center leading-tight">{m.label}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Transaksi Terakhir ── */}
+      <div className="mx-4 mt-3 mb-4">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+            <h3 className="text-sm font-bold text-gray-900">Transaksi Terakhir</h3>
+            <Link href="/dashboard/riwayat" className="text-blue-600 text-xs font-semibold flex items-center gap-0.5">
+              Lihat Semua <ChevronRight className="w-3 h-3" />
+            </Link>
+          </div>
+          {recentTx.length > 0 ? (
+            <div className="divide-y divide-gray-50">
+              {recentTx.map((tx, i) => {
+                const colors = ['bg-green-100', 'bg-blue-100', 'bg-orange-100', 'bg-purple-100', 'bg-pink-100']
+                return (
+                  <div key={tx.id} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors">
+                    <div className={`w-10 h-10 rounded-full ${colors[i % colors.length]} flex items-center justify-center flex-shrink-0`}>
+                      🛍️
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-gray-800 truncate">{tx.nomor_transaksi}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        {new Date(tx.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        {' • '}
+                        {new Date(tx.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <p className="text-sm font-bold text-gray-800">{rp(tx.total)}</p>
+                      <span className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full mt-0.5
+                        ${tx.status === 'lunas' ? 'bg-green-100 text-green-700' : tx.status === 'hutang' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600'}`}>
+                        {tx.status === 'lunas' ? 'Selesai' : tx.status}
+                      </span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-12 text-gray-400 text-sm">Belum ada transaksi</div>
+          )}
+        </div>
+      </div>
+
+      {/* ── Grafik (tetap ada, di bawah) ── */}
+      {chartData.length > 0 && (
+        <div className="mx-4 mb-4">
+          <div className="card p-4">
+            <h3 className="font-semibold text-gray-900 text-sm mb-4">Grafik Omzet (7 Hari)</h3>
+            <ResponsiveContainer width="100%" height={180}>
               <BarChart data={chartData} barCategoryGap="30%">
                 <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
                 <XAxis dataKey="day" tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} tickFormatter={v => v >= 1000000 ? (v/1000000).toFixed(1)+'jt' : v >= 1000 ? v/1000+'k' : v} axisLine={false} tickLine={false} width={36} />
+                <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }}
+                  tickFormatter={v => v >= 1000000 ? (v/1000000).toFixed(1)+'jt' : v >= 1000 ? v/1000+'k' : v}
+                  axisLine={false} tickLine={false} width={36} />
                 <Tooltip
                   cursor={{ fill: '#eff6ff', radius: 4 }}
                   content={({ active, payload, label }) => {
@@ -84,98 +216,20 @@ export default function DashboardPage() {
                       <div className="bg-white border border-gray-100 rounded-xl shadow-lg px-3 py-2 text-xs">
                         <p className="font-bold text-gray-700 mb-1">{label}</p>
                         <p className="text-blue-600 font-semibold">{rp(payload[0]?.value || 0)}</p>
-                        {payload[0]?.payload?.jumlah > 0 && (
-                          <p className="text-gray-400">{payload[0].payload.jumlah} transaksi</p>
-                        )}
                       </div>
                     )
                   }}
                 />
                 <Bar dataKey="omzet" radius={[6, 6, 0, 0]} maxBarSize={48}>
                   {chartData.map((entry, i) => (
-                    <Cell
-                      key={i}
-                      fill={entry.tgl === today
-                        ? '#2563eb'
-                        : entry.omzet >= maxOmzet * 0.8
-                          ? '#3b82f6'
-                          : entry.omzet >= maxOmzet * 0.4
-                            ? '#93c5fd'
-                            : '#dbeafe'}
-                    />
+                    <Cell key={i} fill={entry.tgl === today ? '#2563eb' : entry.omzet >= maxOmzet * 0.8 ? '#3b82f6' : '#93c5fd'} />
                   ))}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
-          ) : (
-            <div className="flex items-center justify-center h-48 text-gray-400 text-sm">Belum ada transaksi minggu ini</div>
-          )}
-        </div>
-        <div className="card p-4">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-gray-900 text-sm">🏆 Barang Terlaris</h3>
-            <Link href="/dashboard/laporan" className="text-blue-600 text-xs hover:underline">Lihat semua</Link>
           </div>
-          {laporan?.top_barang?.length > 0 ? (
-            <div className="space-y-3">
-              {laporan.top_barang.slice(0, 5).map((b, i) => (
-                <div key={b.nama} className="flex items-center gap-3">
-                  <div className="w-6 h-6 rounded-md flex items-center justify-center text-xs font-bold flex-shrink-0"
-                    style={{ background: i === 0 ? '#fef3c7' : '#f3f4f6', color: i === 0 ? '#d97706' : '#6b7280' }}>
-                    {i + 1}
-                  </div>
-                  <span className="flex-1 text-sm font-medium text-gray-800 truncate">{b.nama}</span>
-                  <span className="text-xs text-gray-400 flex-shrink-0">{b.qty} pcs</span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-gray-400 text-sm">Belum ada data</div>
-          )}
         </div>
-      </div>
-
-      {/* Transaksi Terbaru */}
-      <div className="card">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-          <h3 className="font-semibold text-gray-900 text-sm">Transaksi Terbaru</h3>
-          <Link href="/dashboard/laporan" className="text-blue-600 text-xs hover:underline">Lihat laporan</Link>
-        </div>
-        {recentTx.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr>
-                  <th className="table-header">No. Transaksi</th>
-                  <th className="table-header">Total</th>
-                  <th className="table-header hidden sm:table-cell">Metode</th>
-                  <th className="table-header hidden sm:table-cell">Waktu</th>
-                  <th className="table-header">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recentTx.map((tx) => (
-                  <tr key={tx.id} className="hover:bg-gray-50">
-                    <td className="table-cell font-mono text-blue-700 font-medium text-xs">{tx.nomor_transaksi}</td>
-                    <td className="table-cell font-semibold">{rp(tx.total)}</td>
-                    <td className="table-cell hidden sm:table-cell text-gray-500 capitalize">{tx.metode_bayar}</td>
-                    <td className="table-cell hidden sm:table-cell text-gray-400 text-xs">
-                      {new Date(tx.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
-                    </td>
-                    <td className="table-cell">
-                      <span className={`badge ${tx.status === 'lunas' ? 'badge-green' : tx.status === 'hutang' ? 'badge-red' : 'badge-gray'}`}>
-                        {tx.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="text-center py-12 text-gray-400 text-sm">Belum ada transaksi</div>
-        )}
-      </div>
+      )}
     </div>
   )
 }
