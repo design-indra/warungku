@@ -171,7 +171,75 @@ function PrintBottomSheet({ barang, qty, onClose, namaWarung }) {
   const [paperWidth, setPaperWidth] = useState(32)
 
   const handleBrowserPrint = () => {
-    window.print()
+    // Render label ke Canvas lalu download sebagai PNG — bekerja di mobile
+    const canvas  = document.createElement('canvas')
+    const LABEL_W = 400
+    const LABEL_H = 200
+    const cols    = 2
+    const rows    = Math.ceil(qty / cols)
+
+    canvas.width  = LABEL_W * cols
+    canvas.height = LABEL_H * rows
+    const ctx     = canvas.getContext('2d')
+
+    ctx.fillStyle = '#ffffff'
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+    const bits = generateCode128(barang.barcode)
+
+    for (let i = 0; i < qty; i++) {
+      const col = i % cols
+      const row = Math.floor(i / cols)
+      const ox  = col * LABEL_W
+      const oy  = row * LABEL_H
+
+      // Border
+      ctx.strokeStyle = '#cccccc'
+      ctx.lineWidth   = 1
+      ctx.strokeRect(ox + 4, oy + 4, LABEL_W - 8, LABEL_H - 8)
+
+      // Nama warung
+      ctx.fillStyle = '#888888'
+      ctx.font      = 'bold 13px monospace'
+      ctx.textAlign = 'center'
+      ctx.fillText(namaWarung.toUpperCase().slice(0, 24), ox + LABEL_W / 2, oy + 26)
+
+      // Barcode bars
+      const barAreaW = LABEL_W - 40
+      const barAreaX = ox + 20
+      const barAreaY = oy + 36
+      const barH     = 60
+      const barW     = barAreaW / bits.length
+
+      ctx.fillStyle = '#000000'
+      for (let b = 0; b < bits.length; b++) {
+        if (bits[b] === '1') {
+          ctx.fillRect(barAreaX + b * barW, barAreaY, barW + 0.3, barH)
+        }
+      }
+
+      // Kode teks
+      ctx.fillStyle = '#333333'
+      ctx.font      = '11px monospace'
+      ctx.fillText(barang.barcode, ox + LABEL_W / 2, oy + 36 + barH + 14)
+
+      // Nama produk
+      ctx.fillStyle = '#000000'
+      ctx.font      = 'bold 14px sans-serif'
+      const namaText = barang.nama.length > 26 ? barang.nama.slice(0, 24) + '…' : barang.nama
+      ctx.fillText(namaText, ox + LABEL_W / 2, oy + 36 + barH + 32)
+
+      // Harga
+      ctx.fillStyle = '#1d4ed8'
+      ctx.font      = 'bold 15px sans-serif'
+      ctx.fillText(rp(barang.harga_jual), ox + LABEL_W / 2, oy + 36 + barH + 52)
+    }
+
+    // Download PNG
+    const link    = document.createElement('a')
+    link.download = `label-${barang.barcode || barang.nama}-${qty}pcs.png`
+    link.href     = canvas.toDataURL('image/png')
+    link.click()
   }
 
   const handleBtConnect = async () => {
@@ -301,8 +369,8 @@ function PrintBottomSheet({ barang, qty, onClose, namaWarung }) {
                 <Globe className="w-6 h-6 text-blue-600" />
               </div>
               <div>
-                <p className="font-semibold text-gray-900 text-sm">Cetak via Browser</p>
-                <p className="text-xs text-gray-400 mt-0.5">PDF, printer kantor, atau simpan ke file</p>
+                <p className="font-semibold text-gray-900 text-sm">Download Gambar (PNG)</p>
+                <p className="text-xs text-gray-400 mt-0.5">Simpan label sebagai gambar, lalu cetak / share</p>
               </div>
             </button>
 
