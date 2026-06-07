@@ -1,9 +1,19 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Icon from '@/components/Icon'
 
-const TABS = ['Profil Warung', 'Cabang', 'User & Role', 'Satuan Barang']
+const TABS = [
+  'Profil Warung',
+  'Cabang',
+  'User & Role',
+  'Satuan Barang',
+  'Kategori Barang',
+  'Pemasok',
+  'Printer & Struk',
+  'Ubah Password',
+]
 
 // ─── Helper fetch ────────────────────────────────────────────
 async function apiFetch(url, options = {}) {
@@ -538,10 +548,294 @@ function TabSatuan() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// ROOT PAGE
+// TAB: KATEGORI BARANG
 // ═══════════════════════════════════════════════════════════════
-export default function PengaturanPage() {
-  const [activeTab, setActiveTab] = useState('Profil Warung')
+function TabKategori() {
+  const DEFAULT_KATEGORI = ['Makanan', 'Minuman', 'Sembako', 'Rokok', 'Kebutuhan', 'Lainnya']
+  const [kategori, setKategori] = useState(DEFAULT_KATEGORI)
+  const [newKat, setNewKat]     = useState('')
+  const [saving, setSaving]     = useState(false)
+  const [loading, setLoading]   = useState(true)
+  const [msg, setMsg]           = useState('')
+
+  useEffect(() => {
+    apiFetch('/api/pengaturan/profil')
+      .then(d => setKategori(d.kategori_list?.length ? d.kategori_list : DEFAULT_KATEGORI))
+      .catch(() => setKategori(DEFAULT_KATEGORI))
+      .finally(() => setLoading(false))
+  }, [])
+
+  const saveKategori = async (list) => {
+    setSaving(true); setMsg('')
+    try {
+      await apiFetch('/api/pengaturan/profil', {
+        method: 'PUT',
+        body: JSON.stringify({ kategori_list: list }),
+      })
+      setMsg('✅ Kategori disimpan!')
+      setTimeout(() => setMsg(''), 2000)
+    } catch (e) { setMsg('❌ ' + e.message) }
+    finally { setSaving(false) }
+  }
+
+  const addKategori = async () => {
+    const val = newKat.trim()
+    if (!val || kategori.map(k=>k.toLowerCase()).includes(val.toLowerCase())) return
+    const updated = [...kategori, val]
+    setKategori(updated)
+    setNewKat('')
+    await saveKategori(updated)
+  }
+
+  const removeKategori = async (k) => {
+    const updated = kategori.filter(x => x !== k)
+    setKategori(updated)
+    await saveKategori(updated)
+  }
+
+  if (loading) return <div className="flex justify-center py-12"><div className="spinner" /></div>
+
+  return (
+    <div className="max-w-lg space-y-4">
+      <div className="card p-5">
+        <h3 className="font-bold text-gray-900 mb-1">Kategori Barang</h3>
+        <p className="text-xs text-gray-400 mb-4">Kategori ini akan muncul saat tambah atau edit barang.</p>
+        <div className="flex flex-wrap gap-2 mb-4">
+          {kategori.map(k => (
+            <div key={k} className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 text-green-700 rounded-full text-sm font-semibold">
+              {k}
+              <button onClick={() => removeKategori(k)} disabled={saving}
+                className="hover:bg-green-200 rounded-full w-4 h-4 flex items-center justify-center">
+                <Icon name="x" size={10} color="#15803d" />
+              </button>
+            </div>
+          ))}
+        </div>
+        <div className="flex gap-2">
+          <input value={newKat} onChange={e => setNewKat(e.target.value)}
+            placeholder="Tambah kategori baru..." className="input-field flex-1"
+            onKeyDown={e => e.key === 'Enter' && addKategori()} />
+          <button onClick={addKategori} disabled={saving} className="btn-primary flex-shrink-0">
+            <Icon name="plus" size={15} color="#fff" /> Tambah
+          </button>
+        </div>
+        {msg && (
+          <p className={`mt-2 text-xs font-medium ${msg.startsWith('✅') ? 'text-green-600' : 'text-red-500'}`}>{msg}</p>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TAB: PEMASOK
+// ═══════════════════════════════════════════════════════════════
+function TabPemasok() {
+  const [list, setList]     = useState([])
+  const [loading, setLoading] = useState(true)
+  const [msg, setMsg]       = useState('')
+  const [form, setForm]     = useState({ nama: '', kontak: '', alamat: '' })
+  const [showForm, setShowForm] = useState(false)
+  const [saving, setSaving] = useState(false)
+
+  const load = async () => {
+    setLoading(true)
+    try {
+      const res = await fetch('/api/pelanggan?role=pemasok')
+      const json = await res.json()
+      setList(json.data || [])
+    } catch { setList([]) }
+    finally { setLoading(false) }
+  }
+
+  useEffect(() => { load() }, [])
+
+  const handleSave = async () => {
+    if (!form.nama.trim()) { setMsg('❌ Nama pemasok wajib diisi'); return }
+    setSaving(true); setMsg('')
+    try {
+      const res = await fetch('/api/pelanggan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...form, role: 'pemasok' }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Gagal menyimpan')
+      setMsg('✅ Pemasok ditambahkan!')
+      setForm({ nama: '', kontak: '', alamat: '' })
+      setShowForm(false)
+      await load()
+      setTimeout(() => setMsg(''), 2500)
+    } catch (e) { setMsg('❌ ' + e.message) }
+    finally { setSaving(false) }
+  }
+
+  if (loading) return <div className="flex justify-center py-12"><div className="spinner" /></div>
+
+  return (
+    <div className="max-w-lg space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="font-bold text-gray-900">Pemasok / Supplier</h3>
+          <p className="text-xs text-gray-400">Kelola daftar pemasok barang warung kamu.</p>
+        </div>
+        <button onClick={() => setShowForm(v => !v)} className="btn-primary text-xs px-3 py-2">
+          <Icon name="plus" size={14} color="#fff" /> Tambah
+        </button>
+      </div>
+
+      {msg && (
+        <p className={`text-xs font-medium px-3 py-2 rounded-lg ${msg.startsWith('✅') ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-500'}`}>{msg}</p>
+      )}
+
+      {showForm && (
+        <div className="card p-4 space-y-3">
+          <h4 className="font-semibold text-sm text-gray-800">Tambah Pemasok Baru</h4>
+          <input value={form.nama} onChange={e => setForm(p => ({...p, nama: e.target.value}))}
+            placeholder="Nama pemasok *" className="input-field w-full" />
+          <input value={form.kontak} onChange={e => setForm(p => ({...p, kontak: e.target.value}))}
+            placeholder="No. HP / Kontak" className="input-field w-full" />
+          <input value={form.alamat} onChange={e => setForm(p => ({...p, alamat: e.target.value}))}
+            placeholder="Alamat" className="input-field w-full" />
+          <div className="flex gap-2">
+            <button onClick={handleSave} disabled={saving} className="btn-primary flex-1">
+              {saving ? 'Menyimpan...' : 'Simpan'}
+            </button>
+            <button onClick={() => setShowForm(false)} className="btn-secondary flex-1">Batal</button>
+          </div>
+        </div>
+      )}
+
+      <div className="card divide-y divide-gray-50">
+        {list.length === 0 ? (
+          <p className="text-center text-sm text-gray-400 py-10">Belum ada pemasok</p>
+        ) : list.map(p => (
+          <div key={p.id} className="flex items-start gap-3 px-4 py-3">
+            <div className="w-9 h-9 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0 text-orange-600 font-bold text-sm">
+              {p.nama?.[0]?.toUpperCase() || 'P'}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-sm text-gray-900 truncate">{p.nama}</p>
+              {p.kontak && <p className="text-xs text-gray-400">{p.kontak}</p>}
+              {p.alamat && <p className="text-xs text-gray-400 truncate">{p.alamat}</p>}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TAB: PRINTER & STRUK
+// ═══════════════════════════════════════════════════════════════
+function TabPrinter() {
+  return (
+    <div className="max-w-lg">
+      <div className="card p-6 text-center">
+        <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+          <Icon name="printer" size={32} color="#9ca3af" />
+        </div>
+        <h3 className="font-bold text-gray-900 mb-2">Printer & Struk</h3>
+        <p className="text-sm text-gray-400 mb-1">Fitur konfigurasi printer Bluetooth</p>
+        <p className="text-xs text-gray-300">akan tersedia segera.</p>
+      </div>
+    </div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TAB: UBAH PASSWORD
+// ═══════════════════════════════════════════════════════════════
+function TabUbahPassword() {
+  const [form, setForm]     = useState({ password: '', konfirmasi: '' })
+  const [showPass, setShowPass] = useState(false)
+  const [loading, setLoading]   = useState(false)
+  const [msg, setMsg]           = useState('')
+
+  const handleSave = async () => {
+    if (!form.password) { setMsg('❌ Password baru wajib diisi'); return }
+    if (form.password.length < 6) { setMsg('❌ Password minimal 6 karakter'); return }
+    if (form.password !== form.konfirmasi) { setMsg('❌ Konfirmasi password tidak cocok'); return }
+    setLoading(true); setMsg('')
+    try {
+      const { createClient } = await import('@/lib/supabase')
+      const supabase = createClient()
+      const { error } = await supabase.auth.updateUser({ password: form.password })
+      if (error) throw new Error(error.message)
+      setMsg('✅ Password berhasil diubah!')
+      setForm({ password: '', konfirmasi: '' })
+    } catch (e) { setMsg('❌ ' + e.message) }
+    finally { setLoading(false) }
+  }
+
+  return (
+    <div className="max-w-lg space-y-4">
+      <div className="card p-5">
+        <h3 className="font-bold text-gray-900 mb-1">Ubah Password</h3>
+        <p className="text-xs text-gray-400 mb-4">Masukkan password baru untuk akun kamu.</p>
+
+        <div className="space-y-3">
+          <div>
+            <label className="text-xs font-semibold text-gray-600 mb-1 block">Password Baru</label>
+            <div className="relative">
+              <input
+                type={showPass ? 'text' : 'password'}
+                value={form.password}
+                onChange={e => setForm(p => ({...p, password: e.target.value}))}
+                placeholder="Minimal 6 karakter"
+                className="input-field w-full pr-10"
+              />
+              <button
+                onClick={() => setShowPass(v => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+              >
+                <Icon name={showPass ? 'eye-off' : 'eye'} size={16} color="#9ca3af" />
+              </button>
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-gray-600 mb-1 block">Konfirmasi Password</label>
+            <input
+              type={showPass ? 'text' : 'password'}
+              value={form.konfirmasi}
+              onChange={e => setForm(p => ({...p, konfirmasi: e.target.value}))}
+              placeholder="Ulangi password baru"
+              className="input-field w-full"
+            />
+          </div>
+        </div>
+
+        {msg && (
+          <p className={`mt-3 text-xs font-medium ${msg.startsWith('✅') ? 'text-green-600' : 'text-red-500'}`}>{msg}</p>
+        )}
+
+        <button onClick={handleSave} disabled={loading} className="btn-primary w-full mt-4">
+          {loading ? 'Menyimpan...' : 'Simpan Password Baru'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ROOT PAGE (inner — baca searchParams)
+// ═══════════════════════════════════════════════════════════════
+function PengaturanInner() {
+  const searchParams = useSearchParams()
+  const tabFromUrl   = searchParams.get('tab')
+
+  const [activeTab, setActiveTab] = useState(() => {
+    if (tabFromUrl && TABS.includes(tabFromUrl)) return tabFromUrl
+    return 'Profil Warung'
+  })
+
+  // Sync jika URL berubah (navigasi dari sidebar)
+  useEffect(() => {
+    if (tabFromUrl && TABS.includes(tabFromUrl)) {
+      setActiveTab(tabFromUrl)
+    }
+  }, [tabFromUrl])
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -559,11 +853,23 @@ export default function PengaturanPage() {
       </div>
 
       <div className="flex-1 overflow-y-auto page-content space-y-4">
-        {activeTab === 'Profil Warung' && <TabProfilWarung />}
-        {activeTab === 'Cabang'        && <TabCabang />}
-        {activeTab === 'User & Role'   && <TabUsers />}
-        {activeTab === 'Satuan Barang' && <TabSatuan />}
+        {activeTab === 'Profil Warung'   && <TabProfilWarung />}
+        {activeTab === 'Cabang'          && <TabCabang />}
+        {activeTab === 'User & Role'     && <TabUsers />}
+        {activeTab === 'Satuan Barang'   && <TabSatuan />}
+        {activeTab === 'Kategori Barang' && <TabKategori />}
+        {activeTab === 'Pemasok'         && <TabPemasok />}
+        {activeTab === 'Printer & Struk' && <TabPrinter />}
+        {activeTab === 'Ubah Password'   && <TabUbahPassword />}
       </div>
     </div>
+  )
+}
+
+export default function PengaturanPage() {
+  return (
+    <Suspense fallback={<div className="flex justify-center py-12"><div className="spinner" /></div>}>
+      <PengaturanInner />
+    </Suspense>
   )
 }
