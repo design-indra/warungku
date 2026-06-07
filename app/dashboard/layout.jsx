@@ -62,8 +62,8 @@ const sidebarSections = [
       { href: '/dashboard/pengaturan?tab=Kategori+Barang', label: 'Kategori Barang', icon: Tag },
       { href: '/dashboard/pengaturan?tab=Satuan+Barang',   label: 'Satuan Barang',   icon: Layers },
       { href: '/dashboard/pengaturan?tab=Pemasok',         label: 'Pemasok',         icon: Truck },
-      { href: '/dashboard/stok',                           label: 'Harga Jual',      icon: DollarSign },
-      { href: '/dashboard/stok',                           label: 'Barcode',         icon: Barcode },
+      { href: '/dashboard/stok#harga-jual',  activeKey: '/dashboard/stok#harga-jual', label: 'Harga Jual', icon: DollarSign },
+      { href: '/dashboard/barcode',           activeKey: '/dashboard/barcode',          label: 'Barcode',    icon: Barcode },
     ],
   },
   {
@@ -144,8 +144,8 @@ function MobileSidebar({ open, onClose, isActive, user, warungName, onLogout, ro
                 {section.title}
               </p>
               {/* Section items */}
-              {section.items.map(({ href, label, icon: Icon }) => {
-                const active = isActive(href)
+              {section.items.map(({ href, activeKey, label, icon: Icon }) => {
+                const active = isActive(activeKey || href)
                 return (
                   <Link
                     key={href + label}
@@ -237,8 +237,10 @@ export default function DashboardLayout({ children }) {
   }
 
   const isActive = (href) => {
-    if (href === '/dashboard') return pathname === '/dashboard'
-    return pathname.startsWith(href)
+    // Strip hash fragment sebelum bandingkan dengan pathname
+    const cleanHref = href.split('#')[0]
+    if (cleanHref === '/dashboard') return pathname === '/dashboard'
+    return pathname.startsWith(cleanHref)
   }
 
   // Page title from active nav
