@@ -8,7 +8,7 @@ import {
   Settings, LogOut, Store, Menu, X,
   Bell, ChevronRight, Receipt, MoreHorizontal,
   Wallet, Users, ClipboardList,
-  Tag, Layers, Truck, DollarSign, Barcode,
+  Tag, Truck, DollarSign, Barcode,
   Clock, HelpCircle, Headphones, Lock, Printer
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase'
@@ -50,20 +50,19 @@ const sidebarSections = [
   {
     title: 'Kelola Usaha',
     items: [
-      { href: '/dashboard/pengaturan?tab=Profil+Warung', label: 'Profil Usaha',    icon: Store },
-      { href: '/dashboard/pelanggan',                    label: 'Pelanggan',        icon: Users },
-      { href: '/dashboard/pengaturan',                   label: 'Pengaturan',       icon: Settings },
-      { href: '/dashboard/pengaturan?tab=Printer+%26+Struk', label: 'Printer & Struk', icon: Printer },
+      { href: '/dashboard/pengaturan/profil-warung', label: 'Profil Usaha',    icon: Store },
+      { href: '/dashboard/pelanggan',                label: 'Pelanggan',        icon: Users },
+      { href: '/dashboard/pengaturan',               label: 'Pengaturan',       icon: Settings },
+      { href: '/dashboard/pengaturan/printer-struk', label: 'Printer & Struk', icon: Printer },
     ],
   },
   {
     title: 'Master Data',
     items: [
-      { href: '/dashboard/pengaturan?tab=Kategori+Barang', label: 'Kategori Barang', icon: Tag },
-      { href: '/dashboard/pengaturan?tab=Satuan+Barang',   label: 'Satuan Barang',   icon: Layers },
-      { href: '/dashboard/pengaturan?tab=Pemasok',         label: 'Pemasok',         icon: Truck },
-      { href: '/dashboard/stok#harga-jual',  activeKey: '/dashboard/stok#harga-jual', label: 'Harga Jual', icon: DollarSign },
-      { href: '/dashboard/barcode',           activeKey: '/dashboard/barcode',          label: 'Barcode',    icon: Barcode },
+      { href: '/dashboard/pengaturan/satuan-kategori', label: 'Satuan & Kategori', icon: Tag },
+      { href: '/dashboard/pengaturan/pemasok',          label: 'Pemasok',           icon: Truck },
+      { href: '/dashboard/stok#harga-jual', activeKey: '/dashboard/stok#harga-jual', label: 'Harga Jual', icon: DollarSign },
+      { href: '/dashboard/barcode',          activeKey: '/dashboard/barcode',          label: 'Barcode',    icon: Barcode },
     ],
   },
   {
@@ -77,7 +76,7 @@ const sidebarSections = [
   {
     title: 'Akun & Keamanan',
     items: [
-      { href: '/dashboard/pengaturan?tab=Ubah+Password', label: 'Ubah Password', icon: Lock },
+      { href: '/dashboard/pengaturan/reset-password', label: 'Ubah Password', icon: Lock },
     ],
   },
 ]
