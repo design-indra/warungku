@@ -7,7 +7,9 @@ import {
   LayoutDashboard, ShoppingCart, Package, BarChart3,
   Settings, LogOut, Store, Menu, X,
   Bell, ChevronRight, Receipt, MoreHorizontal,
-  Wallet, Users, ClipboardList
+  Wallet, Users, ClipboardList,
+  Tag, Layers, Truck, DollarSign, Barcode,
+  Clock, HelpCircle, Headphones, Lock, Printer
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase'
 
@@ -33,9 +35,56 @@ const navItems = [
   { href: '/dashboard/menu-lainnya', label: 'Menu Lainnya',      icon: MoreHorizontal },
 ]
 
+// ─── Data struktur sidebar sesuai mockup ────────────────────────────────────
+const sidebarSections = [
+  {
+    title: 'Utama',
+    items: [
+      { href: '/dashboard',              label: 'Dashboard',    icon: LayoutDashboard },
+      { href: '/dashboard/kasir',        label: 'Kasir Pos',    icon: ShoppingCart },
+      { href: '/dashboard/stok',         label: 'Stock Barang', icon: Package },
+      { href: '/dashboard/laporan',      label: 'Laporan',      icon: BarChart3 },
+      { href: '/dashboard/menu-lainnya', label: 'Menu Lainnya', icon: MoreHorizontal },
+    ],
+  },
+  {
+    title: 'Kelola Usaha',
+    items: [
+      { href: '/dashboard/pengaturan?tab=profil',   label: 'Profil Usaha',   icon: Store },
+      { href: '/dashboard/pengaturan?tab=users',    label: 'Pengguna',       icon: Users },
+      { href: '/dashboard/pengaturan',              label: 'Pengaturan',     icon: Settings },
+      { href: '/dashboard/pengaturan?tab=printer',  label: 'Printer & Struk',icon: Printer },
+    ],
+  },
+  {
+    title: 'Master Data',
+    items: [
+      { href: '/dashboard/stok?tab=kategori',   label: 'Kategori Barang', icon: Tag },
+      { href: '/dashboard/pengaturan?tab=satuan',label: 'Satuan Barang',  icon: Layers },
+      { href: '/dashboard/pelanggan?tab=pemasok',label: 'Pemasok',        icon: Truck },
+      { href: '/dashboard/stok',                 label: 'Harga Jual',     icon: DollarSign },
+      { href: '/dashboard/stok?tab=barcode',     label: 'Barcode',        icon: Barcode },
+    ],
+  },
+  {
+    title: 'Aktivitas & Bantuan',
+    items: [
+      { href: '/dashboard/riwayat', label: 'Riwayat Aktivitas', icon: Clock },
+      { href: '/dashboard/info',    label: 'Pusat Bantuan',     icon: HelpCircle },
+      { href: '/dashboard/cs',      label: 'Hubungi Kami',      icon: Headphones },
+    ],
+  },
+  {
+    title: 'Akun & Keamanan',
+    items: [
+      { href: '/dashboard/pengaturan?tab=password', label: 'Ubah Password', icon: Lock },
+    ],
+  },
+]
+
 // ─── Mobile Sidebar Drawer ───────────────────────────────────────────────────
-function MobileSidebar({ open, onClose, navItems, isActive, user, warungName, onLogout, router }) {
-  const fullName = user?.user_metadata?.full_name || 'Pemilik Warung'
+function MobileSidebar({ open, onClose, isActive, user, warungName, onLogout, router }) {
+  const fullName = user?.user_metadata?.full_name || 'Pemilik Warungku'
   const email    = user?.email || ''
   const initial  = fullName?.[0]?.toUpperCase() || email?.[0]?.toUpperCase() || 'P'
 
@@ -46,13 +95,12 @@ function MobileSidebar({ open, onClose, navItems, isActive, user, warungName, on
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
 
-      <aside className="relative w-[78vw] max-w-[300px] bg-white flex flex-col h-full z-10 shadow-2xl overflow-hidden">
+      <aside className="relative w-[80vw] max-w-[310px] bg-white flex flex-col h-full z-10 shadow-2xl overflow-hidden">
 
-        {/* ── Header biru ── */}
-        <div className="bg-blue-600 px-4 pt-5 pb-4">
-          {/* Baris: logo warung + nama + X */}
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
+        {/* ── Header biru: logo + nama warung + X ── */}
+        <div className="bg-blue-600 px-4 pt-5 pb-4 flex-shrink-0">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3 min-w-0">
               <div className="w-11 h-11 bg-white rounded-2xl flex items-center justify-center flex-shrink-0">
                 <Store className="w-6 h-6 text-blue-600" />
               </div>
@@ -63,57 +111,68 @@ function MobileSidebar({ open, onClose, navItems, isActive, user, warungName, on
             </div>
             <button
               onClick={onClose}
-              className="w-8 h-8 flex items-center justify-center rounded-xl bg-white/20 hover:bg-white/30 transition-colors flex-shrink-0"
+              className="w-8 h-8 flex items-center justify-center rounded-xl bg-white/20 hover:bg-white/30 transition-colors flex-shrink-0 ml-2"
             >
               <X className="w-4 h-4 text-white" />
             </button>
           </div>
+        </div>
 
-          {/* Card user info */}
-          <div className="bg-blue-500/60 rounded-2xl px-3 py-3 flex items-center gap-3">
-            <div className="w-11 h-11 bg-white rounded-full flex items-center justify-center text-blue-600 font-bold text-base flex-shrink-0">
+        {/* ── User card (putih, di bawah header biru) ── */}
+        <div className="px-3 py-3 border-b border-gray-100 flex-shrink-0">
+          <div className="bg-blue-50 rounded-2xl px-3 py-3 flex items-center gap-3">
+            <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-base flex-shrink-0">
               {initial}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-white font-bold text-sm leading-tight truncate">{fullName}</p>
-              <p className="text-blue-100 text-xs leading-tight truncate mt-0.5">{email}</p>
-              <span className="inline-block mt-1 bg-white text-blue-700 text-[10px] px-2 py-0.5 rounded-full font-bold">
+              <p className="text-gray-900 font-bold text-sm leading-tight truncate">{fullName}</p>
+              <p className="text-gray-500 text-xs leading-tight truncate mt-0.5">{email}</p>
+              <span className="inline-block mt-1 bg-blue-100 text-blue-700 text-[10px] px-2 py-0.5 rounded-full font-semibold">
                 Pemilik
               </span>
             </div>
-            <ChevronRight className="w-4 h-4 text-blue-200 flex-shrink-0" />
+            <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
           </div>
         </div>
 
-        {/* ── Nav list ── */}
-        <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
-          {navItems.map(({ href, label, icon: Icon }) => {
-            const active = isActive(href)
-            return (
-              <Link
-                key={href}
-                href={href}
-                onClick={onClose}
-                className={`flex items-center gap-3.5 px-3 py-3 rounded-xl text-sm font-medium transition-colors
-                  ${active
-                    ? 'bg-blue-50 text-blue-700 font-semibold'
-                    : 'text-gray-700 hover:bg-gray-50'}`}
-              >
-                <Icon className={`w-5 h-5 flex-shrink-0 ${active ? 'text-blue-600' : 'text-gray-500'}`} />
-                <span>{label}</span>
-              </Link>
-            )
-          })}
+        {/* ── Scrollable nav sections ── */}
+        <nav className="flex-1 overflow-y-auto py-2">
+          {sidebarSections.map((section) => (
+            <div key={section.title} className="mb-1">
+              {/* Section title */}
+              <p className="px-4 pt-3 pb-1 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
+                {section.title}
+              </p>
+              {/* Section items */}
+              {section.items.map(({ href, label, icon: Icon }) => {
+                const active = isActive(href)
+                return (
+                  <Link
+                    key={href + label}
+                    href={href}
+                    onClick={onClose}
+                    className={`flex items-center gap-3 mx-2 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors
+                      ${active
+                        ? 'bg-blue-50 text-blue-700 font-semibold'
+                        : 'text-gray-700 hover:bg-gray-50'}`}
+                  >
+                    <Icon className={`w-[18px] h-[18px] flex-shrink-0 ${active ? 'text-blue-600' : 'text-gray-500'}`} />
+                    <span>{label}</span>
+                  </Link>
+                )
+              })}
+            </div>
+          ))}
         </nav>
 
-        {/* ── Footer: Keluar + versi ── */}
-        <div className="px-2 pb-4 pt-2">
+        {/* ── Footer: Keluar Akun + versi ── */}
+        <div className="flex-shrink-0 border-t border-gray-100 px-2 pt-2 pb-4">
           <button
             onClick={() => { onClose(); onLogout() }}
-            className="flex items-center gap-3.5 px-3 py-3 rounded-xl text-sm font-semibold text-red-500 hover:bg-red-50 w-full transition-colors"
+            className="flex items-center gap-3 mx-0 px-3 py-2.5 rounded-xl text-sm font-semibold text-red-500 hover:bg-red-50 w-full transition-colors"
           >
-            <LogOut className="w-5 h-5 text-red-500 flex-shrink-0" />
-            <span>Keluar Akun</span>
+            <LogOut className="w-[18px] h-[18px] text-red-500 flex-shrink-0" />
+            <span>Keluar</span>
           </button>
           <p className="text-center text-[11px] text-gray-400 mt-2">Versi 1.2.0 (Build 120)</p>
         </div>
@@ -221,7 +280,6 @@ export default function DashboardLayout({ children }) {
       <MobileSidebar
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
-        navItems={navItems}
         isActive={isActive}
         user={user}
         warungName={warungName}
