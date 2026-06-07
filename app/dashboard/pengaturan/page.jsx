@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import Icon from '@/components/Icon'
 
 const TABS = ['Profil Warung', 'Cabang', 'User & Role', 'Satuan Barang']
@@ -37,17 +37,54 @@ function Modal({ title, onClose, children }) {
 // TAB: PROFIL WARUNG
 // ═══════════════════════════════════════════════════════════════
 function TabProfilWarung() {
-  const [form,    setForm]    = useState({ nama_warung: '', no_hp: '', alamat: '' })
-  const [loading, setLoading] = useState(true)
-  const [saving,  setSaving]  = useState(false)
-  const [msg,     setMsg]     = useState('')
+  const [form,       setForm]       = useState({ nama_warung: '', no_hp: '', alamat: '' })
+  const [logoUrl,    setLogoUrl]    = useState('')
+  const [uploading,  setUploading]  = useState(false)
+  const [loading,    setLoading]    = useState(true)
+  const [saving,     setSaving]     = useState(false)
+  const [msg,        setMsg]        = useState('')
+  const fileRef = useRef(null)
 
   useEffect(() => {
     apiFetch('/api/pengaturan/profil')
-      .then(d => setForm({ nama_warung: d.nama_warung || '', no_hp: d.no_hp || '', alamat: d.alamat || '' }))
+      .then(d => {
+        setForm({ nama_warung: d.nama_warung || '', no_hp: d.no_hp || '', alamat: d.alamat || '' })
+        setLogoUrl(d.logo_url || '')
+      })
       .catch(e => setMsg('❌ ' + e.message))
       .finally(() => setLoading(false))
   }, [])
+
+  // Upload foto logo ke Cloudinary via API yang sudah ada
+  const handleLogoChange = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    // Preview lokal dulu
+    const localUrl = URL.createObjectURL(file)
+    setLogoUrl(localUrl)
+    setUploading(true)
+    setMsg('')
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res  = await fetch('/api/barang/upload-foto', { method: 'POST', body: fd })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Upload gagal')
+      setLogoUrl(json.url)
+      // Langsung simpan logo_url ke DB
+      await apiFetch('/api/pengaturan/profil', {
+        method: 'PUT',
+        body: JSON.stringify({ logo_url: json.url }),
+      })
+      setMsg('✅ Foto warung berhasil diperbarui!')
+      setTimeout(() => setMsg(''), 3000)
+    } catch (err) {
+      setMsg('❌ ' + err.message)
+    } finally {
+      setUploading(false)
+      e.target.value = ''
+    }
+  }
 
   const handleSave = async () => {
     if (!form.nama_warung.trim()) { setMsg('❌ Nama warung wajib diisi'); return }
@@ -65,9 +102,66 @@ function TabProfilWarung() {
     <div className="max-w-lg space-y-4">
       <div className="card p-5">
         <h3 className="font-bold text-gray-900 mb-4">Profil Warung</h3>
-        <div className="text-center mb-5">
-          <div className="text-5xl mb-3">🏪</div>
+
+        {/* ── Logo / Foto Warung ── */}
+        <div className="flex flex-col items-center mb-6">
+          {/* Zona foto — klik untuk upload */}
+          <div
+            className="relative cursor-pointer group"
+            onClick={() => !uploading && fileRef.current?.click()}
+          >
+            {/* Avatar / preview */}
+            <div className="w-24 h-24 rounded-2xl overflow-hidden border-4 border-white shadow-lg bg-blue-50 flex items-center justify-center">
+              {logoUrl ? (
+                <img src={logoUrl} alt="Logo warung" className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-5xl select-none">🏪</span>
+              )}
+            </div>
+
+            {/* Overlay kamera saat hover / loading */}
+            <div className={`absolute inset-0 rounded-2xl flex items-center justify-center transition-all
+              ${uploading ? 'bg-black/40' : 'bg-black/0 group-hover:bg-black/40'}`}>
+              {uploading ? (
+                <svg className="w-7 h-7 text-white animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                </svg>
+              ) : (
+                <svg className="w-7 h-7 text-white opacity-0 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+              )}
+            </div>
+
+            {/* Badge kamera kecil di pojok kanan bawah */}
+            <div className="absolute -bottom-1 -right-1 w-7 h-7 bg-blue-600 rounded-full flex items-center justify-center border-2 border-white shadow">
+              <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+              </svg>
+            </div>
+          </div>
+
+          <p className="text-xs text-gray-400 mt-3 text-center">
+            {uploading ? 'Mengupload foto...' : 'Ketuk foto untuk mengganti'}
+          </p>
+          <p className="text-[10px] text-gray-300 mt-0.5">JPG, PNG, WebP • Maks. 10MB</p>
+
+          {/* Input file hidden */}
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="hidden"
+            onChange={handleLogoChange}
+          />
         </div>
+
+        {/* ── Form fields ── */}
         <div className="space-y-3">
           {[
             { label: 'Nama Warung', key: 'nama_warung', placeholder: 'Nama warung Anda' },
@@ -92,10 +186,11 @@ function TabProfilWarung() {
             />
           </div>
         </div>
+
         {msg && (
           <p className={`mt-3 text-xs font-medium ${msg.startsWith('✅') ? 'text-green-600' : 'text-red-500'}`}>{msg}</p>
         )}
-        <button onClick={handleSave} disabled={saving} className="w-full btn-primary justify-center mt-4 py-3">
+        <button onClick={handleSave} disabled={saving || uploading} className="w-full btn-primary justify-center mt-4 py-3">
           <Icon name="save" size={16} color="#fff" />
           {saving ? 'Menyimpan...' : 'Simpan Perubahan'}
         </button>
