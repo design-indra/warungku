@@ -587,10 +587,19 @@ export default function KasirPage() {
     setShowCamera(true)
   }
 
+  // Helper: cocokkan barcode pabrikan ATAU kode internal
+  const matchByCode = (p, code) => {
+    const c = code.toLowerCase()
+    return (
+      p.barcode?.toLowerCase() === c ||
+      p.kode_barang?.toLowerCase() === c
+    )
+  }
+
   // Handle hasil scan dari file lib/scanner
   const handleCameraDetected = (code) => {
     setShowCamera(false)
-    const match = products.filter(p => p.kode_barang?.toLowerCase() === code.toLowerCase())
+    const match = products.filter(p => matchByCode(p, code))
     if (match.length === 1) {
       addToCart(match[0])
       setSearch('') // Reset kolom pencarian
@@ -602,7 +611,7 @@ export default function KasirPage() {
   // Jika hasil pencarian dari keyboard/hardware scanner tepat 1, auto-add
   useEffect(() => {
     if (!search) return
-    const match = products.filter(p => p.kode_barang?.toLowerCase() === search.toLowerCase())
+    const match = products.filter(p => matchByCode(p, search))
     if (match.length === 1) {
       addToCart(match[0])
       setSearch('')
@@ -611,7 +620,11 @@ export default function KasirPage() {
 
   const filtered = useMemo(() => products.filter(p =>
     (activeCategory === 'Semua' || p.kategori?.nama === activeCategory) &&
-    (p.nama.toLowerCase().includes(search.toLowerCase()) || p.kode_barang?.toLowerCase().includes(search.toLowerCase())) &&
+    (
+      p.nama.toLowerCase().includes(search.toLowerCase()) ||
+      p.kode_barang?.toLowerCase().includes(search.toLowerCase()) ||
+      p.barcode?.toLowerCase().includes(search.toLowerCase())
+    ) &&
     p.stok > 0
   ), [search, activeCategory, products])
 
