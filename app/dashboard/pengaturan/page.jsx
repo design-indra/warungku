@@ -55,7 +55,7 @@ function TabProfilWarung() {
       .finally(() => setLoading(false))
   }, [])
 
-  // Upload foto logo ke Cloudinary via API yang sudah ada
+  // Upload foto logo ke Supabase Storage via API baru
   const handleLogoChange = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -67,19 +67,15 @@ function TabProfilWarung() {
     try {
       const fd = new FormData()
       fd.append('file', file)
-      const res  = await fetch('/api/barang/upload-foto', { method: 'POST', body: fd })
+      const res  = await fetch('/api/pengaturan/upload-logo', { method: 'POST', body: fd })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error || 'Upload gagal')
-      setLogoUrl(json.url)
-      // Langsung simpan logo_url ke DB
-      await apiFetch('/api/pengaturan/profil', {
-        method: 'PUT',
-        body: JSON.stringify({ logo_url: json.url }),
-      })
+      setLogoUrl(json.url) // ganti preview lokal dengan URL permanent
       setMsg('✅ Foto warung berhasil diperbarui!')
       setTimeout(() => setMsg(''), 3000)
     } catch (err) {
       setMsg('❌ ' + err.message)
+      setLogoUrl('') // reset preview jika gagal
     } finally {
       setUploading(false)
       e.target.value = ''
