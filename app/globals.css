@@ -15,6 +15,10 @@ html, body {
   font-family: 'Inter', sans-serif;
   background-color: #f3f4f6;
   color: #111827;
+
+  /* ── Disable pull-to-refresh & overscroll bounce ── */
+  overscroll-behavior: none;
+  overscroll-behavior-y: none;
 }
 
 /* Scrollbar */
