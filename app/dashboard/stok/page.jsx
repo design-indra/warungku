@@ -322,7 +322,7 @@ function BarangModal({ editData, onClose, onSaved }) {
     const file = e.target.files?.[0]
     if (!file) return
     setAiLoading(true)
-    setLookupInfo('AI sedang membaca kemasan produk...')
+    setLookupInfo(' sedang membaca kemasan produk...')
     try {
       // Konversi gambar ke base64
       const base64 = await new Promise((res, rej) => {
@@ -346,7 +346,7 @@ function BarangModal({ editData, onClose, onSaved }) {
       if (!apiRes.ok) throw new Error(json.error || 'Gagal memproses gambar')
 
       const parsed = json.data
-      if (!parsed.nama) throw new Error('AI tidak bisa membaca nama produk dari gambar ini')
+      if (!parsed.nama) throw new Error(' tidak bisa membaca nama produk dari gambar ini')
 
       setForm(prev => ({
         ...prev,
@@ -354,7 +354,7 @@ function BarangModal({ editData, onClose, onSaved }) {
         kategori: parsed.kategori || prev.kategori,
         satuan:   parsed.satuan   || prev.satuan,
       }))
-      setLookupInfo(`\u2713 AI berhasil membaca: ${parsed.nama}`)
+      setLookupInfo(`\u2713 Berhasil membaca: ${parsed.nama}`)
     } catch (err) {
       setLookupInfo(`Gagal: ${err.message}. Isi nama produk manual.`)
     } finally {
