@@ -146,12 +146,6 @@ export default function MenuLainnyaPage() {
 
   return (
     <div className="page-content space-y-4 pb-8">
-      {/* Mobile page header (desktop sudah ada di layout) */}
-      <div className="md:hidden -mx-4 -mt-4 bg-blue-600 px-4 pt-4 pb-5 mb-4">
-        <h1 className="text-xl font-bold text-white">Menu Lainnya</h1>
-        <p className="text-blue-200 text-sm mt-0.5">Kelola pengaturan dan fitur lainnya</p>
-      </div>
-
       {/* Kelola Usaha - Grid 4 */}
       <div className="card overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-100">
