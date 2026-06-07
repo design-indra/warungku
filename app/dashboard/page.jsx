@@ -23,6 +23,7 @@ export default function DashboardPage() {
   const [recentTx, setRecentTx] = useState([])
   const [loading, setLoading]   = useState(true)
   const [userName, setUserName] = useState('Pemilik Warungku')
+  const [logoUrl, setLogoUrl]   = useState('')
 
   useEffect(() => {
     // Ambil nama user
@@ -33,6 +34,12 @@ export default function DashboardPage() {
         else if (data?.user?.email) setUserName(data.user.email.split('@')[0])
       })
     } catch {}
+
+    // Ambil logo warung
+    fetch('/api/pengaturan/profil')
+      .then(r => r.json())
+      .then(d => { if (d.logo_url) setLogoUrl(d.logo_url) })
+      .catch(() => {})
 
     Promise.all([
       fetch(`/api/laporan?from=${week}&to=${today}`).then(r => r.json()),
@@ -91,9 +98,11 @@ export default function DashboardPage() {
               <p className="text-gray-400 text-xs mt-1">Semoga harimu menyenangkan!</p>
             </div>
             <div className="w-20 h-20 flex-shrink-0">
-              {/* Warung illustration placeholder */}
-              <div className="w-full h-full bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl flex items-center justify-center text-3xl">
-                🏪
+              <div className="w-full h-full bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl overflow-hidden flex items-center justify-center">
+                {logoUrl
+                  ? <img src={logoUrl} alt="Logo warung" className="w-full h-full object-cover" />
+                  : <span className="text-3xl">🏪</span>
+                }
               </div>
             </div>
           </div>
