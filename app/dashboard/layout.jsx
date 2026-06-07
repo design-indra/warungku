@@ -50,20 +50,20 @@ const sidebarSections = [
   {
     title: 'Kelola Usaha',
     items: [
-      { href: '/dashboard/pengaturan?tab=profil',   label: 'Profil Usaha',   icon: Store },
-      { href: '/dashboard/pengaturan?tab=users',    label: 'Pengguna',       icon: Users },
-      { href: '/dashboard/pengaturan',              label: 'Pengaturan',     icon: Settings },
-      { href: '/dashboard/pengaturan?tab=printer',  label: 'Printer & Struk',icon: Printer },
+      { href: '/dashboard/pengaturan?tab=Profil+Warung', label: 'Profil Usaha',    icon: Store },
+      { href: '/dashboard/pelanggan',                    label: 'Pelanggan',        icon: Users },
+      { href: '/dashboard/pengaturan',                   label: 'Pengaturan',       icon: Settings },
+      { href: '/dashboard/pengaturan?tab=Printer+%26+Struk', label: 'Printer & Struk', icon: Printer },
     ],
   },
   {
     title: 'Master Data',
     items: [
-      { href: '/dashboard/stok?tab=kategori',   label: 'Kategori Barang', icon: Tag },
-      { href: '/dashboard/pengaturan?tab=satuan',label: 'Satuan Barang',  icon: Layers },
-      { href: '/dashboard/pelanggan?tab=pemasok',label: 'Pemasok',        icon: Truck },
-      { href: '/dashboard/stok',                 label: 'Harga Jual',     icon: DollarSign },
-      { href: '/dashboard/stok?tab=barcode',     label: 'Barcode',        icon: Barcode },
+      { href: '/dashboard/pengaturan?tab=Kategori+Barang', label: 'Kategori Barang', icon: Tag },
+      { href: '/dashboard/pengaturan?tab=Satuan+Barang',   label: 'Satuan Barang',   icon: Layers },
+      { href: '/dashboard/pengaturan?tab=Pemasok',         label: 'Pemasok',         icon: Truck },
+      { href: '/dashboard/stok',                           label: 'Harga Jual',      icon: DollarSign },
+      { href: '/dashboard/stok',                           label: 'Barcode',         icon: Barcode },
     ],
   },
   {
@@ -77,7 +77,7 @@ const sidebarSections = [
   {
     title: 'Akun & Keamanan',
     items: [
-      { href: '/dashboard/pengaturan?tab=password', label: 'Ubah Password', icon: Lock },
+      { href: '/dashboard/pengaturan?tab=Ubah+Password', label: 'Ubah Password', icon: Lock },
     ],
   },
 ]
