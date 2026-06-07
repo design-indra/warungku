@@ -2,93 +2,49 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase'
 import {
-  Store, Users, Settings, Printer,
-  Tag, PackageOpen, Truck, DollarSign, Barcode,
+  Store, Barcode, CreditCard, Printer,
+  Tag, PackageOpen, Truck, DollarSign,
   Clock, HelpCircle, Headphones,
-  Lock, LogOut, ChevronRight
+  Lock, LogOut, ChevronRight, Crown
 } from 'lucide-react'
 
-const kelolaSections = [
-  {
-    id: 'profil',
-    icon: Store,
-    label: 'Profil Usaha',
-    sub: 'Kelola informasi warung Anda',
-    color: 'text-blue-600',
-    bg: 'bg-blue-50',
-    href: '/dashboard/pengaturan?tab=profil',
-  },
-  {
-    id: 'pengguna',
-    icon: Users,
-    label: 'Pengguna',
-    sub: 'Kelola akun dan hak akses',
-    color: 'text-green-600',
-    bg: 'bg-green-50',
-    href: '/dashboard/pengaturan?tab=users',
-  },
-  {
-    id: 'pengaturan',
-    icon: Settings,
-    label: 'Pengaturan',
-    sub: 'Atur preferensi aplikasi',
-    color: 'text-orange-500',
-    bg: 'bg-orange-50',
-    href: '/dashboard/pengaturan',
-  },
-  {
-    id: 'printer',
-    icon: Printer,
-    label: 'Printer & Struk',
-    sub: 'Atur perangkat cetak struk',
-    color: 'text-purple-600',
-    bg: 'bg-purple-50',
-    href: '/dashboard/pengaturan?tab=printer',
-  },
-]
+// ── Grid 4: Kelola Usaha ──────────────────────────────────────
+// 1. Profil Usaha
+// 2. Barcode (ganti Pengaturan)
+// 3. Hutang (basic & pro only, ada crown kuning)
+// 4. Print & Struk
 
 const masterData = [
   {
     icon: Tag,
-    label: 'Kategori Barang',
-    sub: 'Kelola kategori untuk mengelompokkan barang',
-    color: 'text-blue-600',
-    bg: 'bg-blue-50',
-    href: '/dashboard/stok?tab=kategori',
-  },
-  {
-    icon: PackageOpen,
-    label: 'Satuan Barang',
-    sub: 'Kelola satuan seperti pcs, kg, liter, dll',
-    color: 'text-green-600',
-    bg: 'bg-green-50',
-    href: '/dashboard/pengaturan?tab=satuan',
+    label: 'Satuan & Kategori',
+    sub: 'Kelola satuan dan kategori barang',
+    color: 'text-teal-600', bg: 'bg-teal-50',
+    href: '/dashboard/pengaturan/satuan-kategori',
   },
   {
     icon: Truck,
     label: 'Pemasok',
-    sub: 'Kelola data pemasok / supplier',
-    color: 'text-orange-500',
-    bg: 'bg-orange-50',
-    href: '/dashboard/pelanggan?tab=pemasok',
+    sub: 'Agen grosir, distributor, salesman',
+    color: 'text-orange-500', bg: 'bg-orange-50',
+    href: '/dashboard/pengaturan/pemasok',
   },
   {
     icon: DollarSign,
     label: 'Harga Jual',
     sub: 'Kelola harga jual per barang',
-    color: 'text-purple-600',
-    bg: 'bg-purple-50',
+    color: 'text-purple-600', bg: 'bg-purple-50',
     href: '/dashboard/stok',
   },
   {
     icon: Barcode,
     label: 'Barcode',
     sub: 'Cetak dan kelola barcode produk',
-    color: 'text-gray-600',
-    bg: 'bg-gray-100',
-    href: '/dashboard/stok?tab=barcode',
+    color: 'text-gray-600', bg: 'bg-gray-100',
+    href: '/dashboard/barcode',
   },
 ]
 
@@ -97,32 +53,31 @@ const aktivitas = [
     icon: Clock,
     label: 'Riwayat Aktivitas',
     sub: 'Lihat catatan aktivitas pada aplikasi',
-    color: 'text-blue-600',
-    bg: 'bg-blue-50',
+    color: 'text-blue-600', bg: 'bg-blue-50',
     href: '/dashboard/riwayat',
   },
   {
     icon: HelpCircle,
     label: 'Pusat Bantuan',
     sub: 'Panduan penggunaan dan FAQ',
-    color: 'text-green-600',
-    bg: 'bg-green-50',
+    color: 'text-green-600', bg: 'bg-green-50',
     href: '/dashboard/info',
   },
   {
     icon: Headphones,
     label: 'Hubungi Kami',
     sub: 'Butuh bantuan? Hubungi tim support kami',
-    color: 'text-orange-500',
-    bg: 'bg-orange-50',
+    color: 'text-orange-500', bg: 'bg-orange-50',
     href: '/dashboard/cs',
   },
 ]
 
 function ListItem({ item }) {
   return (
-    <Link href={item.href}
-      className="flex items-center gap-4 px-4 py-3.5 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-b-0">
+    <Link
+      href={item.href}
+      className="flex items-center gap-4 px-4 py-3.5 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-b-0"
+    >
       <div className={`w-10 h-10 rounded-xl ${item.bg} flex items-center justify-center flex-shrink-0`}>
         <item.icon className={`w-5 h-5 ${item.color}`} />
       </div>
@@ -135,8 +90,55 @@ function ListItem({ item }) {
   )
 }
 
+// Komponen grid item untuk Kelola Usaha
+function GridItem({ icon: Icon, label, sub, color, bg, href, locked }) {
+  const inner = (
+    <div className="flex flex-col items-center gap-2 p-4 rounded-xl hover:bg-gray-50 transition-colors text-center relative">
+      <div className={`w-12 h-12 rounded-2xl ${bg} flex items-center justify-center relative`}>
+        <Icon className={`w-6 h-6 ${color}`} />
+        {locked && (
+          <div className="absolute -top-1 -right-1 w-5 h-5 bg-yellow-400 rounded-full flex items-center justify-center shadow">
+            <Crown className="w-3 h-3 text-white" />
+          </div>
+        )}
+      </div>
+      <div>
+        <p className="text-sm font-semibold text-gray-800 leading-tight">{label}</p>
+        <p className="text-[10px] text-gray-400 mt-0.5 leading-tight">{sub}</p>
+      </div>
+      {locked && (
+        <span className="text-[9px] font-bold text-yellow-600 bg-yellow-50 px-2 py-0.5 rounded-full border border-yellow-200">
+          Basic & Pro
+        </span>
+      )}
+    </div>
+  )
+
+  if (locked) {
+    return (
+      <Link href={href} className="block">
+        {inner}
+      </Link>
+    )
+  }
+
+  return (
+    <Link href={href} className="block">
+      {inner}
+    </Link>
+  )
+}
+
 export default function MenuLainnyaPage() {
   const router = useRouter()
+  const [plan, setPlan] = useState(null) // null=loading, 'free', 'basic', 'pro'
+
+  useEffect(() => {
+    fetch('/api/subscription/status')
+      .then(r => r.json())
+      .then(j => setPlan(j.plan || 'free'))
+      .catch(() => setPlan('free'))
+  }, [])
 
   const handleLogout = async () => {
     const supabase = createClient()
@@ -144,26 +146,55 @@ export default function MenuLainnyaPage() {
     router.push('/auth/login')
   }
 
+  const hutangLocked = plan === 'free' // free plan tidak bisa akses hutang
+
+  const kelolaGrid = [
+    {
+      icon: Store,
+      label: 'Profil Usaha',
+      sub: 'Info warung Anda',
+      color: 'text-blue-600', bg: 'bg-blue-50',
+      href: '/dashboard/pengaturan/profil-warung',
+      locked: false,
+    },
+    {
+      icon: Barcode,
+      label: 'Barcode',
+      sub: 'Kelola barcode produk',
+      color: 'text-gray-600', bg: 'bg-gray-100',
+      href: '/dashboard/barcode',
+      locked: false,
+    },
+    {
+      icon: CreditCard,
+      label: 'Hutang',
+      sub: hutangLocked ? 'Upgrade untuk akses' : 'Kelola hutang pelanggan',
+      color: hutangLocked ? 'text-yellow-500' : 'text-red-500',
+      bg: hutangLocked ? 'bg-yellow-50' : 'bg-red-50',
+      href: hutangLocked ? '/dashboard/berlangganan' : '/dashboard/hutang',
+      locked: hutangLocked,
+    },
+    {
+      icon: Printer,
+      label: 'Print & Struk',
+      sub: 'Atur printer cetak',
+      color: 'text-purple-600', bg: 'bg-purple-50',
+      href: '/dashboard/pengaturan/printer-struk',
+      locked: false,
+    },
+  ]
+
   return (
     <div className="page-content space-y-4 pb-8">
+
       {/* Kelola Usaha - Grid 4 */}
       <div className="card overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-100">
           <h2 className="text-sm font-bold text-gray-800">Kelola Usaha</h2>
         </div>
         <div className="grid grid-cols-2 gap-0 p-3">
-          {kelolaSections.map((item) => (
-            <Link key={item.id} href={item.href}
-              className="flex flex-col items-center gap-2 p-4 rounded-xl hover:bg-gray-50 transition-colors text-center">
-              <div className={`w-12 h-12 rounded-2xl ${item.bg} flex items-center justify-center`}>
-                <item.icon className={`w-6 h-6 ${item.color}`} />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-gray-800 leading-tight">{item.label}</p>
-                <p className="text-[10px] text-gray-400 mt-0.5 leading-tight">{item.sub}</p>
-              </div>
-              <ChevronRight className="w-3 h-3 text-gray-300" />
-            </Link>
+          {kelolaGrid.map(item => (
+            <GridItem key={item.label} {...item} />
           ))}
         </div>
       </div>
@@ -174,7 +205,22 @@ export default function MenuLainnyaPage() {
           <h2 className="text-sm font-bold text-gray-800">Master Data</h2>
         </div>
         <div className="divide-y divide-gray-50">
-          {masterData.map((item) => (
+          {masterData.map(item => (
+            <ListItem key={item.label} item={item} />
+          ))}
+        </div>
+      </div>
+
+      {/* Pengaturan Lanjutan */}
+      <div className="card overflow-hidden">
+        <div className="px-4 py-3 border-b border-gray-100">
+          <h2 className="text-sm font-bold text-gray-800">Pengaturan Lanjutan</h2>
+        </div>
+        <div className="divide-y divide-gray-50">
+          {[
+            { icon: Store, label: 'Kelola Cabang', sub: 'Tambah & atur cabang', color: 'text-indigo-600', bg: 'bg-indigo-50', href: '/dashboard/pengaturan/cabang' },
+            { icon: Store, label: 'Pengguna & Role', sub: 'Akun kasir & hak akses', color: 'text-green-600', bg: 'bg-green-50', href: '/dashboard/pengaturan/role' },
+          ].map(item => (
             <ListItem key={item.label} item={item} />
           ))}
         </div>
@@ -186,7 +232,7 @@ export default function MenuLainnyaPage() {
           <h2 className="text-sm font-bold text-gray-800">Aktivitas & Bantuan</h2>
         </div>
         <div className="divide-y divide-gray-50">
-          {aktivitas.map((item) => (
+          {aktivitas.map(item => (
             <ListItem key={item.label} item={item} />
           ))}
         </div>
@@ -198,8 +244,10 @@ export default function MenuLainnyaPage() {
           <h2 className="text-sm font-bold text-gray-800">Akun & Keamanan</h2>
         </div>
         <div className="divide-y divide-gray-50">
-          <Link href="/dashboard/pengaturan?tab=password"
-            className="flex items-center gap-4 px-4 py-3.5 hover:bg-gray-50 transition-colors">
+          <Link
+            href="/dashboard/pengaturan/reset-password"
+            className="flex items-center gap-4 px-4 py-3.5 hover:bg-gray-50 transition-colors"
+          >
             <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center flex-shrink-0">
               <Lock className="w-5 h-5 text-purple-600" />
             </div>
@@ -209,8 +257,10 @@ export default function MenuLainnyaPage() {
             </div>
             <ChevronRight className="w-4 h-4 text-gray-300" />
           </Link>
-          <button onClick={handleLogout}
-            className="flex items-center gap-4 px-4 py-3.5 hover:bg-red-50 transition-colors w-full text-left">
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-4 px-4 py-3.5 hover:bg-red-50 transition-colors w-full text-left"
+          >
             <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center flex-shrink-0">
               <LogOut className="w-5 h-5 text-red-500" />
             </div>
@@ -223,7 +273,6 @@ export default function MenuLainnyaPage() {
         </div>
       </div>
 
-      {/* Version info */}
       <p className="text-center text-xs text-gray-400 py-2">Versi 1.2.0 (Build 120)</p>
     </div>
   )
