@@ -46,7 +46,7 @@ export async function PUT(request) {
     if (profile.role !== 'owner') return NextResponse.json({ error: 'Hanya owner yang bisa mengubah profil warung' }, { status: 403 })
 
     const body = await request.json()
-    const allowed = ['nama_warung', 'no_hp', 'alamat', 'satuan_list']
+    const allowed = ['nama_warung', 'no_hp', 'alamat', 'satuan_list', 'logo_url']
     const updates = {}
     allowed.forEach(k => { if (body[k] !== undefined) updates[k] = body[k] })
 
