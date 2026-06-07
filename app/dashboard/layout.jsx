@@ -290,7 +290,8 @@ export default function DashboardLayout({ children }) {
       {/* MAIN CONTENT AREA */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* ── MOBILE HEADER (biru, sesuai mockup) ── */}
-        <header className="md:hidden bg-blue-600 text-white px-4 pt-4 pb-3 flex-shrink-0">
+        <header className="md:hidden bg-blue-600 text-white px-4 pt-4 pb-6 flex-shrink-0"
+          style={{ borderBottomLeftRadius: '28px', borderBottomRightRadius: '28px' }}>
           <div className="flex items-center justify-between">
             <button className="p-1.5 rounded-lg hover:bg-white/20" onClick={() => setSidebarOpen(true)}>
               <Menu className="w-6 h-6 text-white" />
