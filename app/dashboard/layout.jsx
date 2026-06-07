@@ -6,7 +6,8 @@ import { usePathname, useRouter } from 'next/navigation'
 import {
   LayoutDashboard, ShoppingCart, Package, BarChart3,
   Settings, LogOut, Store, Menu, X,
-  Bell, Crown, ChevronRight, Receipt, MoreHorizontal
+  Bell, ChevronRight, Receipt, MoreHorizontal,
+  Wallet, Users, ClipboardList
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase'
 
@@ -25,9 +26,9 @@ const navItems = [
   { href: '/dashboard/kasir',        label: 'Kasir Pos',         icon: ShoppingCart },
   { href: '/dashboard/stok',         label: 'Stock Barang',      icon: Package },
   { href: '/dashboard/laporan',      label: 'Laporan',           icon: BarChart3 },
-  { href: '/dashboard/hutang',       label: 'Hutang',            icon: Receipt },
-  { href: '/dashboard/pelanggan',    label: 'Pelanggan',         icon: LayoutDashboard },
-  { href: '/dashboard/riwayat',      label: 'Riwayat Transaksi', icon: Receipt },
+  { href: '/dashboard/hutang',       label: 'Hutang',            icon: Wallet },
+  { href: '/dashboard/pelanggan',    label: 'Pelanggan',         icon: Users },
+  { href: '/dashboard/riwayat',      label: 'Riwayat Transaksi', icon: ClipboardList },
   { href: '/dashboard/pengaturan',   label: 'Pengaturan',        icon: Settings },
   { href: '/dashboard/menu-lainnya', label: 'Menu Lainnya',      icon: MoreHorizontal },
 ]
@@ -35,64 +36,86 @@ const navItems = [
 // ─── Mobile Sidebar Drawer ───────────────────────────────────────────────────
 function MobileSidebar({ open, onClose, navItems, isActive, user, warungName, onLogout, router }) {
   const fullName = user?.user_metadata?.full_name || 'Pemilik Warung'
-  const email = user?.email || ''
-  const initial = email?.[0]?.toUpperCase() || 'P'
+  const email    = user?.email || ''
+  const initial  = fullName?.[0]?.toUpperCase() || email?.[0]?.toUpperCase() || 'P'
 
   if (!open) return null
 
   return (
     <div className="md:hidden fixed inset-0 z-50 flex">
+      {/* Backdrop */}
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <aside className="relative w-72 bg-white flex flex-col h-full z-10 shadow-2xl">
-        {/* Header sidebar */}
-        <div className="bg-blue-600 px-4 py-5">
+
+      <aside className="relative w-[78vw] max-w-[300px] bg-white flex flex-col h-full z-10 shadow-2xl overflow-hidden">
+
+        {/* ── Header biru ── */}
+        <div className="bg-blue-600 px-4 pt-5 pb-4">
+          {/* Baris: logo warung + nama + X */}
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center">
-                <Store className="w-5 h-5 text-blue-600" />
+              <div className="w-11 h-11 bg-white rounded-2xl flex items-center justify-center flex-shrink-0">
+                <Store className="w-6 h-6 text-blue-600" />
               </div>
-              <div>
-                <p className="font-bold text-white text-sm">{warungName}</p>
-                <p className="text-blue-200 text-xs">Kasir Pos & Warung</p>
+              <div className="min-w-0">
+                <p className="font-bold text-white text-base leading-tight truncate">{warungName}</p>
+                <p className="text-blue-200 text-xs leading-tight">Kasir Pos & Warung</p>
               </div>
             </div>
-            <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/20">
+            <button
+              onClick={onClose}
+              className="w-8 h-8 flex items-center justify-center rounded-xl bg-white/20 hover:bg-white/30 transition-colors flex-shrink-0"
+            >
               <X className="w-4 h-4 text-white" />
             </button>
           </div>
-          {/* User info */}
-          <div className="bg-white/15 rounded-xl px-3 py-3 flex items-center gap-3">
-            <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-blue-600 font-bold text-sm">
+
+          {/* Card user info */}
+          <div className="bg-blue-500/60 rounded-2xl px-3 py-3 flex items-center gap-3">
+            <div className="w-11 h-11 bg-white rounded-full flex items-center justify-center text-blue-600 font-bold text-base flex-shrink-0">
               {initial}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-white font-semibold text-sm truncate">{fullName}</p>
-              <p className="text-blue-200 text-xs truncate">{email}</p>
-              <span className="inline-block mt-0.5 bg-blue-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-semibold">Pemilik</span>
+              <p className="text-white font-bold text-sm leading-tight truncate">{fullName}</p>
+              <p className="text-blue-100 text-xs leading-tight truncate mt-0.5">{email}</p>
+              <span className="inline-block mt-1 bg-white text-blue-700 text-[10px] px-2 py-0.5 rounded-full font-bold">
+                Pemilik
+              </span>
             </div>
-            <ChevronRight className="w-4 h-4 text-blue-300 flex-shrink-0" />
+            <ChevronRight className="w-4 h-4 text-blue-200 flex-shrink-0" />
           </div>
         </div>
 
-        {/* Nav items */}
-        <nav className="flex-1 py-3 px-3 space-y-0.5 overflow-y-auto">
-          {navItems.map(({ href, label, icon: Icon }) => (
-            <Link key={href} href={href} onClick={onClose}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors
-                ${isActive(href) ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-gray-700 hover:bg-gray-50'}`}>
-              <Icon className="w-5 h-5 flex-shrink-0" />
-              <span>{label}</span>
-            </Link>
-          ))}
+        {/* ── Nav list ── */}
+        <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
+          {navItems.map(({ href, label, icon: Icon }) => {
+            const active = isActive(href)
+            return (
+              <Link
+                key={href}
+                href={href}
+                onClick={onClose}
+                className={`flex items-center gap-3.5 px-3 py-3 rounded-xl text-sm font-medium transition-colors
+                  ${active
+                    ? 'bg-blue-50 text-blue-700 font-semibold'
+                    : 'text-gray-700 hover:bg-gray-50'}`}
+              >
+                <Icon className={`w-5 h-5 flex-shrink-0 ${active ? 'text-blue-600' : 'text-gray-500'}`} />
+                <span>{label}</span>
+              </Link>
+            )
+          })}
         </nav>
 
-        <div className="border-t border-gray-100 px-3 py-3">
-          <button onClick={() => { onClose(); onLogout() }}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 w-full transition-colors">
-            <LogOut className="w-5 h-5" />
+        {/* ── Footer: Keluar + versi ── */}
+        <div className="px-2 pb-4 pt-2">
+          <button
+            onClick={() => { onClose(); onLogout() }}
+            className="flex items-center gap-3.5 px-3 py-3 rounded-xl text-sm font-semibold text-red-500 hover:bg-red-50 w-full transition-colors"
+          >
+            <LogOut className="w-5 h-5 text-red-500 flex-shrink-0" />
             <span>Keluar Akun</span>
           </button>
-          <p className="text-center text-[10px] text-gray-400 mt-2">Versi 1.2.0 (Build 120)</p>
+          <p className="text-center text-[11px] text-gray-400 mt-2">Versi 1.2.0 (Build 120)</p>
         </div>
       </aside>
     </div>
