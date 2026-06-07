@@ -1,3 +1,6 @@
+'use client'
+
+import React from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 
@@ -434,13 +437,13 @@ export default function LandingPage() {
       <section style={{ borderTop: '0.5px solid var(--border-soft)', borderBottom: '0.5px solid var(--border-soft)', padding: '40px 24px', position: 'relative', overflow: 'hidden' }}>
         <div style={{ maxWidth: 800, margin: '0 auto', display: 'flex', justifyContent: 'center', gap: 0 }} className="stats-row">
           {STATS.map((s, i) => (
-            <>
-              <div key={s.label} style={{ flex: 1, textAlign: 'center', padding: '0 32px' }}>
+            <React.Fragment key={s.label}>
+              <div style={{ flex: 1, textAlign: 'center', padding: '0 32px' }}>
                 <p className="serif text-gold" style={{ fontSize: '2rem', fontWeight: 400, marginBottom: 6 }}>{s.value}</p>
                 <p style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase' }}>{s.label}</p>
               </div>
-              {i < STATS.length - 1 && <div className="stat-sep" key={`sep-${i}`} />}
-            </>
+              {i < STATS.length - 1 && <div className="stat-sep" />}
+            </React.Fragment>
           ))}
         </div>
       </section>
