@@ -1,8 +1,9 @@
 import Link from 'next/link'
+import Image from 'next/image'
 
 const FEATURES = [
-  { icon: '🛒', title: 'Kasir (POS)', desc: 'Proses transaksi cepat, hitung kembalian otomatis, cetak atau share struk lewat WhatsApp.' },
-  { icon: '📦', title: 'Manajemen Stok', desc: 'CRUD barang lengkap, alert stok menipis, import CSV/XLS dengan mudah.' },
+  { icon: '🛒', title: 'Kasir POS', desc: 'Proses transaksi cepat, hitung kembalian otomatis, cetak atau share struk lewat WhatsApp.' },
+  { icon: '📦', title: 'Manajemen Stok', desc: 'CRUD barang lengkap, scan barcode pabrikan, alert stok menipis, import CSV/XLS.' },
   { icon: '📊', title: 'Laporan Lengkap', desc: 'Omzet harian, mingguan, bulanan. Laba kotor & barang terlaris setiap saat.' },
   { icon: '👥', title: 'Hutang Pelanggan', desc: 'Catat hutang, bayar sebagian, riwayat per pelanggan secara rapi.' },
   { icon: '🏪', title: 'Multi Cabang', desc: 'Kelola lebih dari satu cabang warung dari satu akun terpusat.' },
@@ -23,7 +24,7 @@ const PLANS = [
   },
   {
     name: 'Basic', price: 'Rp 29.000', period: '/bulan',
-    desc: 'Paling pas untuk UMKM yang ingin tumbuh.', badge: '⭐ Rekomendasi',
+    desc: 'Paling pas untuk UMKM yang ingin tumbuh.', badge: 'Rekomendasi',
     highlight: true,
     features: [
       { text: '500 barang', ok: true }, { text: '3 kasir', ok: true }, { text: '3 cabang', ok: true },
@@ -46,15 +47,15 @@ const PLANS = [
 ]
 
 const REVIEWS = [
-  { name: 'Sari Dewi', role: 'Pemilik Warung Sembako, Surabaya', avatar: 'SD', color: 'bg-blue-600', stars: 5,
+  { name: 'Sari Dewi', role: 'Warung Sembako, Surabaya', avatar: 'SD', stars: 5,
     text: 'WarungKu beneran ngebantu banget! Dulu nyatat hutang pelanggan di buku, sering kelewat. Sekarang semua tercatat rapi dan bisa dicek kapan aja dari HP.' },
-  { name: 'Budi Santoso', role: 'Toko Kelontong, Malang', avatar: 'BS', color: 'bg-emerald-600', stars: 5,
+  { name: 'Budi Santoso', role: 'Toko Kelontong, Malang', avatar: 'BS', stars: 5,
     text: 'Laporan hariannya keren, langsung tahu untung berapa. Fitur kasirnya simpel, karyawan saya langsung bisa pakai tanpa diajari lama.' },
-  { name: 'Rina Marlina', role: 'Warung Makan, Bandung', avatar: 'RM', color: 'bg-amber-500', stars: 5,
+  { name: 'Rina Marlina', role: 'Warung Makan, Bandung', avatar: 'RM', stars: 5,
     text: 'Paket Basic harganya terjangkau banget untuk fitur selengkap ini. Manajemen stok bumbu jadi jauh lebih gampang, ga pernah kehabisan stok lagi.' },
-  { name: 'Hendra Wijaya', role: 'Mini Market, Jakarta', avatar: 'HW', color: 'bg-rose-600', stars: 5,
+  { name: 'Hendra Wijaya', role: 'Mini Market, Jakarta', avatar: 'HW', stars: 5,
     text: 'Sudah coba beberapa aplikasi kasir lain, WarungKu yang paling ringan dan mudah dipakai. Bisa install di HP juga jadi praktis banget buat usaha saya.' },
-  { name: 'Fitri Handayani', role: 'Toko Sembako, Yogyakarta', avatar: 'FH', color: 'bg-purple-600', stars: 5,
+  { name: 'Fitri Handayani', role: 'Toko Sembako, Yogyakarta', avatar: 'FH', stars: 5,
     text: 'Awalnya ragu karena gratis, tapi ternyata fiturnya lengkap! Upgrade ke Basic setelah sebulan pakai, dan tidak menyesal sama sekali. Recommended!' },
 ]
 
@@ -67,196 +68,498 @@ const STATS = [
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-white" style={{ fontFamily: "'Plus Jakarta Sans', 'Nunito', sans-serif" }}>
+    <div className="min-h-screen" style={{ fontFamily: "'Instrument Sans', 'DM Sans', sans-serif", background: '#0a0a0f', color: '#e8e6f0' }}>
 
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-        .gradient-hero { background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 40%, #0ea5e9 100%); }
-        .gradient-text { background: linear-gradient(135deg, #fbbf24, #f97316); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-        .card-hover { transition: transform 0.2s ease, box-shadow 0.2s ease; }
-        .card-hover:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(37,99,235,0.12); }
-        .shine-btn { position: relative; overflow: hidden; }
-        .shine-btn::after { content: ''; position: absolute; top: -50%; left: -75%; width: 50%; height: 200%; background: linear-gradient(to right, transparent, rgba(255,255,255,0.25), transparent); transform: skewX(-20deg); animation: shine 3s infinite; }
-        @keyframes shine { 0% { left: -75%; } 100% { left: 125%; } }
-        .blob { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.15; pointer-events: none; }
-        .float { animation: float 6s ease-in-out infinite; }
-        @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }
-        .review-scroll { display: flex; gap: 16px; overflow-x: auto; padding-bottom: 8px; scrollbar-width: none; -ms-overflow-style: none; }
-        .review-scroll::-webkit-scrollbar { display: none; }
-        .review-card { flex: 0 0 280px; }
-        @media (min-width: 640px) { .review-scroll { display: grid; grid-template-columns: repeat(2, 1fr); } .review-card { flex: none; } }
-        @media (min-width: 1024px) { .review-scroll { grid-template-columns: repeat(3, 1fr); } }
-        .plan-popular { background: linear-gradient(135deg, #1d4ed8, #2563eb); color: white; transform: scale(1.04); box-shadow: 0 24px 60px rgba(37,99,235,0.3); }
-        @media (max-width: 639px) { .plan-popular { transform: none; } }
+        @import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+        :root {
+          --gold: #c9a84c;
+          --gold-light: #e8c97a;
+          --gold-dim: #7a6130;
+          --surface: #13121a;
+          --surface-2: #1a1826;
+          --surface-3: #211f2e;
+          --border: rgba(201,168,76,0.15);
+          --border-soft: rgba(255,255,255,0.07);
+          --text-muted: #7c7a8e;
+          --text-dim: #4a4860;
+          --radius: 16px;
+          --radius-sm: 10px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        /* Noise overlay */
+        body::before {
+          content: '';
+          position: fixed; inset: 0; z-index: 0;
+          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.035'/%3E%3C/svg%3E");
+          pointer-events: none;
+        }
+
+        .serif { font-family: 'Instrument Serif', Georgia, serif; }
+        .serif-italic { font-family: 'Instrument Serif', Georgia, serif; font-style: italic; }
+
+        /* Glow orbs */
+        .orb {
+          position: absolute; border-radius: 50%;
+          filter: blur(120px); pointer-events: none;
+        }
+
+        /* Glass card */
+        .glass {
+          background: rgba(255,255,255,0.03);
+          border: 0.5px solid var(--border-soft);
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+        }
+
+        .glass-gold {
+          background: linear-gradient(135deg, rgba(201,168,76,0.06), rgba(201,168,76,0.02));
+          border: 0.5px solid var(--border);
+        }
+
+        /* Gold gradient text */
+        .text-gold {
+          background: linear-gradient(135deg, #e8c97a 0%, #c9a84c 50%, #a07d2a 100%);
+          -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
+
+        /* Premium button */
+        .btn-gold {
+          background: linear-gradient(135deg, #c9a84c, #a07d2a);
+          color: #0a0a0f;
+          font-weight: 700;
+          border: none;
+          position: relative;
+          overflow: hidden;
+          transition: all 0.3s ease;
+        }
+        .btn-gold::before {
+          content: '';
+          position: absolute; inset: 0;
+          background: linear-gradient(135deg, #e8c97a, #c9a84c);
+          opacity: 0; transition: opacity 0.3s;
+        }
+        .btn-gold:hover::before { opacity: 1; }
+        .btn-gold:hover { transform: translateY(-1px); box-shadow: 0 12px 32px rgba(201,168,76,0.35); }
+
+        .btn-outline {
+          background: transparent;
+          border: 0.5px solid var(--border);
+          color: var(--gold-light);
+          transition: all 0.3s;
+        }
+        .btn-outline:hover {
+          background: rgba(201,168,76,0.08);
+          border-color: var(--gold);
+          transform: translateY(-1px);
+        }
+
+        /* Divider line */
+        .divider {
+          width: 48px; height: 1px;
+          background: linear-gradient(90deg, transparent, var(--gold), transparent);
+        }
+
+        /* Shimmer badge */
+        .badge-premium {
+          background: linear-gradient(135deg, rgba(201,168,76,0.15), rgba(201,168,76,0.05));
+          border: 0.5px solid var(--border);
+          color: var(--gold-light);
+          font-size: 11px;
+          font-weight: 600;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          padding: 6px 16px;
+          border-radius: 100px;
+        }
+
+        /* Feature card */
+        .feature-card {
+          background: var(--surface);
+          border: 0.5px solid var(--border-soft);
+          border-radius: var(--radius);
+          padding: 28px;
+          transition: all 0.3s ease;
+          position: relative;
+          overflow: hidden;
+        }
+        .feature-card::before {
+          content: '';
+          position: absolute; top: 0; left: 0; right: 0; height: 1px;
+          background: linear-gradient(90deg, transparent, rgba(201,168,76,0.4), transparent);
+          opacity: 0; transition: opacity 0.3s;
+        }
+        .feature-card:hover {
+          border-color: var(--border);
+          background: var(--surface-2);
+          transform: translateY(-3px);
+        }
+        .feature-card:hover::before { opacity: 1; }
+
+        /* Stat separator */
+        .stat-sep { width: 1px; background: var(--border-soft); align-self: stretch; }
+
+        /* Review card */
+        .review-card {
+          background: var(--surface);
+          border: 0.5px solid var(--border-soft);
+          border-radius: var(--radius);
+          padding: 24px;
+          transition: border-color 0.3s;
+        }
+        .review-card:hover { border-color: var(--border); }
+
+        /* Pricing card */
+        .plan-card {
+          background: var(--surface);
+          border: 0.5px solid var(--border-soft);
+          border-radius: 20px;
+          padding: 32px 28px;
+          transition: all 0.3s;
+        }
+        .plan-card:hover { border-color: var(--border); }
+        .plan-popular {
+          background: linear-gradient(160deg, #1c1a2a 0%, #14121e 100%);
+          border: 1px solid var(--gold-dim);
+          position: relative;
+          overflow: hidden;
+        }
+        .plan-popular::before {
+          content: '';
+          position: absolute; top: 0; left: 0; right: 0; height: 1px;
+          background: linear-gradient(90deg, transparent, var(--gold), transparent);
+        }
+
+        /* Avatar ring */
+        .avatar {
+          width: 40px; height: 40px; border-radius: 50%;
+          background: linear-gradient(135deg, var(--gold-dim), #2a2518);
+          border: 1px solid var(--border);
+          display: flex; align-items: center; justify-content: center;
+          font-size: 12px; font-weight: 700;
+          color: var(--gold-light);
+          flex-shrink: 0;
+        }
+
+        /* Nav */
+        .navbar {
+          position: sticky; top: 0; z-index: 100;
+          background: rgba(10,10,15,0.85);
+          border-bottom: 0.5px solid var(--border-soft);
+          backdrop-filter: blur(24px);
+          -webkit-backdrop-filter: blur(24px);
+        }
+
+        /* Section label */
+        .section-eyebrow {
+          display: inline-flex; align-items: center; gap: 8px;
+          font-size: 11px; font-weight: 600;
+          letter-spacing: 0.12em; text-transform: uppercase;
+          color: var(--gold);
+          margin-bottom: 16px;
+        }
+        .section-eyebrow::before, .section-eyebrow::after {
+          content: ''; display: block;
+          width: 24px; height: 0.5px;
+          background: var(--gold-dim);
+        }
+
+        /* Scroll reviews */
+        .reviews-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+          gap: 16px;
+        }
+
+        /* Footer */
+        .footer-link { color: var(--text-muted); font-size: 13px; text-decoration: none; transition: color 0.2s; }
+        .footer-link:hover { color: var(--gold-light); }
+
+        /* Floating animation */
+        @keyframes floatY { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
+        @keyframes rotateSlow { from{transform:rotate(0)} to{transform:rotate(360deg)} }
+        @keyframes pulseGlow { 0%,100%{opacity:0.3} 50%{opacity:0.6} }
+        .float-anim { animation: floatY 7s ease-in-out infinite; }
+        .pulse-orb { animation: pulseGlow 4s ease-in-out infinite; }
+
+        /* Mock card shine */
+        @keyframes shimmer {
+          0% { transform: translateX(-100%) skewX(-15deg); }
+          100% { transform: translateX(200%) skewX(-15deg); }
+        }
+        .shimmer-line {
+          position: absolute; inset: 0;
+          background: linear-gradient(90deg, transparent 30%, rgba(201,168,76,0.07) 50%, transparent 70%);
+          animation: shimmer 3s infinite;
+          pointer-events: none;
+        }
+
+        @media (max-width: 640px) {
+          .hero-title { font-size: 2.4rem !important; }
+          .stats-row { flex-wrap: wrap; }
+          .stat-sep { display: none; }
+          .plan-popular { transform: none !important; }
+        }
       `}</style>
 
-      {/* NAVBAR */}
-      <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-100 px-5 py-3.5">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center text-white text-lg font-black shadow-lg shadow-blue-200">W</div>
-            <span className="text-lg font-extrabold text-gray-900 tracking-tight">WarungKu</span>
+      {/* ── NAVBAR ── */}
+      <nav className="navbar">
+        <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 64 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Image src="/assets/logo.png" alt="WarungKu" width={32} height={32} style={{ borderRadius: 8 }} />
+            <span style={{ fontSize: 17, fontWeight: 700, color: '#fff', letterSpacing: '-0.02em' }}>WarungKu</span>
           </div>
-          <div className="flex items-center gap-2">
-            <Link href="/auth/login" className="px-4 py-2 rounded-xl text-sm font-semibold text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-all">Masuk</Link>
-            <Link href="/auth/register" className="shine-btn px-5 py-2.5 rounded-xl text-sm font-bold bg-blue-600 text-white hover:bg-blue-700 transition-all shadow-lg shadow-blue-200">Daftar Gratis →</Link>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Link href="/auth/login" style={{ padding: '8px 18px', borderRadius: 100, fontSize: 13, fontWeight: 500, color: 'var(--text-muted)', textDecoration: 'none', transition: 'color 0.2s' }}
+              onMouseEnter={e => e.target.style.color='var(--gold-light)'}
+              onMouseLeave={e => e.target.style.color='var(--text-muted)'}>
+              Masuk
+            </Link>
+            <Link href="/auth/register" className="btn-gold" style={{ padding: '9px 22px', borderRadius: 100, fontSize: 13, textDecoration: 'none', display: 'inline-block', position: 'relative', zIndex: 1 }}>
+              <span style={{ position: 'relative', zIndex: 1 }}>Daftar Gratis →</span>
+            </Link>
           </div>
         </div>
       </nav>
 
-      {/* HERO */}
-      <section className="gradient-hero relative overflow-hidden px-5 pt-16 pb-24 text-white text-center">
-        <div className="blob w-96 h-96 bg-white" style={{top:'-5rem',left:'-5rem'}} />
-        <div className="blob w-80 h-80 bg-yellow-300" style={{bottom:'-3rem',right:'-3rem'}} />
-        <div className="relative max-w-3xl mx-auto">
-          <div className="inline-flex items-center gap-2 bg-white/15 backdrop-blur border border-white/20 px-4 py-1.5 rounded-full text-xs font-bold mb-7">
-            🚀 Gratis untuk selamanya · Upgrade kapan saja
-          </div>
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight mb-5 tracking-tight">
-            Warungmu Makin Maju<br />dengan <span className="gradient-text">WarungKu</span>
-          </h1>
-          <p className="text-blue-100 text-lg max-w-xl mx-auto mb-8 leading-relaxed">
-            Kasir POS, stok barang, hutang pelanggan, laporan lengkap — semua dalam satu aplikasi. Bisa install di HP kamu!
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center mb-8">
-            <Link href="/auth/register" className="shine-btn px-8 py-4 bg-white text-blue-700 font-extrabold rounded-2xl text-base shadow-2xl hover:-translate-y-0.5 transition-all">
-              Mulai Gratis Sekarang →
-            </Link>
-            <Link href="/auth/login" className="px-8 py-4 bg-white/10 backdrop-blur border border-white/25 font-semibold rounded-2xl text-base hover:bg-white/20 transition-all">
-              Sudah punya akun? Masuk
-            </Link>
-          </div>
-          <p className="text-blue-200 text-xs mb-12">Tidak perlu kartu kredit · Gratis selamanya untuk paket dasar</p>
-          {/* Mock dashboard card */}
-          <div className="float max-w-sm mx-auto bg-white/10 backdrop-blur border border-white/20 rounded-3xl p-5 text-left shadow-2xl">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-xs text-blue-200 font-medium">Total Omzet Hari Ini</p>
-                <p className="text-3xl font-extrabold text-white">Rp 1.250.000</p>
-              </div>
-              <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center text-2xl">📈</div>
+      {/* ── HERO ── */}
+      <section style={{ position: 'relative', minHeight: '100vh', display: 'flex', alignItems: 'center', overflow: 'hidden', padding: '80px 24px' }}>
+        {/* Orbs */}
+        <div className="orb pulse-orb" style={{ width: 600, height: 600, background: 'radial-gradient(circle, rgba(201,168,76,0.12), transparent 70%)', top: '-150px', left: '-150px' }} />
+        <div className="orb pulse-orb" style={{ width: 500, height: 500, background: 'radial-gradient(circle, rgba(99,76,201,0.1), transparent 70%)', bottom: '-100px', right: '-100px', animationDelay: '2s' }} />
+        <div className="orb" style={{ width: 300, height: 300, background: 'radial-gradient(circle, rgba(201,168,76,0.06), transparent 70%)', top: '40%', left: '55%' }} />
+
+        <div style={{ maxWidth: 1100, margin: '0 auto', width: '100%', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 60, alignItems: 'center', position: 'relative', zIndex: 1 }}>
+
+          {/* Left: Text */}
+          <div>
+            <div className="section-eyebrow">Manajemen Warung Modern</div>
+            <h1 className="hero-title serif" style={{ fontSize: '3.6rem', lineHeight: 1.1, fontWeight: 400, color: '#f5f3ff', marginBottom: 20, letterSpacing: '-0.02em' }}>
+              Warungmu Makin<br />
+              <span className="serif-italic text-gold">Maju & Cerdas</span>
+            </h1>
+            <p style={{ fontSize: 16, color: 'var(--text-muted)', lineHeight: 1.75, marginBottom: 36, maxWidth: 440 }}>
+              Kasir POS, stok barang, hutang pelanggan, laporan lengkap — semua dalam satu aplikasi premium. Bisa install di HP kamu!
+            </p>
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 48 }}>
+              <Link href="/auth/register" className="btn-gold" style={{ padding: '14px 32px', borderRadius: 100, fontSize: 14, textDecoration: 'none', display: 'inline-block', position: 'relative', zIndex: 1 }}>
+                <span style={{ position: 'relative', zIndex: 1 }}>Mulai Gratis Sekarang →</span>
+              </Link>
+              <Link href="/auth/login" className="btn-outline" style={{ padding: '14px 28px', borderRadius: 100, fontSize: 14, fontWeight: 500, textDecoration: 'none', display: 'inline-block' }}>
+                Sudah punya akun
+              </Link>
             </div>
-            <div className="grid grid-cols-3 gap-2">
-              {[['42','Transaksi'],['18','Produk'],['3','Hutang']].map(([v,l]) => (
-                <div key={l} className="bg-white/10 rounded-xl p-2.5 text-center">
-                  <p className="text-lg font-extrabold text-white">{v}</p>
-                  <p className="text-[10px] text-blue-200">{l}</p>
-                </div>
+            {/* Trust badges */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
+              {['✓ Gratis selamanya', '✓ Tanpa kartu kredit', '✓ Setup 2 menit'].map(t => (
+                <span key={t} style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 500 }}>{t}</span>
               ))}
             </div>
           </div>
+
+          {/* Right: Mock dashboard */}
+          <div className="float-anim" style={{ position: 'relative' }}>
+            <div className="glass-gold" style={{ borderRadius: 24, padding: 24, position: 'relative', overflow: 'hidden' }}>
+              <div className="shimmer-line" />
+
+              {/* Dashboard header */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                <div>
+                  <p style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 4 }}>Total Omzet Hari Ini</p>
+                  <p className="serif text-gold" style={{ fontSize: '2rem', fontWeight: 400 }}>Rp 1.250.000</p>
+                </div>
+                <div style={{ padding: 12, borderRadius: 12, background: 'rgba(201,168,76,0.1)', border: '0.5px solid var(--border)', fontSize: 22 }}>📈</div>
+              </div>
+
+              {/* Stats row */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10, marginBottom: 20 }}>
+                {[['42', 'Transaksi', '↑ 12%'], ['18', 'Produk Terjual', '↑ 8%'], ['3', 'Hutang Baru', '→ Sama']].map(([v, l, ch]) => (
+                  <div key={l} style={{ background: 'rgba(255,255,255,0.03)', border: '0.5px solid var(--border-soft)', borderRadius: 12, padding: '12px 14px' }}>
+                    <p style={{ fontSize: 20, fontWeight: 700, color: '#f5f3ff', lineHeight: 1 }}>{v}</p>
+                    <p style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 3 }}>{l}</p>
+                    <p style={{ fontSize: 10, color: 'var(--gold)', marginTop: 2, fontWeight: 600 }}>{ch}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Recent transactions */}
+              <div style={{ borderTop: '0.5px solid var(--border-soft)', paddingTop: 16 }}>
+                <p style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 12 }}>Transaksi Terbaru</p>
+                {[
+                  ['Indomie Goreng', '2x', 'Rp 7.000'],
+                  ['Aqua 600ml', '1x', 'Rp 4.000'],
+                  ['Rokok Surya 12', '1x', 'Rp 24.000'],
+                ].map(([name, qty, price]) => (
+                  <div key={name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '0.5px solid var(--border-soft)' }}>
+                    <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                      <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--gold)' }} />
+                      <span style={{ fontSize: 12, color: '#ccc' }}>{name}</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: 16 }}>
+                      <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{qty}</span>
+                      <span style={{ fontSize: 12, color: 'var(--gold-light)', fontWeight: 600 }}>{price}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Floating badge */}
+            <div className="glass-gold" style={{ position: 'absolute', top: -18, right: -18, borderRadius: 14, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 16 }}>⚡</span>
+              <div>
+                <p style={{ fontSize: 11, fontWeight: 700, color: '#f5f3ff' }}>Stok Rendah</p>
+                <p style={{ fontSize: 10, color: 'var(--gold)' }}>5 produk perlu restock</p>
+              </div>
+            </div>
+
+            {/* Floating scan badge */}
+            <div className="glass" style={{ position: 'absolute', bottom: -16, left: -16, borderRadius: 14, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 16 }}>📷</span>
+              <div>
+                <p style={{ fontSize: 11, fontWeight: 700, color: '#f5f3ff' }}>Scan Barcode</p>
+                <p style={{ fontSize: 10, color: 'var(--text-muted)' }}>Auto-isi nama produk</p>
+              </div>
+            </div>
+          </div>
+
         </div>
       </section>
 
-      {/* STATS */}
-      <section className="bg-gray-50 border-y border-gray-100 px-5 py-10">
-        <div className="max-w-4xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
-          {STATS.map(s => (
-            <div key={s.label}>
-              <p className="text-3xl font-extrabold text-blue-600 mb-1">{s.value}</p>
-              <p className="text-sm text-gray-500 font-medium">{s.label}</p>
-            </div>
+      {/* ── STATS ── */}
+      <section style={{ borderTop: '0.5px solid var(--border-soft)', borderBottom: '0.5px solid var(--border-soft)', padding: '40px 24px', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ maxWidth: 800, margin: '0 auto', display: 'flex', justifyContent: 'center', gap: 0 }} className="stats-row">
+          {STATS.map((s, i) => (
+            <>
+              <div key={s.label} style={{ flex: 1, textAlign: 'center', padding: '0 32px' }}>
+                <p className="serif text-gold" style={{ fontSize: '2rem', fontWeight: 400, marginBottom: 6 }}>{s.value}</p>
+                <p style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase' }}>{s.label}</p>
+              </div>
+              {i < STATS.length - 1 && <div className="stat-sep" key={`sep-${i}`} />}
+            </>
           ))}
         </div>
       </section>
 
-      {/* FEATURES */}
-      <section className="px-5 py-20">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-12">
-            <span className="inline-block bg-blue-50 text-blue-700 text-xs font-bold px-4 py-1.5 rounded-full mb-4 border border-blue-100">✨ Fitur Lengkap</span>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-3 tracking-tight">Semua yang kamu butuhkan</h2>
-            <p className="text-gray-500 max-w-xl mx-auto leading-relaxed">Dirancang khusus untuk warung sembako, toko kelontong, dan UMKM Indonesia</p>
+      {/* ── FEATURES ── */}
+      <section style={{ padding: '100px 24px', position: 'relative', overflow: 'hidden' }}>
+        <div className="orb" style={{ width: 500, height: 500, background: 'radial-gradient(circle, rgba(201,168,76,0.07), transparent 70%)', top: '10%', right: '-100px' }} />
+        <div style={{ maxWidth: 1100, margin: '0 auto', position: 'relative', zIndex: 1 }}>
+          <div style={{ textAlign: 'center', marginBottom: 64 }}>
+            <div className="section-eyebrow" style={{ justifyContent: 'center' }}>Fitur Lengkap</div>
+            <h2 className="serif" style={{ fontSize: '2.6rem', fontWeight: 400, color: '#f5f3ff', marginBottom: 16, letterSpacing: '-0.02em' }}>
+              Semua yang kamu<br /><span className="serif-italic text-gold">butuhkan</span>
+            </h2>
+            <p style={{ color: 'var(--text-muted)', maxWidth: 480, margin: '0 auto', lineHeight: 1.7, fontSize: 15 }}>
+              Dirancang khusus untuk warung sembako, toko kelontong, dan UMKM Indonesia
+            </p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
             {FEATURES.map((f, i) => (
-              <div key={f.title} className="card-hover bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-                <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl mb-4"
-                  style={{ background: ['#eff6ff','#f0fdf4','#fefce8','#fff1f2','#f5f3ff','#ecfeff'][i] }}>
-                  {f.icon}
-                </div>
-                <h3 className="font-bold text-gray-900 mb-2">{f.title}</h3>
-                <p className="text-sm text-gray-500 leading-relaxed">{f.desc}</p>
+              <div key={f.title} className="feature-card">
+                <div style={{ fontSize: 28, marginBottom: 16 }}>{f.icon}</div>
+                <h3 style={{ fontSize: 15, fontWeight: 600, color: '#f5f3ff', marginBottom: 8 }}>{f.title}</h3>
+                <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.7 }}>{f.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* PRICING */}
-      <section className="bg-gray-50 px-5 py-20">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-12">
-            <span className="inline-block bg-blue-50 text-blue-700 text-xs font-bold px-4 py-1.5 rounded-full mb-4 border border-blue-100">💰 Harga Transparan</span>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-3 tracking-tight">Mulai gratis, upgrade kapan saja</h2>
-            <p className="text-gray-500">Harga terjangkau, fitur lengkap untuk semua skala usaha</p>
+      {/* ── SCREENSHOT / APP PREVIEW ── */}
+      <section style={{ padding: '80px 24px', borderTop: '0.5px solid var(--border-soft)' }}>
+        <div style={{ maxWidth: 900, margin: '0 auto', textAlign: 'center' }}>
+          <div className="section-eyebrow" style={{ justifyContent: 'center' }}>Tampilan Aplikasi</div>
+          <h2 className="serif" style={{ fontSize: '2.4rem', fontWeight: 400, color: '#f5f3ff', marginBottom: 48, letterSpacing: '-0.02em' }}>
+            Desain yang <span className="serif-italic text-gold">intuitif</span> & cepat
+          </h2>
+          <div style={{ position: 'relative', borderRadius: 24, overflow: 'hidden', border: '0.5px solid var(--border)' }}>
+            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 60%, rgba(10,10,15,0.9) 100%)', zIndex: 1, pointerEvents: 'none' }} />
+            <Image
+              src="/assets/login.png"
+              alt="WarungKu App Preview"
+              width={900}
+              height={500}
+              style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'cover' }}
+            />
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 items-center">
-            {PLANS.map(plan => (
-              <div key={plan.name} className={`relative rounded-3xl p-7 border ${plan.highlight ? 'plan-popular border-blue-600' : 'bg-white border-gray-200 shadow-sm'}`}>
+        </div>
+      </section>
+
+      {/* ── PRICING ── */}
+      <section style={{ padding: '100px 24px', position: 'relative', overflow: 'hidden' }}>
+        <div className="orb" style={{ width: 600, height: 400, background: 'radial-gradient(circle, rgba(99,76,201,0.08), transparent 70%)', bottom: '0', left: '-100px' }} />
+        <div style={{ maxWidth: 1000, margin: '0 auto', position: 'relative', zIndex: 1 }}>
+          <div style={{ textAlign: 'center', marginBottom: 64 }}>
+            <div className="section-eyebrow" style={{ justifyContent: 'center' }}>Harga Transparan</div>
+            <h2 className="serif" style={{ fontSize: '2.6rem', fontWeight: 400, color: '#f5f3ff', marginBottom: 16, letterSpacing: '-0.02em' }}>
+              Mulai gratis,<br /><span className="serif-italic text-gold">upgrade kapan saja</span>
+            </h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: 15 }}>Harga terjangkau, fitur lengkap untuk semua skala usaha</p>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, alignItems: 'start' }}>
+            {PLANS.map((plan) => (
+              <div key={plan.name} className={`plan-card ${plan.highlight ? 'plan-popular' : ''}`} style={{ position: 'relative' }}>
                 {plan.badge && (
-                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-amber-400 text-amber-900 text-xs font-extrabold px-4 py-1 rounded-full shadow-lg whitespace-nowrap">{plan.badge}</div>
+                  <div style={{ position: 'absolute', top: -13, left: '50%', transform: 'translateX(-50%)', background: 'linear-gradient(135deg, #c9a84c, #a07d2a)', color: '#0a0a0f', fontSize: 10, fontWeight: 700, padding: '4px 14px', borderRadius: 100, letterSpacing: '0.05em', whiteSpace: 'nowrap', textTransform: 'uppercase' }}>
+                    ⭐ {plan.badge}
+                  </div>
                 )}
-                <h3 className={`font-extrabold text-xl mb-1 ${plan.highlight ? 'text-white' : 'text-gray-900'}`}>{plan.name}</h3>
-                <p className={`text-xs mb-5 ${plan.highlight ? 'text-blue-200' : 'text-gray-400'}`}>{plan.desc}</p>
-                <div className="mb-6">
-                  <span className={`text-4xl font-extrabold tracking-tight ${plan.highlight ? 'text-white' : 'text-gray-900'}`}>{plan.price}</span>
-                  <span className={`text-sm ml-1 ${plan.highlight ? 'text-blue-200' : 'text-gray-400'}`}>{plan.period}</span>
+                <h3 style={{ fontSize: 13, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: plan.highlight ? 'var(--gold-light)' : 'var(--text-muted)', marginBottom: 20 }}>{plan.name}</h3>
+                <div style={{ marginBottom: 8 }}>
+                  <span className={plan.highlight ? 'text-gold' : ''} style={{ fontSize: '2.2rem', fontWeight: 700, color: plan.highlight ? '' : '#f5f3ff', fontFamily: 'inherit' }}>{plan.price}</span>
+                  <span style={{ fontSize: 13, color: 'var(--text-muted)', marginLeft: 4 }}>{plan.period}</span>
                 </div>
-                <ul className="space-y-2.5 mb-7">
+                <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 28, lineHeight: 1.5 }}>{plan.desc}</p>
+                <div className="divider" style={{ marginBottom: 24 }} />
+                <ul style={{ listStyle: 'none', marginBottom: 32, display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {plan.features.map(f => (
-                    <li key={f.text} className={`flex items-center gap-2.5 text-sm ${!f.ok ? 'opacity-35' : ''}`}>
-                      <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0 ${
-                        f.ok
-                          ? plan.highlight ? 'bg-white/20 text-white' : 'bg-blue-100 text-blue-700'
-                          : plan.highlight ? 'bg-white/10 text-white/40' : 'bg-gray-100 text-gray-400'
-                      }`}>{f.ok ? '✓' : '✗'}</span>
-                      <span className={plan.highlight ? 'text-blue-100' : f.ok ? 'text-gray-700' : 'text-gray-300'}>{f.text}</span>
+                    <li key={f.text} style={{ display: 'flex', alignItems: 'center', gap: 10, opacity: f.ok ? 1 : 0.3 }}>
+                      <span style={{ width: 18, height: 18, borderRadius: '50%', background: f.ok ? (plan.highlight ? 'rgba(201,168,76,0.2)' : 'rgba(201,168,76,0.1)') : 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: f.ok ? 'var(--gold)' : 'var(--text-dim)', flexShrink: 0 }}>
+                        {f.ok ? '✓' : '✗'}
+                      </span>
+                      <span style={{ fontSize: 13, color: plan.highlight ? (f.ok ? '#e8e6f0' : 'var(--text-muted)') : (f.ok ? '#ccc' : 'var(--text-dim)') }}>{f.text}</span>
                     </li>
                   ))}
                 </ul>
-                <Link href={plan.href} className={`block text-center py-3.5 rounded-2xl font-bold text-sm transition-all ${
-                  plan.highlight ? 'bg-white text-blue-700 hover:bg-blue-50 shadow-lg' : 'bg-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-100'
-                }`}>{plan.cta}</Link>
+                <Link href={plan.href} className={plan.highlight ? 'btn-gold' : 'btn-outline'} style={{ display: 'block', textAlign: 'center', padding: '13px', borderRadius: 12, fontSize: 13, fontWeight: 600, textDecoration: 'none', position: 'relative', zIndex: 1 }}>
+                  <span style={{ position: 'relative', zIndex: 1 }}>{plan.cta}</span>
+                </Link>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* REVIEWS */}
-      <section className="px-5 py-20">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-10">
-            <span className="inline-block bg-amber-50 text-amber-700 text-xs font-bold px-4 py-1.5 rounded-full mb-4 border border-amber-100">⭐ Testimoni Pengguna</span>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-3 tracking-tight">
-              Dipercaya ribuan warung<br />di seluruh Indonesia
+      {/* ── REVIEWS ── */}
+      <section style={{ padding: '100px 24px', borderTop: '0.5px solid var(--border-soft)' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: 64 }}>
+            <div className="section-eyebrow" style={{ justifyContent: 'center' }}>Testimoni</div>
+            <h2 className="serif" style={{ fontSize: '2.6rem', fontWeight: 400, color: '#f5f3ff', marginBottom: 16, letterSpacing: '-0.02em' }}>
+              Dipercaya ribuan warung<br /><span className="serif-italic text-gold">di seluruh Indonesia</span>
             </h2>
-            <div className="flex items-center justify-center gap-1 mb-2">
-              {[...Array(5)].map((_,i) => (
-                <svg key={i} className="w-6 h-6 text-amber-400 fill-current" viewBox="0 0 24 24">
-                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                </svg>
-              ))}
-              <span className="ml-2 text-gray-600 text-sm font-semibold">4.9 dari 5 · 10.000+ ulasan</span>
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 4, marginBottom: 6 }}>
+              {'★★★★★'.split('').map((s, i) => <span key={i} style={{ color: 'var(--gold)', fontSize: 18 }}>{s}</span>)}
+              <span style={{ marginLeft: 8, fontSize: 13, color: 'var(--text-muted)' }}>4.9 dari 5 · 10.000+ ulasan</span>
             </div>
           </div>
-          <div className="review-scroll">
+          <div className="reviews-grid">
             {REVIEWS.map(r => (
-              <div key={r.name} className="review-card card-hover bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
-                <div className="flex items-center gap-1 mb-3">
-                  {[...Array(r.stars)].map((_,i) => (
-                    <svg key={i} className="w-4 h-4 text-amber-400 fill-current" viewBox="0 0 24 24">
-                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                    </svg>
-                  ))}
+              <div key={r.name} className="review-card">
+                <div style={{ display: 'flex', gap: 4, marginBottom: 14 }}>
+                  {'★'.repeat(r.stars).split('').map((s, i) => <span key={i} style={{ color: 'var(--gold)', fontSize: 13 }}>{s}</span>)}
                 </div>
-                <p className="text-sm text-gray-600 leading-relaxed mb-4 italic">"{r.text}"</p>
-                <div className="flex items-center gap-3">
-                  <div className={`w-9 h-9 rounded-full ${r.color} flex items-center justify-center text-white text-xs font-bold flex-shrink-0`}>{r.avatar}</div>
+                <p style={{ fontSize: 13, color: '#9e9cb0', lineHeight: 1.8, marginBottom: 20, fontStyle: 'italic' }}>"{r.text}"</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div className="avatar">{r.avatar}</div>
                   <div>
-                    <p className="text-sm font-bold text-gray-900">{r.name}</p>
-                    <p className="text-xs text-gray-400">{r.role}</p>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: '#f5f3ff' }}>{r.name}</p>
+                    <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>{r.role}</p>
                   </div>
                 </div>
               </div>
@@ -265,34 +568,42 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* CTA BANNER */}
-      <section className="gradient-hero px-5 py-16 text-center text-white relative overflow-hidden">
-        <div className="blob w-80 h-80 bg-white" style={{top:'-3rem',right:'-3rem'}} />
-        <div className="relative max-w-2xl mx-auto">
-          <h2 className="text-3xl sm:text-4xl font-extrabold mb-4 tracking-tight">
-            Siap kelola warungmu<br />lebih profesional?
+      {/* ── CTA BANNER ── */}
+      <section style={{ padding: '100px 24px', position: 'relative', overflow: 'hidden', borderTop: '0.5px solid var(--border-soft)' }}>
+        <div className="orb pulse-orb" style={{ width: 700, height: 400, background: 'radial-gradient(circle, rgba(201,168,76,0.1), transparent 70%)', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }} />
+        <div style={{ maxWidth: 640, margin: '0 auto', textAlign: 'center', position: 'relative', zIndex: 1 }}>
+          <div className="divider" style={{ margin: '0 auto 32px' }} />
+          <h2 className="serif" style={{ fontSize: '3rem', fontWeight: 400, color: '#f5f3ff', marginBottom: 20, letterSpacing: '-0.02em', lineHeight: 1.15 }}>
+            Siap kelola warungmu<br />lebih <span className="serif-italic text-gold">profesional?</span>
           </h2>
-          <p className="text-blue-100 mb-8 text-lg">Daftar sekarang, gratis untuk selamanya. Tidak perlu kartu kredit.</p>
-          <Link href="/auth/register" className="shine-btn inline-block px-10 py-4 bg-white text-blue-700 font-extrabold rounded-2xl text-base shadow-2xl hover:-translate-y-1 transition-all">
-            Mulai Gratis Sekarang →
+          <p style={{ color: 'var(--text-muted)', marginBottom: 40, fontSize: 15, lineHeight: 1.7 }}>
+            Daftar sekarang, gratis untuk selamanya.<br />Tidak perlu kartu kredit.
+          </p>
+          <Link href="/auth/register" className="btn-gold" style={{ padding: '16px 44px', borderRadius: 100, fontSize: 15, textDecoration: 'none', display: 'inline-block', position: 'relative', zIndex: 1 }}>
+            <span style={{ position: 'relative', zIndex: 1 }}>Mulai Gratis Sekarang →</span>
           </Link>
+          <div className="divider" style={{ margin: '40px auto 0' }} />
         </div>
       </section>
 
-      {/* FOOTER */}
-      <footer className="bg-gray-950 text-gray-400 px-5 py-10">
-        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-blue-600 rounded-xl flex items-center justify-center text-white font-black text-sm">W</div>
-            <span className="font-bold text-white">WarungKu</span>
+      {/* ── FOOTER ── */}
+      <footer style={{ borderTop: '0.5px solid var(--border-soft)', padding: '40px 24px' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 24, marginBottom: 32 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <Image src="/assets/logo.png" alt="WarungKu" width={28} height={28} style={{ borderRadius: 6, opacity: 0.8 }} />
+              <span style={{ fontSize: 15, fontWeight: 700, color: '#f5f3ff' }}>WarungKu</span>
+            </div>
+            <p style={{ fontSize: 12, color: 'var(--text-dim)', textAlign: 'center' }}>Aplikasi manajemen warung untuk Indonesia 🇮🇩</p>
+            <div style={{ display: 'flex', gap: 24 }}>
+              <Link href="/auth/login" className="footer-link">Masuk</Link>
+              <Link href="/auth/register" className="footer-link">Daftar</Link>
+            </div>
           </div>
-          <p className="text-sm text-center">Aplikasi manajemen warung untuk Indonesia 🇮🇩</p>
-          <div className="flex gap-4 text-sm">
-            <Link href="/auth/login" className="hover:text-white transition-colors">Masuk</Link>
-            <Link href="/auth/register" className="hover:text-white transition-colors">Daftar</Link>
+          <div style={{ borderTop: '0.5px solid var(--border-soft)', paddingTop: 24, textAlign: 'center' }}>
+            <p style={{ fontSize: 11, color: 'var(--text-dim)' }}>© 2026 WarungKu. Semua hak dilindungi.</p>
           </div>
         </div>
-        <p className="text-xs text-center mt-6 text-gray-600">© 2026 WarungKu. Semua hak dilindungi.</p>
       </footer>
 
     </div>
