@@ -221,6 +221,10 @@ function BarangModal({ editData, onClose, onSaved }) {
   const [fotoFile, setFotoFile] = useState(null)
   const [uploading, setUploading] = useState(false)
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false)
+  const [lookingUp, setLookingUp]   = useState(false)
+  const [lookupInfo, setLookupInfo] = useState('')
+  const [showAiCamera, setShowAiCamera] = useState(false)
+  const [aiLoading, setAiLoading]   = useState(false)
 
   const handleFotoChange = (file, localPreview) => {
     setFotoFile(file)
@@ -268,6 +272,95 @@ function BarangModal({ editData, onClose, onSaved }) {
   }
 
   const f = (key, val) => setForm(prev => ({ ...prev, [key]: val }))
+
+  // ── Lookup barcode ke Open Food Facts ──────────────────────
+  const lookupBarcode = async (code) => {
+    if (!code || code.length < 8) return
+    setLookingUp(true)
+    setLookupInfo('Mencari info produk...')
+    try {
+      const res  = await fetch(`https://world.openfoodfacts.org/api/v0/product/${code}.json`)
+      const json = await res.json()
+      if (json.status === 1 && json.product) {
+        const p    = json.product
+        const nama = p.product_name_id || p.product_name || p.brands || ''
+        const kat  = p.categories_tags?.[0]?.replace('en:', '') || ''
+        if (nama) {
+          setForm(prev => ({
+            ...prev,
+            nama:     prev.nama || nama,
+            kategori: prev.kategori || mapKategori(kat),
+            foto_url: prev.foto_url || p.image_front_url || '',
+          }))
+          setLookupInfo(`✓ Produk ditemukan: ${nama}`)
+        } else {
+          setLookupInfo('Barcode ditemukan tapi nama kosong. Coba foto produk untuk AI.')
+        }
+      } else {
+        setLookupInfo('Produk tidak ada di database online. Coba foto produk untuk AI.')
+      }
+    } catch {
+      setLookupInfo('Gagal lookup. Periksa koneksi internet.')
+    } finally {
+      setLookingUp(false)
+    }
+  }
+
+  // Peta kategori Open Food Facts → kategori warungku
+  const mapKategori = (tag) => {
+    if (!tag) return 'Lainnya'
+    const t = tag.toLowerCase()
+    if (t.includes('beverage') || t.includes('drink') || t.includes('minuman')) return 'Minuman'
+    if (t.includes('snack') || t.includes('food') || t.includes('makanan') || t.includes('biscuit')) return 'Makanan'
+    if (t.includes('tobacco') || t.includes('rokok') || t.includes('cigarette')) return 'Rokok'
+    if (t.includes('grocery') || t.includes('sembako') || t.includes('rice') || t.includes('oil')) return 'Sembako'
+    return 'Lainnya'
+  }
+
+  // ── AI Vision: foto kemasan → isi form ─────────────────────
+  const handleAiPhoto = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setAiLoading(true)
+    setLookupInfo('AI sedang membaca kemasan produk...')
+    try {
+      // Konversi gambar ke base64
+      const base64 = await new Promise((res, rej) => {
+        const r = new FileReader()
+        r.onload  = () => res(r.result.split(',')[1])
+        r.onerror = () => rej(new Error('Gagal baca file'))
+        r.readAsDataURL(file)
+      })
+
+      // Kirim ke API route server — API key aman, tidak terekspos ke browser
+      const apiRes = await fetch('/api/barang/ai-vision', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          base64,
+          mimeType: file.type || 'image/jpeg',
+        }),
+      })
+
+      const json = await apiRes.json()
+      if (!apiRes.ok) throw new Error(json.error || 'Gagal memproses gambar')
+
+      const parsed = json.data
+      if (!parsed.nama) throw new Error('AI tidak bisa membaca nama produk dari gambar ini')
+
+      setForm(prev => ({
+        ...prev,
+        nama:     prev.nama || parsed.nama,
+        kategori: parsed.kategori || prev.kategori,
+        satuan:   parsed.satuan   || prev.satuan,
+      }))
+      setLookupInfo(`\u2713 AI berhasil membaca: ${parsed.nama}`)
+    } catch (err) {
+      setLookupInfo(`Gagal: ${err.message}. Isi nama produk manual.`)
+    } finally {
+      setAiLoading(false)
+    }
+  }
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
@@ -325,13 +418,36 @@ function BarangModal({ editData, onClose, onSaved }) {
           {/* Nama Barang */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1.5">Nama Barang</label>
-            <input
-              type="text"
-              placeholder="Contoh: Kopi Kapal Api 165g"
-              value={form.nama}
-              onChange={e => f('nama', e.target.value)}
-              className="input-field"
-            />
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Scan barcode atau foto kemasan untuk auto-isi"
+                value={form.nama}
+                onChange={e => f('nama', e.target.value)}
+                className="input-field pr-10"
+              />
+              {(lookingUp || aiLoading) && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                </div>
+              )}
+            </div>
+            {lookupInfo && (
+              <p className={`text-xs mt-1 ${lookupInfo.startsWith('✓') ? 'text-green-600' : 'text-amber-600'}`}>
+                {lookupInfo}
+              </p>
+            )}
+            {/* Tombol AI Foto Kemasan */}
+            {!form.nama && !lookingUp && !aiLoading && (
+              <label className="mt-2 flex items-center gap-2 cursor-pointer w-fit text-xs font-semibold text-blue-600 hover:text-blue-700">
+                <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleAiPhoto} />
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
+                  <circle cx="12" cy="13" r="3"/>
+                </svg>
+                Foto kemasan → AI baca nama otomatis
+              </label>
+            )}
           </div>
 
           {/* Kategori */}
@@ -456,6 +572,7 @@ function BarangModal({ editData, onClose, onSaved }) {
             onDetected={(code) => {
               f('barcode', code)
               setShowBarcodeScanner(false)
+              lookupBarcode(code)
             }}
             onClose={() => setShowBarcodeScanner(false)}
           />
