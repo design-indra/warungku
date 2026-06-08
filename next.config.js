@@ -10,9 +10,19 @@ const withPWA = require('@ducanh2912/next-pwa').default({
   workboxOptions: {
     disableDevLogs: true,
 
+    additionalManifestEntries: [
+      { url: '/offline.html', revision: '1' },
+      { url: '/dashboard', revision: '1' },
+      { url: '/dashboard/kasir', revision: '1' },
+      { url: '/dashboard/stok', revision: '1' },
+      { url: '/dashboard/laporan', revision: '1' },
+      { url: '/dashboard/riwayat', revision: '1' },
+      { url: '/dashboard/menu-lainnya', revision: '1' },
+    ],
+
     // ── Navigations (halaman HTML) — fallback ke cache ─────────────────────
     // Ini kunci utama agar halaman dashboard bisa dibuka offline
-    navigateFallback: '/dashboard/kasir',
+    navigateFallback: '/offline.html',
     navigateFallbackDenylist: [
       /^\/auth\//,        // Jangan fallback halaman auth
       /^\/api\//,         // Jangan fallback API routes
@@ -40,14 +50,13 @@ const withPWA = require('@ducanh2912/next-pwa').default({
         },
       },
 
-      // ── Halaman dashboard — NetworkFirst + fallback cache ──
-      // networkTimeoutSeconds: 4 detik coba network, kalau gagal pakai cache
+      // ── Halaman dashboard — StaleWhileRevalidate ──────────
+      // Serve dari cache langsung, update di background
       {
         urlPattern: /\/dashboard.*/i,
-        handler: 'NetworkFirst',
+        handler: 'StaleWhileRevalidate',
         options: {
           cacheName: 'pages-dashboard',
-          networkTimeoutSeconds: 4,
           expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 },
         },
       },
