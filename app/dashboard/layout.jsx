@@ -212,41 +212,66 @@ export default function DashboardLayout({ children }) {
 
   useEffect(() => {
     const supabase = createClient()
-    supabase.auth.getUser().then(async ({ data }) => {
-      if (!data.user) { router.push('/auth/login'); return }
-      setUser(data.user)
 
-      try {
-        const res = await fetch('/api/pengaturan/profil')
-        const json = await res.json()
-        if (json.nama_warung) setWarungName(json.nama_warung)
-        if (json.plan) setPlan(json.plan)
-      } catch {}
+    async function initLayout() {
+      // ── Gunakan getSession() bukan getUser() ─────────────────────────────
+      // getSession() baca dari cookie lokal → TIDAK hit network → aman offline
+      // getUser()    selalu validasi ke Supabase server → gagal saat offline
+      const { data: { session } } = await supabase.auth.getSession()
+      const currentUser = session?.user ?? null
 
-      try {
-        const { data: profile } = await supabase
-          .from('user_profiles')
-          .select('cabang:cabang_id(nama)')
-          .eq('id', data.user.id)
-          .single()
-        if (profile?.cabang?.nama) setCabang(profile.cabang.nama)
-      } catch {}
-
-      try {
-        const res = await fetch('/api/barang?stok=rendah')
-        const json = await res.json()
-        const stokRendah = json.data || []
-        if (stokRendah.length > 0) {
-          setNotifs(stokRendah.map(b => ({
-            id: b.id,
-            type: b.stok === 0 ? 'habis' : 'rendah',
-            msg: b.stok === 0
-              ? `${b.nama} — stok habis!`
-              : `${b.nama} — sisa ${b.stok} ${b.satuan || 'pcs'} (min. ${b.stok_minimum})`,
-          })))
+      if (!currentUser) {
+        // Hanya redirect ke login jika benar-benar online dan tidak ada session
+        // Jika offline, biarkan tetap di halaman (middleware sudah guard)
+        if (navigator.onLine) {
+          router.push('/auth/login')
         }
-      } catch {}
-    })
+        return
+      }
+
+      setUser(currentUser)
+
+      // Fetch data profil & notif hanya jika online
+      if (navigator.onLine) {
+        try {
+          const res = await fetch('/api/pengaturan/profil')
+          const json = await res.json()
+          if (json.nama_warung) setWarungName(json.nama_warung)
+          if (json.plan) setPlan(json.plan)
+        } catch {}
+
+        try {
+          const { data: profile } = await supabase
+            .from('user_profiles')
+            .select('cabang:cabang_id(nama)')
+            .eq('id', currentUser.id)
+            .single()
+          if (profile?.cabang?.nama) setCabang(profile.cabang.nama)
+        } catch {}
+
+        try {
+          const res = await fetch('/api/barang?stok=rendah')
+          const json = await res.json()
+          const stokRendah = json.data || []
+          if (stokRendah.length > 0) {
+            setNotifs(stokRendah.map(b => ({
+              id: b.id,
+              type: b.stok === 0 ? 'habis' : 'rendah',
+              msg: b.stok === 0
+                ? `${b.nama} — stok habis!`
+                : `${b.nama} — sisa ${b.stok} ${b.satuan || 'pcs'} (min. ${b.stok_minimum})`,
+            })))
+          }
+        } catch {}
+      }
+    }
+
+    initLayout()
+
+    // Saat online kembali, re-fetch data profil & notif tanpa redirect
+    const handleOnline = () => initLayout()
+    window.addEventListener('online', handleOnline)
+    return () => window.removeEventListener('online', handleOnline)
   }, [])
 
   const handleLogout = async () => {
