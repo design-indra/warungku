@@ -45,17 +45,27 @@ jobs:
       - name: Capacitor Sync
         run: npx cap sync android
 
-      - name: Build Debug APK
+      - name: Build Release APK
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleRelease
 
-      - name: Upload APK Artifact
+      - name: Sign APK
+        uses: r0adkll/sign-android-release@v1
+        id: sign_app
+        with:
+          releaseDirectory: android/app/build/outputs/apk/release
+          signingKeyBase64: ${{ secrets.KEYSTORE_BASE64 }}
+          alias: ${{ secrets.KEY_ALIAS }}
+          keyStorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
+          keyPassword: ${{ secrets.KEY_PASSWORD }}
+
+      - name: Upload Signed APK
         uses: actions/upload-artifact@v4
         with:
-          name: warungku-debug-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: warungku-release-apk
+          path: ${{ steps.sign_app.outputs.signedReleaseFile }}
           retention-days: 30
 
       - name: Create Release
@@ -64,9 +74,9 @@ jobs:
         with:
           tag_name: apk-${{ github.run_number }}
           name: "WarungKu APK - Build #${{ github.run_number }}"
-          files: android/app/build/outputs/apk/debug/app-debug.apk
+          files: ${{ steps.sign_app.outputs.signedReleaseFile }}
           body: |
-            Download app-debug.apk lalu install di HP Android.
-            Izinkan "Install dari sumber tidak dikenal" jika diminta.
+            Download aplikasi WarungKu (Signed Release).
+            Aman dari peringatan Play Protect.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
