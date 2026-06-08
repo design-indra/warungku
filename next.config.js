@@ -5,32 +5,23 @@ const withPWA = require('@ducanh2912/next-pwa').default({
   disable: process.env.NODE_ENV === 'development',
   cacheOnFrontEndNav: true,
   aggressiveFrontEndNavCaching: true,
-  reloadOnOnline: false, // Jangan auto reload — kita handle manual via OnlineSyncHandler
+  reloadOnOnline: false,
+
+  // fallbackRoutes: SW akan serve file ini saat halaman tidak tersedia offline
+  fallbackRoutes: {
+    document: '/offline.html',
+  },
 
   workboxOptions: {
     disableDevLogs: true,
 
+    // offline.html di-precache agar selalu tersedia sebagai fallback
     additionalManifestEntries: [
       { url: '/offline.html', revision: '1' },
-      { url: '/dashboard', revision: '1' },
-      { url: '/dashboard/kasir', revision: '1' },
-      { url: '/dashboard/stok', revision: '1' },
-      { url: '/dashboard/laporan', revision: '1' },
-      { url: '/dashboard/riwayat', revision: '1' },
-      { url: '/dashboard/menu-lainnya', revision: '1' },
-    ],
-
-    // ── Navigations (halaman HTML) — fallback ke cache ─────────────────────
-    // Ini kunci utama agar halaman dashboard bisa dibuka offline
-    navigateFallback: '/offline.html',
-    navigateFallbackDenylist: [
-      /^\/auth\//,        // Jangan fallback halaman auth
-      /^\/api\//,         // Jangan fallback API routes
-      /^\/_next\//,       // Jangan fallback asset Next.js internal
     ],
 
     runtimeCaching: [
-      // ── Static Next.js chunks ──────────────────────────
+      // Static Next.js chunks
       {
         urlPattern: /\/_next\/static\/.*/i,
         handler: 'CacheFirst',
@@ -40,7 +31,7 @@ const withPWA = require('@ducanh2912/next-pwa').default({
         },
       },
 
-      // ── Static assets (gambar, font, css) ─────────────
+      // Static assets (gambar, font, css)
       {
         urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico|woff|woff2|ttf|eot|css)$/i,
         handler: 'CacheFirst',
@@ -50,18 +41,19 @@ const withPWA = require('@ducanh2912/next-pwa').default({
         },
       },
 
-      // ── Halaman dashboard — StaleWhileRevalidate ──────────
-      // Serve dari cache langsung, update di background
+      // Halaman dashboard — NetworkFirst dengan timeout
+      // Jika offline, SW fallback ke cache. Jika cache juga tidak ada, tampil offline.html
       {
         urlPattern: /\/dashboard.*/i,
-        handler: 'StaleWhileRevalidate',
+        handler: 'NetworkFirst',
         options: {
           cacheName: 'pages-dashboard',
+          networkTimeoutSeconds: 4,
           expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 },
         },
       },
 
-      // ── API barang — NetworkFirst, fallback cache offline ──
+      // API barang — NetworkFirst, fallback cache offline
       {
         urlPattern: /\/api\/barang.*/i,
         handler: 'NetworkFirst',
@@ -72,7 +64,7 @@ const withPWA = require('@ducanh2912/next-pwa').default({
         },
       },
 
-      // ── API profil & subscription ──────────────────────
+      // API profil & subscription
       {
         urlPattern: /\/api\/(?:pengaturan\/profil|subscription\/status).*/i,
         handler: 'NetworkFirst',
@@ -83,15 +75,13 @@ const withPWA = require('@ducanh2912/next-pwa').default({
         },
       },
 
-      // ── Supabase auth — JANGAN PERNAH cache ───────────
-      // Token auth harus selalu fresh dari server
+      // Supabase auth — JANGAN PERNAH cache
       {
         urlPattern: /supabase\.co\/auth.*/i,
         handler: 'NetworkOnly',
       },
 
-      // ── Supabase REST API — NetworkFirst ───────────────
-      // Jika offline, fallback ke cache response terakhir
+      // Supabase REST API — NetworkFirst
       {
         urlPattern: /supabase\.co\/rest.*/i,
         handler: 'NetworkFirst',
