@@ -31,9 +31,6 @@ export default function RootLayout({ children }) {
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="theme-color" content="#1d4ed8" />
 
-        {/* Splash screen Apple */}
-        <link rel="apple-touch-startup-image" href="/assets/login.png" />
-
         {/* ── Splash screen styles ── */}
         <style dangerouslySetInnerHTML={{ __html: `
           #wk-splash {
