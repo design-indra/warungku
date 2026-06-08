@@ -16,7 +16,6 @@ import BarcodeScanner from '@/lib/scanner'
 // IMPORT HELPER PELANGGAN
 import { fetchPelanggan, tambahPelanggan } from '@/lib/pelanggan'
 import { getBarang, simpanTransaksi } from '@/lib/useOfflineSync'
-import { getBarang, simpanTransaksi } from '@/lib/useOfflineSync'
 
 const rp = (n) => 'Rp ' + Number(n || 0).toLocaleString('id-ID')
 
