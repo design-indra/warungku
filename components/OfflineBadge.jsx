@@ -2,10 +2,14 @@
 import { useState, useEffect } from 'react'
 
 export default function OfflineBadge() {
-  const [isOnline, setIsOnline] = useState(true)
+  // FIX 10: useState(true) diganti useState(null) untuk hindari hydration mismatch.
+  // Saat SSR, navigator tidak tersedia → nilainya tidak diketahui.
+  // Render null dulu sampai useEffect jalan di browser.
+  const [isOnline, setIsOnline] = useState(null)
   const [pendingCount, setPendingCount] = useState(0)
 
   useEffect(() => {
+    // Set nilai awal setelah mount (browser-only)
     setIsOnline(navigator.onLine)
 
     const handleOnline  = () => setIsOnline(true)
@@ -21,7 +25,6 @@ export default function OfflineBadge() {
   }, [])
 
   useEffect(() => {
-    // Guard: hanya jalan di browser
     if (typeof window === 'undefined') return
 
     async function countPending() {
@@ -41,6 +44,10 @@ export default function OfflineBadge() {
     return () => clearInterval(interval)
   }, [])
 
+  // FIX 11: Sebelumnya isOnline dimulai dengan true → badge tidak pernah muncul
+  // saat pertama load offline karena nilai awal sudah true sebelum useEffect jalan.
+  // Dengan null, kita tunggu sampai browser konfirmasi status sesungguhnya.
+  if (isOnline === null) return null
   if (isOnline && pendingCount === 0) return null
 
   return (

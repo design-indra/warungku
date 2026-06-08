@@ -2,11 +2,9 @@
 import { useEffect, useRef } from 'react'
 
 export default function OnlineSyncHandler() {
-  // Track apakah sebelumnya offline
   const wasOffline = useRef(false)
 
   useEffect(() => {
-    // Set flag awal berdasarkan status saat mount
     if (!navigator.onLine) {
       wasOffline.current = true
     }
@@ -16,32 +14,42 @@ export default function OnlineSyncHandler() {
     }
 
     const handleOnline = async () => {
-      // 1. Sync pending transaksi ke Supabase
+      // FIX 8: Sebelumnya syncPendingTransaksi() dan refreshSession() dijalankan
+      // bersamaan tanpa urutan pasti (keduanya awaited tapi dalam satu handler).
+      // Sekarang: sync dulu, baru refresh session — karena transaksi butuh token
+      // yang valid. Jika token sudah expired, refresh dulu sebelum sync.
+
+      // Langkah 1: refresh session dulu agar token valid sebelum sync ke server
+      if (wasOffline.current) {
+        wasOffline.current = false
+        try {
+          const { createClient } = await import('@/lib/supabase')
+          const supabase = createClient()
+          await supabase.auth.refreshSession()
+        } catch (e) {
+          // Abaikan — session lama mungkin masih valid
+        }
+      }
+
+      // Langkah 2: baru sync pending transaksi (token sudah segar)
       try {
         const { syncPendingTransaksi } = await import('@/lib/useOfflineSync')
         await syncPendingTransaksi()
       } catch (e) {
         console.error('Sync transaksi gagal:', e)
       }
-
-      // 2. Jika sebelumnya offline, refresh session Supabase
-      //    supaya token valid kembali tanpa hard reload
-      if (wasOffline.current) {
-        wasOffline.current = false
-        try {
-          const { createClient } = await import('@/lib/supabase')
-          const supabase = createClient()
-          // refreshSession() akan ambil token baru dari server
-          // Ini NON-BLOCKING — tidak menyebabkan error jika gagal
-          await supabase.auth.refreshSession()
-        } catch (e) {
-          // Abaikan — session lama masih valid untuk sementara
-        }
-      }
     }
 
     window.addEventListener('offline', handleOffline)
     window.addEventListener('online', handleOnline)
+
+    // FIX 9: Tambah sync otomatis saat komponen mount (jika ada pending dari
+    // sesi sebelumnya yang belum tersync — misal app ditutup saat offline).
+    if (navigator.onLine) {
+      import('@/lib/useOfflineSync')
+        .then(({ syncPendingTransaksi }) => syncPendingTransaksi())
+        .catch(() => {})
+    }
 
     return () => {
       window.removeEventListener('offline', handleOffline)
