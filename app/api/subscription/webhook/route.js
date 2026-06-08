@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 
 // Durasi per plan (hari)
-const PLAN_DURATION = { basic: 30, pro: 365 }
+const PLAN_DURATION = { basic: 30, pro: 30 }
 
 // Selalu return 200 — Cashi tidak akan retry jika 200
 export async function POST(request) {
