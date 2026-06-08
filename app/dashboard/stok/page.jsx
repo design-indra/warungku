@@ -7,7 +7,7 @@ import BarcodeScanner from '@/lib/scanner'
 
 const TABS             = ['Semua', 'Stok Rendah', 'Hampir Habis', 'Stok Habis']
 const KATEGORI_OPTIONS = ['Makanan', 'Minuman', 'Sembako', 'Rokok', 'Kebutuhan', 'Lainnya']
-const SATUAN_OPTIONS   = ['pcs', 'kg', 'liter', 'pack', 'dus', 'slof', 'karton', 'botol', 'sachet']
+const SATUAN_DEFAULT   = ['pcs', 'kg', 'liter', 'pack', 'dus', 'slof', 'karton', 'botol', 'sachet']
 const EMPTY_FORM = {
   kode_barang: '', nama: '', kategori: 'Makanan', satuan: 'pcs',
   harga_beli: '', harga_jual: '', stok: '', stok_minimum: '5',
@@ -225,6 +225,19 @@ function BarangModal({ editData, onClose, onSaved }) {
   const [lookupInfo, setLookupInfo] = useState('')
   const [showAiCamera, setShowAiCamera] = useState(false)
   const [aiLoading, setAiLoading]   = useState(false)
+  const [satuanOptions, setSatuanOptions] = useState(SATUAN_DEFAULT)
+
+  // Fetch satuan list dari profil warung
+  useEffect(() => {
+    fetch('/api/pengaturan/profil')
+      .then(r => r.json())
+      .then(d => {
+        if (d.satuan_list && Array.isArray(d.satuan_list) && d.satuan_list.length > 0) {
+          setSatuanOptions(d.satuan_list)
+        }
+      })
+      .catch(() => {}) // fallback ke SATUAN_DEFAULT
+  }, [])
 
   const handleFotoChange = (file, localPreview) => {
     setFotoFile(file)
@@ -515,7 +528,7 @@ function BarangModal({ editData, onClose, onSaved }) {
                   onChange={e => f('satuan', e.target.value)}
                   className="input-field appearance-none pr-10"
                 >
-                  {SATUAN_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+                  {satuanOptions.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
                 <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
                   <Icon name="chevron-down" size={16} color="#9ca3af" />
