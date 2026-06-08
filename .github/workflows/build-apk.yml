@@ -26,6 +26,9 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: npm run build
 
+      - name: Create Android Assets Directory
+        run: mkdir -p android/app/src/main/assets
+
       - name: Capacitor Sync
         run: npx cap sync android
 
