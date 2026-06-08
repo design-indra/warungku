@@ -383,10 +383,10 @@ export default function DashboardLayout({ children }) {
                     </div>
                     {notifs.length > 0 && (
                       <div className="px-4 py-2.5 border-t border-gray-100">
-                        <a href="/dashboard/stok" onClick={() => setBellOpen(false)}
+                        <Link href="/dashboard/stok" onClick={() => setBellOpen(false)}
                           className="text-xs text-blue-600 font-semibold hover:underline">
                           Lihat semua stok →
-                        </a>
+                        </Link>
                       </div>
                     )}
                   </div>

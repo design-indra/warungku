@@ -16,6 +16,20 @@ const quickMenus = [
 ]
 
 export default function DashboardPage() {
+  // Prefetch semua halaman dashboard agar tersedia offline via SW cache
+  useEffect(() => {
+    const urls = [
+      '/dashboard/kasir',
+      '/dashboard/stok',
+      '/dashboard/laporan',
+      '/dashboard/riwayat',
+      '/dashboard/menu-lainnya',
+    ]
+    urls.forEach((url) => {
+      fetch(url).catch(() => {})
+    })
+  }, [])
+
   const today = new Date().toISOString().split('T')[0]
   const week  = new Date(Date.now() - 6 * 86400000).toISOString().split('T')[0]
 
