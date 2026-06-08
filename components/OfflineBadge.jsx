@@ -6,7 +6,6 @@ export default function OfflineBadge() {
   const [pendingCount, setPendingCount] = useState(0)
 
   useEffect(() => {
-    // Set status awal
     setIsOnline(navigator.onLine)
 
     const handleOnline  = () => setIsOnline(true)
@@ -21,8 +20,10 @@ export default function OfflineBadge() {
     }
   }, [])
 
-  // Hitung transaksi pending di IndexedDB
   useEffect(() => {
+    // Guard: hanya jalan di browser
+    if (typeof window === 'undefined') return
+
     async function countPending() {
       try {
         const { db } = await import('@/lib/localdb')
@@ -30,7 +31,9 @@ export default function OfflineBadge() {
           .where('status').equals('pending')
           .count()
         setPendingCount(count)
-      } catch (e) {}
+      } catch (e) {
+        // Dexie belum siap, abaikan
+      }
     }
 
     countPending()
