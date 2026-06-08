@@ -23,7 +23,7 @@ const PLANS = [
     cta: 'Mulai Gratis', href: '/auth/register',
   },
   {
-    name: 'Basic', price: 'Rp 29.000', period: '/bulan',
+    name: 'Basic', price: 'Rp 15.000', period: '/bulan',
     desc: 'Paling pas untuk UMKM yang ingin tumbuh.', badge: 'Rekomendasi',
     highlight: true,
     features: [
@@ -34,7 +34,7 @@ const PLANS = [
     cta: 'Pilih Basic', href: '/auth/register',
   },
   {
-    name: 'Pro', price: 'Rp 48.000', period: '/bulan',
+    name: 'Pro', price: 'Rp 30.000', period: '/bulan',
     desc: 'Untuk bisnis besar dengan kontrol penuh.',
     highlight: false,
     features: [
