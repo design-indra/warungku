@@ -110,11 +110,11 @@ function DonutChart({ data, colors, labelKey = 'nama', valueKey = 'persen', titl
 
 // ─── Tab laporan lainnya ───────────────────────────────────────
 const SUB_LAPORAN = [
-  { label: 'Laporan Penjualan', icon: ShoppingBag,  color: '#2563eb', bg: '#eff6ff', href: '#' },
-  { label: 'Laporan Produk',    icon: Package,       color: '#16a34a', bg: '#f0fdf4', href: '#' },
-  { label: 'Laporan Stok',      icon: Archive,       color: '#f59e0b', bg: '#fffbeb', href: '#' },
-  { label: 'Laporan Kas',       icon: Wallet,        color: '#9333ea', bg: '#faf5ff', href: '#' },
-  { label: 'Laporan Pelanggan', icon: Users,         color: '#ec4899', bg: '#fdf2f8', href: '#' },
+  { label: 'Laporan Penjualan', icon: ShoppingBag,  color: '#2563eb', bg: '#eff6ff', href: '/dashboard/laporan/penjualan' },
+  { label: 'Laporan Produk',    icon: Package,       color: '#16a34a', bg: '#f0fdf4', href: '/dashboard/laporan/produk' },
+  { label: 'Laporan Stok',      icon: Archive,       color: '#f59e0b', bg: '#fffbeb', href: '/dashboard/laporan/stok' },
+  { label: 'Laporan Kas',       icon: Wallet,        color: '#9333ea', bg: '#faf5ff', href: '/dashboard/laporan/kas' },
+  { label: 'Laporan Pelanggan', icon: Users,         color: '#ec4899', bg: '#fdf2f8', href: '/dashboard/laporan/pelanggan' },
 ]
 
 // ─── Date Picker sederhana ─────────────────────────────────────
