@@ -79,15 +79,20 @@ export default function RootLayout({ children }) {
             animation: wkFadeIn 1s ease 0.4s both;
           }
 
-          /* Logo — full image, no border radius */
+          /* Logo dalam lingkaran border putih */
           .wk-logo-wrap {
-            width: 280px; height: 280px;
+            width: 200px; height: 200px;
             z-index: 2;
             animation: wkLogoIn 0.9s cubic-bezier(0.34,1.46,0.64,1) 0.2s both;
+            border-radius: 50%;
+            border: 3px solid rgba(255,255,255,0.35);
+            box-shadow: 0 0 0 10px rgba(255,255,255,0.08), 0 20px 60px rgba(0,0,0,0.2);
+            overflow: hidden;
+            margin-bottom: 12px;
           }
           .wk-logo-wrap img {
             width: 100%; height: 100%;
-            object-fit: contain;
+            object-fit: cover;
           }
           .wk-logo-fallback {
             width: 100%; height: 100%;
