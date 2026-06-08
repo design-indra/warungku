@@ -10,6 +10,7 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -25,105 +26,30 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: npm run build
 
-      - name: Verify Build Output
+      - name: Create Android Structure
         run: |
-          if [ ! -d "out" ]; then
-            echo "ERROR: Next.js build output directory 'out' not found!"
-            echo "Available directories:"
-            ls -la
-            exit 1
-          fi
-          echo "✓ Build output directory verified"
-          ls -la out/
-
-      - name: Create Android Assets Directory
-        run: mkdir -p android/app/src/main/assets/public
-
-      - name: Copy Web Assets
-        run: |
-          if [ -d "out" ]; then
-            cp -r out/* android/app/src/main/assets/public/
-            echo "✓ Web assets copied successfully"
-          else
-            echo "WARNING: out directory not found, skipping asset copy"
-          fi
-
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Make Gradle Wrapper Executable
-        run: |
-          cd android
-          chmod +x gradlew
-          ls -la gradlew
+          mkdir -p android/app/src/main/assets
+          mkdir -p android/app/src/main/res
+          touch android/app/src/main/AndroidManifest.xml
 
       - name: Capacitor Sync
         run: npx cap sync android
 
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-          cache: gradle
-
       - name: Decode Keystore
-        run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/my-release-key.keystore
-          if [ -f "android/app/my-release-key.keystore" ]; then
-            echo "✓ Keystore decoded successfully"
-            ls -lh android/app/my-release-key.keystore
-          else
-            echo "ERROR: Keystore file not created!"
-            exit 1
-          fi
+        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/my-release-key.keystore
 
       - name: Build Release APK
-        working-directory: ./android
         run: |
-          ./gradlew clean assembleRelease \
-            --stacktrace \
-            -Pandroid.injected.signing.store.file=app/my-release-key.keystore \
-            -Pandroid.injected.signing.store.password="${{ secrets.KEYSTORE_PASSWORD }}" \
-            -Pandroid.injected.signing.key.alias="${{ secrets.KEY_ALIAS }}" \
-            -Pandroid.injected.signing.key.password="${{ secrets.KEY_PASSWORD }}"
-
-      - name: Verify APK Output
-        run: |
-          if [ -f "android/app/build/outputs/apk/release/app-release.apk" ]; then
-            echo "✓ Signed APK built successfully"
-            ls -lh android/app/build/outputs/apk/release/app-release.apk
-          else
-            echo "ERROR: Signed APK file not found!"
-            ls -la android/app/build/outputs/apk/release/ || echo "Release directory not found"
-            exit 1
-          fi
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleRelease \
+          -Pandroid.injected.signing.store.file=my-release-key.keystore \
+          -Pandroid.injected.signing.store.password="${{ secrets.KEYSTORE_PASSWORD }}" \
+          -Pandroid.injected.signing.key.alias="${{ secrets.KEY_ALIAS }}" \
+          -Pandroid.injected.signing.key.password="${{ secrets.KEY_PASSWORD }}"
 
       - name: Upload Signed APK
         uses: actions/upload-artifact@v4
         with:
           name: warungku-release-apk
-          path: android/app/build/outputs/apk/release/app-release.apk
-          if-no-files-found: error
-          retention-days: 30
-
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
-        if: success()
-        with:
-          tag_name: apk-${{ github.run_number }}
-          name: "WarungKu APK - Build #${{ github.run_number }}"
-          files: android/app/build/outputs/apk/release/app-release.apk
-          body: |
-            Download aplikasi WarungKu (Signed Release).
-            Aman dari peringatan Play Protect.
-          env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload Build Logs on Failure
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-logs
-          path: android/build/reports/
-          retention-days: 7
+          path: android/app/build/outputs/apk/release/app-release-unsigned.apk
