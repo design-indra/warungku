@@ -12,27 +12,18 @@ export async function GET(request) {
     let from = searchParams.get('from') || new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0]
     let to   = searchParams.get('to')   || new Date().toISOString().split('T')[0]
 
-    // Ambil tenant_id
     const { data: profile } = await supabase
-      .from('user_profiles')
-      .select('tenant_id')
-      .eq('id', user.id)
-      .single()
+      .from('user_profiles').select('tenant_id').eq('id', user.id).single()
     if (!profile?.tenant_id) return NextResponse.json({ error: 'Profil tidak ditemukan' }, { status: 404 })
     const tenantId = profile.tenant_id
 
-    // Cek plan
     const { data: tenant } = await supabase
-      .from('tenants')
-      .select('plan, plan_expired_at')
-      .eq('id', tenantId)
-      .single()
+      .from('tenants').select('plan, plan_expired_at').eq('id', tenantId).single()
 
-    const now = new Date()
     const isPaidActive =
       tenant?.plan !== 'free' &&
       tenant?.plan_expired_at !== null &&
-      new Date(tenant?.plan_expired_at) > now
+      new Date(tenant?.plan_expired_at) > new Date()
 
     const today = new Date().toISOString().split('T')[0]
     if (!isPaidActive) { from = today; to = today }
@@ -51,7 +42,7 @@ export async function GET(request) {
 
     if (trxErr) throw trxErr
 
-    // ── Detail transaksi — filter via transaksi_id IN ──────
+    // ── Detail transaksi via transaksi_id IN ───────────────
     // FIX: .eq('transaksi.tenant_id') tidak reliable di PostgREST
     let detailData = []
     const trxIds = trxData?.map(t => t.id) || []
@@ -61,20 +52,17 @@ export async function GET(request) {
         .from('detail_transaksi')
         .select('nama_barang, qty, harga_jual, harga_beli, barang_id, transaksi_id')
         .in('transaksi_id', trxIds)
-
       if (detailErr) throw detailErr
       detailData = data || []
     }
 
-    // ── Ambil kategori barang ──────────────────────────────
+    // ── Kategori barang ───────────────────────────────────
     let perKategori = []
     if (detailData.length > 0) {
       const barangIds = [...new Set(detailData.map(d => d.barang_id).filter(Boolean))]
       if (barangIds.length > 0) {
         const { data: barangData } = await supabase
-          .from('barang')
-          .select('id, kategori(nama)')
-          .in('id', barangIds)
+          .from('barang').select('id, kategori(nama)').in('id', barangIds)
 
         const barangKatMap = {}
         barangData?.forEach(b => { barangKatMap[b.id] = b.kategori?.nama || 'Lainnya' })
