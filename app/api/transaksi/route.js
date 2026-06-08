@@ -8,6 +8,14 @@ export async function GET(request) {
     const { data: { user }, error: authErr } = await supabase.auth.getUser()
     if (authErr || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+    // Ambil tenant_id user
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('tenant_id')
+      .eq('id', user.id)
+      .single()
+    if (!profile?.tenant_id) return NextResponse.json({ error: 'Profil tidak ditemukan' }, { status: 404 })
+
     const { searchParams } = new URL(request.url)
     const limit = Number(searchParams.get('limit')) || 50
     const from  = searchParams.get('from')
@@ -16,6 +24,7 @@ export async function GET(request) {
     let query = supabase
       .from('transaksi')
       .select('*, detail_transaksi(*), pelanggan(nama)')
+      .eq('tenant_id', profile.tenant_id)   // ← filter by tenant
       .order('created_at', { ascending: false })
       .limit(limit)
 
