@@ -336,91 +336,67 @@ export default function DashboardLayout({ children }) {
 
       {/* MAIN CONTENT AREA */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* ── MOBILE HEADER (biru, wave abstract) ── */}
-        <header className="md:hidden bg-blue-600 text-white px-4 pt-4 pb-6 flex-shrink-0 relative overflow-hidden"
+        {/* ── MOBILE BELL DROPDOWN (fixed, di luar header agar tidak terpotong overflow-hidden) ── */}
+        {bellOpen && (
+          <>
+            {/* Backdrop tap-to-close */}
+            <div className="md:hidden fixed inset-0 z-40" onClick={() => setBellOpen(false)} />
+            {/* Dropdown */}
+            <div className="md:hidden fixed top-16 right-4 w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden"
+              style={{ animation: 'dropIn 0.18s ease-out' }}>
+              <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+                <p className="font-bold text-sm text-gray-900">Notifikasi</p>
+                {notifs.length > 0 && (
+                  <button onClick={() => setNotifs([])} className="text-[10px] text-gray-400 hover:text-red-500 font-semibold">
+                    Hapus semua
+                  </button>
+                )}
+              </div>
+              <div className="max-h-64 overflow-y-auto divide-y divide-gray-50">
+                {notifs.length === 0 ? (
+                  <p className="text-center text-sm text-gray-400 py-8">Tidak ada notifikasi</p>
+                ) : notifs.map(n => (
+                  <div key={n.id} className="flex items-start gap-3 px-4 py-3 hover:bg-gray-50">
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-xs
+                      ${n.type === 'habis' ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600'}`}>
+                      {n.type === 'habis' ? '⛔' : '⚠️'}
+                    </div>
+                    <p className="text-xs text-gray-700 pt-1">{n.msg}</p>
+                  </div>
+                ))}
+              </div>
+              {notifs.length > 0 && (
+                <div className="px-4 py-2.5 border-t border-gray-100">
+                  <Link href="/dashboard/stok" onClick={() => setBellOpen(false)}
+                    className="text-xs text-blue-600 font-semibold hover:underline">
+                    Lihat semua stok →
+                  </Link>
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
+        {/* ── MOBILE HEADER (biru, sesuai mockup) ── */}
+        <header className="md:hidden bg-blue-600 text-white px-4 pt-4 pb-6 flex-shrink-0"
           style={{ borderBottomLeftRadius: '28px', borderBottomRightRadius: '28px' }}>
-
-          {/* ── Wave abstract decoration ── */}
-          <div className="absolute inset-0 pointer-events-none">
-            <svg width="100%" height="100%" viewBox="0 0 390 130" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-              {/* Wave 1 – back */}
-              <path d="M-10,80 C40,40 90,110 150,70 C210,30 260,90 320,55 C360,35 385,60 400,50 L400,130 L-10,130 Z"
-                fill="rgba(255,255,255,0.06)"/>
-              {/* Wave 2 – mid */}
-              <path d="M-10,95 C30,65 80,105 140,82 C200,58 250,100 310,78 C350,64 380,82 400,75 L400,130 L-10,130 Z"
-                fill="rgba(255,255,255,0.08)"/>
-              {/* Wave 3 – front */}
-              <path d="M-10,108 C50,88 100,118 160,100 C220,82 270,112 330,95 C365,84 385,98 400,93 L400,130 L-10,130 Z"
-                fill="rgba(255,255,255,0.10)"/>
-              {/* Decorative circles top-right */}
-              <circle cx="340" cy="30" r="38" fill="rgba(255,255,255,0.05)"/>
-              <circle cx="340" cy="30" r="22" fill="rgba(255,255,255,0.06)"/>
-              <circle cx="360" cy="12" r="12" fill="rgba(255,255,255,0.07)"/>
-              {/* Floating dots */}
-              <circle cx="270" cy="22" r="4"   fill="rgba(255,255,255,0.15)"/>
-              <circle cx="290" cy="38" r="2.5" fill="rgba(255,255,255,0.12)"/>
-              <circle cx="310" cy="18" r="3"   fill="rgba(255,255,255,0.10)"/>
-              <circle cx="255" cy="48" r="2"   fill="rgba(255,255,255,0.13)"/>
-              {/* Subtle arc lines */}
-              <path d="M200,0 Q260,35 230,70" stroke="rgba(255,255,255,0.07)" strokeWidth="1.5" fill="none"/>
-              <path d="M220,0 Q290,40 255,78" stroke="rgba(255,255,255,0.05)" strokeWidth="1"   fill="none"/>
-            </svg>
-          </div>
-
-          {/* Header top row */}
-          <div className="flex items-center justify-between relative z-10">
+          <div className="flex items-center justify-between">
             <button className="p-1.5 rounded-lg hover:bg-white/20" onClick={() => setSidebarOpen(true)}>
               <Menu className="w-6 h-6 text-white" />
             </button>
             <div className="flex items-center gap-2">
               {/* Bell */}
-              <div className="relative">
-                <button
-                  onClick={() => setBellOpen(v => !v)}
-                  className="relative p-2 rounded-full hover:bg-white/20 transition-colors"
-                >
-                  <Bell className="w-5 h-5 text-white" />
-                  {notifs.length > 0 && (
-                    <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center leading-none">
-                      {notifs.length > 9 ? '9+' : notifs.length}
-                    </span>
-                  )}
-                </button>
-                {bellOpen && (
-                  <div className="absolute right-0 top-11 w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden"
-                    style={{ animation: 'dropIn 0.18s ease-out' }}>
-                    <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-                      <p className="font-bold text-sm text-gray-900">Notifikasi</p>
-                      {notifs.length > 0 && (
-                        <button onClick={() => setNotifs([])} className="text-[10px] text-gray-400 hover:text-red-500 font-semibold">
-                          Hapus semua
-                        </button>
-                      )}
-                    </div>
-                    <div className="max-h-64 overflow-y-auto divide-y divide-gray-50">
-                      {notifs.length === 0 ? (
-                        <p className="text-center text-sm text-gray-400 py-8">Tidak ada notifikasi</p>
-                      ) : notifs.map(n => (
-                        <div key={n.id} className="flex items-start gap-3 px-4 py-3 hover:bg-gray-50">
-                          <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-xs
-                            ${n.type === 'habis' ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600'}`}>
-                            {n.type === 'habis' ? '⛔' : '⚠️'}
-                          </div>
-                          <p className="text-xs text-gray-700 pt-1">{n.msg}</p>
-                        </div>
-                      ))}
-                    </div>
-                    {notifs.length > 0 && (
-                      <div className="px-4 py-2.5 border-t border-gray-100">
-                        <Link href="/dashboard/stok" onClick={() => setBellOpen(false)}
-                          className="text-xs text-blue-600 font-semibold hover:underline">
-                          Lihat semua stok →
-                        </Link>
-                      </div>
-                    )}
-                  </div>
+              <button
+                onClick={() => setBellOpen(v => !v)}
+                className="relative p-2 rounded-full hover:bg-white/20 transition-colors"
+              >
+                <Bell className="w-5 h-5 text-white" />
+                {notifs.length > 0 && (
+                  <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center leading-none">
+                    {notifs.length > 9 ? '9+' : notifs.length}
+                  </span>
                 )}
-              </div>
+              </button>
               {/* Avatar */}
               <button
                 onClick={() => router.push('/dashboard/menu-lainnya')}
@@ -430,9 +406,8 @@ export default function DashboardLayout({ children }) {
               </button>
             </div>
           </div>
-
           {/* App title row */}
-          <div className="mt-2 relative z-10">
+          <div className="mt-2">
             <p className="font-bold text-xl text-white leading-tight">{warungName.toLowerCase()}</p>
             <p className="text-blue-200 text-xs">Kasir Pos & Warung</p>
           </div>
