@@ -84,7 +84,6 @@ jobs:
         run: |
           ./gradlew clean assembleRelease \
             --stacktrace \
-            --debug \
             -Pandroid.injected.signing.store.file=app/my-release-key.keystore \
             -Pandroid.injected.signing.store.password="${{ secrets.KEYSTORE_PASSWORD }}" \
             -Pandroid.injected.signing.key.alias="${{ secrets.KEY_ALIAS }}" \
@@ -92,12 +91,12 @@ jobs:
 
       - name: Verify APK Output
         run: |
-          if [ -f "android/app/build/outputs/apk/release/app-release-unsigned.apk" ]; then
-            echo "✓ APK built successfully"
-            ls -lh android/app/build/outputs/apk/release/app-release-unsigned.apk
+          if [ -f "android/app/build/outputs/apk/release/app-release.apk" ]; then
+            echo "✓ Signed APK built successfully"
+            ls -lh android/app/build/outputs/apk/release/app-release.apk
           else
-            echo "ERROR: APK file not found!"
-            ls -la android/app/build/outputs/apk/ || echo "Release directory not found"
+            echo "ERROR: Signed APK file not found!"
+            ls -la android/app/build/outputs/apk/release/ || echo "Release directory not found"
             exit 1
           fi
 
@@ -105,8 +104,22 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: warungku-release-apk
-          path: android/app/build/outputs/apk/release/app-release-unsigned.apk
+          path: android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
+          retention-days: 30
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        if: success()
+        with:
+          tag_name: apk-${{ github.run_number }}
+          name: "WarungKu APK - Build #${{ github.run_number }}"
+          files: android/app/build/outputs/apk/release/app-release.apk
+          body: |
+            Download aplikasi WarungKu (Signed Release).
+            Aman dari peringatan Play Protect.
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload Build Logs on Failure
         if: failure()
