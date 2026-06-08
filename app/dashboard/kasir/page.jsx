@@ -676,7 +676,6 @@ function StrukView({ tx, onSelesai, store }) {
 export default function KasirPage() {
   const [products, setProducts] = useState([])
   const [categories, setCategories] = useState(['Semua'])
-  const [nextNoTrx, setNextNoTrx] = useState('')
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [activeCategory, setActiveCategory] = useState('Semua')
@@ -710,18 +709,6 @@ export default function KasirPage() {
 
     fetch('/api/subscription/status').then(r => r.json()).then(j => {
       setPlan(j.plan || 'free')
-    }).catch(() => {})
-
-    fetch('/api/transaksi?limit=1').then(r => r.json()).then(j => {
-      const last = j.data?.[0]?.nomor_transaksi || ''
-      const todayDate = new Date().toISOString().slice(0, 10).replace(/-/g, '')
-      if (last) {
-        const parts = last.split('-')
-        const num = parseInt(parts[parts.length - 1] || '0') + 1
-        setNextNoTrx(`TRX-${todayDate}-${String(num).padStart(4, '0')}`)
-      } else {
-        setNextNoTrx(`TRX-${todayDate}-0001`)
-      }
     }).catch(() => {})
   }, [])
 
@@ -832,7 +819,7 @@ export default function KasirPage() {
       <div className="bg-white border-b border-gray-100 px-4 py-2.5 flex items-center gap-3 flex-shrink-0">
         <div className="flex-1">
           <p className="text-[10px] text-gray-400 uppercase tracking-wide font-medium">No. Transaksi</p>
-          <p className="text-xs font-bold text-gray-600">{nextNoTrx || 'Memuat...'}</p>
+          <p className="text-xs font-bold text-gray-600">Auto</p>
         </div>
         <div className="flex-1 text-center">
           <p className="text-[10px] text-gray-400 uppercase tracking-wide font-medium">Tanggal</p>
