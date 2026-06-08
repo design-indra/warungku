@@ -31,27 +31,41 @@ export async function POST(request, { params }) {
         plan_required: 'basic',
       }, { status: 403 })
     }
-    // ────────────────────────────────────────────────────────
 
     const { jumlah, catatan } = await request.json()
+    if (!jumlah || Number(jumlah) <= 0) {
+      return NextResponse.json({ error: 'Jumlah bayar tidak valid' }, { status: 400 })
+    }
 
-    // 1. Ambil hutang
-    const { data: hutang } = await supabase
-      .from('hutang').select('*').eq('id', params.id).single()
+    // 1. Ambil hutang — pastikan milik tenant ini
+    const { data: hutang, error: fetchErr } = await supabase
+      .from('hutang')
+      .select('*')
+      .eq('id', params.id)
+      .eq('tenant_id', profile.tenant_id)
+      .single()
+
+    if (fetchErr || !hutang) return NextResponse.json({ error: 'Hutang tidak ditemukan' }, { status: 404 })
+    if (hutang.status === 'lunas') return NextResponse.json({ error: 'Hutang sudah lunas' }, { status: 400 })
+
     const sisa_baru = Math.max(0, hutang.sisa - Number(jumlah))
 
     // 2. Insert pembayaran
-    await supabase.from('pembayaran_hutang').insert({
+    const { error: bayarErr } = await supabase.from('pembayaran_hutang').insert({
       hutang_id: params.id,
       jumlah:    Number(jumlah),
-      catatan,
+      catatan:   catatan || null,
     })
+    if (bayarErr) throw bayarErr
 
     // 3. Update sisa & status hutang
-    await supabase.from('hutang').update({
-      sisa:   sisa_baru,
-      status: sisa_baru === 0 ? 'lunas' : 'belum_lunas',
+    // FIX: status valid di tabel hutang = 'belum_lunas' | 'lunas' (bukan 'hutang'/'batal')
+    const { error: updateErr } = await supabase.from('hutang').update({
+      sisa:       sisa_baru,
+      status:     sisa_baru === 0 ? 'lunas' : 'belum_lunas',
+      updated_at: new Date().toISOString(),
     }).eq('id', params.id)
+    if (updateErr) throw updateErr
 
     return NextResponse.json({ success: true, sisa: sisa_baru })
   } catch (e) {
