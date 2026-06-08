@@ -1,4 +1,7 @@
+'use client'
 import './globals.css'
+import { useEffect } from 'react'
+import OfflineBadge from '@/components/OfflineBadge'
 
 export const metadata = {
   title: 'WarungKu — Kelola Warung Makin Mudah',
@@ -14,6 +17,16 @@ export const metadata = {
 }
 
 export default function RootLayout({ children }) {
+  useEffect(() => {
+    // Auto sync saat kembali online
+    const handleOnline = async () => {
+      const { syncPendingTransaksi } = await import('@/lib/useOfflineSync')
+      await syncPendingTransaksi()
+    }
+    window.addEventListener('online', handleOnline)
+    return () => window.removeEventListener('online', handleOnline)
+  }, [])
+
   return (
     <html lang="id">
       <head>
@@ -136,6 +149,9 @@ export default function RootLayout({ children }) {
         `}} />
       </head>
       <body>
+
+        {/* ── Offline Badge ── */}
+        <OfflineBadge />
 
         {/* ── Animated Splash Screen ── */}
         <div id="wk-splash">
