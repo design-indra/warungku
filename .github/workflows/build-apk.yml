@@ -16,6 +16,15 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
       - name: Install Dependencies
         run: npm install
 
@@ -26,30 +35,33 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: npm run build
 
-      - name: Create Android Structure
+      - name: Add Android Platform
         run: |
-          mkdir -p android/app/src/main/assets
-          mkdir -p android/app/src/main/res
-          touch android/app/src/main/AndroidManifest.xml
+          if [ ! -d "android" ]; then
+            npx cap add android
+          else
+            echo "Android folder already exists, skipping cap add"
+          fi
 
       - name: Capacitor Sync
         run: npx cap sync android
 
       - name: Decode Keystore
-        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/my-release-key.keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/my-release-key.keystore
 
       - name: Build Release APK
         run: |
           cd android
           chmod +x gradlew
           ./gradlew assembleRelease \
-          -Pandroid.injected.signing.store.file=my-release-key.keystore \
-          -Pandroid.injected.signing.store.password="${{ secrets.KEYSTORE_PASSWORD }}" \
-          -Pandroid.injected.signing.key.alias="${{ secrets.KEY_ALIAS }}" \
-          -Pandroid.injected.signing.key.password="${{ secrets.KEY_PASSWORD }}"
+            -Pandroid.injected.signing.store.file=my-release-key.keystore \
+            -Pandroid.injected.signing.store.password="${{ secrets.KEYSTORE_PASSWORD }}" \
+            -Pandroid.injected.signing.key.alias="${{ secrets.KEY_ALIAS }}" \
+            -Pandroid.injected.signing.key.password="${{ secrets.KEY_PASSWORD }}"
 
       - name: Upload Signed APK
         uses: actions/upload-artifact@v4
         with:
           name: warungku-release-apk
-          path: android/app/build/outputs/apk/release/app-release-unsigned.apk
+          path: android/app/build/outputs/apk/release/app-release*.apk
