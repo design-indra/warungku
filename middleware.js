@@ -6,6 +6,11 @@ export async function middleware(request) {
 
   let response = NextResponse.next({ request })
 
+  // FIX 12: Sebelumnya middleware selalu hit Supabase untuk getSession(),
+  // padahal saat offline request tetap lewat middleware (di server).
+  // getSession() di middleware sebenarnya aman (baca cookie lokal),
+  // tapi jika Supabase SDK mencoba refresh token di background → bisa hang offline.
+  // Solusi: tambahkan autoRefreshToken: false di createServerClient middleware.
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
@@ -20,35 +25,33 @@ export async function middleware(request) {
           )
         },
       },
+      // FIX 13: Matikan auto-refresh di middleware → tidak ada network call
+      // background yang bisa gagal/hang saat offline.
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
     }
   )
 
-  // ── Cek session dari cookie lokal (tidak hit network) ───────────────────
-  // getSession() aman dipakai di middleware karena baca JWT dari cookie
-  // getUser() tidak cocok di sini karena selalu hit Supabase server
   let session = null
   try {
     const { data } = await supabase.auth.getSession()
     session = data?.session ?? null
   } catch {
-    // Jika Supabase SDK error, fallback ke cek cookie manual
     session = null
   }
 
-  // ── Fallback: cek cookie Supabase secara manual ─────────────────────────
-  // Dipakai jika getSession() gagal (jarang, tapi bisa terjadi)
   const hasSessionCookie = request.cookies.getAll().some(c =>
     c.name.startsWith('sb-') && c.name.endsWith('-auth-token')
   )
 
   const isAuthenticated = !!session || hasSessionCookie
 
-  // Protect dashboard — izinkan jika ada session ATAU ada cookie session
   if (pathname.startsWith('/dashboard') && !isAuthenticated) {
     return NextResponse.redirect(new URL('/auth/login', request.url))
   }
 
-  // Redirect user yang sudah login dari halaman auth
   if (
     pathname.startsWith('/auth') &&
     !pathname.startsWith('/auth/callback') &&

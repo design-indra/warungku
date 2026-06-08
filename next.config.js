@@ -7,7 +7,6 @@ const withPWA = require('@ducanh2912/next-pwa').default({
   aggressiveFrontEndNavCaching: true,
   reloadOnOnline: false,
 
-  // fallbackRoutes: SW akan serve file ini saat halaman tidak tersedia offline
   fallbackRoutes: {
     document: '/offline.html',
   },
@@ -15,7 +14,6 @@ const withPWA = require('@ducanh2912/next-pwa').default({
   workboxOptions: {
     disableDevLogs: true,
 
-    // offline.html di-precache agar selalu tersedia sebagai fallback
     additionalManifestEntries: [
       { url: '/offline.html', revision: '1' },
     ],
@@ -41,15 +39,17 @@ const withPWA = require('@ducanh2912/next-pwa').default({
         },
       },
 
-      // Halaman dashboard — NetworkFirst dengan timeout
-      // Jika offline, SW fallback ke cache. Jika cache juga tidak ada, tampil offline.html
+      // FIX 14: Halaman dashboard — tambah cachingStrategy yang lebih robust.
+      // Sebelumnya hanya NetworkFirst tanpa fallback eksplisit ke offline.html.
+      // Workbox sudah handle via fallbackRoutes, tapi perlu pastikan
+      // cacheName konsisten dan expiration cukup panjang untuk offline lama.
       {
         urlPattern: /\/dashboard.*/i,
         handler: 'NetworkFirst',
         options: {
           cacheName: 'pages-dashboard',
           networkTimeoutSeconds: 4,
-          expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 },
+          expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 * 7 }, // 7 hari
         },
       },
 
@@ -60,7 +60,7 @@ const withPWA = require('@ducanh2912/next-pwa').default({
         options: {
           cacheName: 'api-barang',
           networkTimeoutSeconds: 4,
-          expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 },
+          expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 }, // 24 jam
         },
       },
 
@@ -72,6 +72,19 @@ const withPWA = require('@ducanh2912/next-pwa').default({
           cacheName: 'api-config',
           networkTimeoutSeconds: 4,
           expiration: { maxEntries: 5, maxAgeSeconds: 60 * 60 * 6 },
+        },
+      },
+
+      // FIX 15: Tambah cache untuk _next/data (RSC payload Next.js 14).
+      // Tanpa ini, navigasi client-side ke halaman yang pernah dikunjungi
+      // akan gagal offline karena fetch ke /_next/data/... tidak ter-cache.
+      {
+        urlPattern: /\/_next\/data\/.*/i,
+        handler: 'NetworkFirst',
+        options: {
+          cacheName: 'next-data',
+          networkTimeoutSeconds: 4,
+          expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 },
         },
       },
 
