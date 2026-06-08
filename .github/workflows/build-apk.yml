@@ -16,13 +16,6 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-          cache: gradle
-
       - name: Install Dependencies
         run: npm install
 
@@ -67,6 +60,13 @@ jobs:
 
       - name: Capacitor Sync
         run: npx cap sync android
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
 
       - name: Decode Keystore
         run: |
