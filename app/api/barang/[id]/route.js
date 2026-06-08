@@ -8,7 +8,9 @@ export async function PUT(request, { params }) {
     if (authErr || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const body = await request.json()
-    const { data: profile } = await supabase.from('user_profiles').select('tenant_id').eq('id', user.id).single()
+    const { data: profile } = await supabase
+      .from('user_profiles').select('tenant_id').eq('id', user.id).single()
+    if (!profile?.tenant_id) return NextResponse.json({ error: 'Profil tidak ditemukan' }, { status: 404 })
 
     // Resolve kategori_id dari nama jika perlu
     let kategori_id = body.kategori_id || null
@@ -32,6 +34,7 @@ export async function PUT(request, { params }) {
       }
     }
 
+    // FIX: tambah .eq('tenant_id') agar tidak bisa edit barang tenant lain
     const { data, error } = await supabase.from('barang').update({
       kode_barang:  body.kode_barang || null,
       nama:         body.nama,
@@ -45,9 +48,14 @@ export async function PUT(request, { params }) {
       foto_url:     body.foto_url ?? null,
       barcode:      body.barcode || null,
       updated_at:   new Date().toISOString(),
-    }).eq('id', params.id).select('*, kategori(id, nama)').single()
+    })
+      .eq('id', params.id)
+      .eq('tenant_id', profile.tenant_id)  // FIX: security filter
+      .select('*, kategori(id, nama)')
+      .single()
 
     if (error) throw error
+    if (!data) return NextResponse.json({ error: 'Barang tidak ditemukan' }, { status: 404 })
     return NextResponse.json({ data })
   } catch (e) {
     return NextResponse.json({ error: e.message }, { status: 500 })
@@ -60,7 +68,16 @@ export async function DELETE(request, { params }) {
     const { data: { user }, error: authErr } = await supabase.auth.getUser()
     if (authErr || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const { error } = await supabase.from('barang').update({ is_active: false }).eq('id', params.id)
+    const { data: profile } = await supabase
+      .from('user_profiles').select('tenant_id').eq('id', user.id).single()
+    if (!profile?.tenant_id) return NextResponse.json({ error: 'Profil tidak ditemukan' }, { status: 404 })
+
+    // FIX: tambah .eq('tenant_id') agar tidak bisa hapus barang tenant lain
+    const { error } = await supabase.from('barang')
+      .update({ is_active: false })
+      .eq('id', params.id)
+      .eq('tenant_id', profile.tenant_id)  // FIX: security filter
+
     if (error) throw error
     return NextResponse.json({ success: true })
   } catch (e) {
