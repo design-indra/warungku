@@ -15,6 +15,8 @@ import BarcodeScanner from '@/lib/scanner'
 
 // IMPORT HELPER PELANGGAN
 import { fetchPelanggan, tambahPelanggan } from '@/lib/pelanggan'
+import { getBarang, simpanTransaksi } from '@/lib/useOfflineSync'
+import { getBarang, simpanTransaksi } from '@/lib/useOfflineSync'
 
 const rp = (n) => 'Rp ' + Number(n || 0).toLocaleString('id-ID')
 
@@ -698,10 +700,9 @@ export default function KasirPage() {
   const searchRef = useRef(null)
 
   useEffect(() => {
-    fetch('/api/barang?limit=200').then(r => r.json()).then(j => {
-      const data = j.data || []
-      setProducts(data)
-      setCategories(['Semua', ...new Set(data.map(p => p.kategori?.nama).filter(Boolean))])
+    getBarang().then(data => {
+      setProducts(data || [])
+      setCategories(['Semua', ...new Set((data || []).map(p => p.kategori?.nama).filter(Boolean))])
       setLoading(false)
     }).catch(() => setLoading(false))
 
@@ -793,16 +794,27 @@ export default function KasirPage() {
   const handleBayar = async ({ metode, bayar, kembalian, pelanggan_id }) => {
     setSaving(true)
     try {
-      const res = await fetch('/api/transaksi', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          total, diskon: diskonNominal, total_bayar: bayar, metode_bayar: metode, pelanggan_id: pelanggan_id || null,
-          items: cart.map(c => ({ id: c.id, nama: c.nama, harga: c.harga, harga_beli: c.harga_beli, qty: c.qty })),
-        }),
-      })
-      const json = await res.json()
-      if (!res.ok) throw new Error(json.error || 'Gagal menyimpan')
+      const payload = {
+        total, diskon: diskonNominal, total_bayar: bayar, metode_bayar: metode,
+        pelanggan_id: pelanggan_id || null,
+        items: cart.map(c => ({ id: c.id, nama: c.nama, harga: c.harga, harga_beli: c.harga_beli, qty: c.qty })),
+      }
+      const json = await simpanTransaksi(payload)
+
+      if (json.offline) {
+        // Transaksi disimpan lokal — tampil struk offline
+        setLastTx({
+          nomor_transaksi: 'OFFLINE-' + json.queue_id,
+          created_at: new Date().toISOString(),
+          items: cart, subtotal, total, diskon: diskonNominal,
+          bayar, kembalian, metode_bayar: metode, offline: true,
+        })
+        clearCart()
+        setScreen('struk')
+        return
+      }
+
+      if (json.error) throw new Error(json.error)
       setLastTx({ ...json.data, items: cart, subtotal, total, diskon: diskonNominal, bayar, kembalian, metode_bayar: metode })
       clearCart()
       setScreen('struk')
