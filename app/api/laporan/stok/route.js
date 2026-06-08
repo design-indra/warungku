@@ -19,7 +19,7 @@ export async function GET(request) {
     // Ambil semua barang aktif beserta kategori
     let query = supabase
       .from('barang')
-      .select('id, kode, nama, stok, stok_minimum, harga_jual, harga_beli, satuan, kategori(nama)')
+      .select('id, kode_barang, nama, stok, stok_minimum, harga_jual, harga_beli, satuan, kategori(nama)')
       .eq('tenant_id', profile.tenant_id)
       .eq('is_active', true)
       .order('nama')
