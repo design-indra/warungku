@@ -336,10 +336,39 @@ export default function DashboardLayout({ children }) {
 
       {/* MAIN CONTENT AREA */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* ── MOBILE HEADER (biru, sesuai mockup) ── */}
-        <header className="md:hidden bg-blue-600 text-white px-4 pt-4 pb-6 flex-shrink-0"
+        {/* ── MOBILE HEADER (biru, wave abstract) ── */}
+        <header className="md:hidden bg-blue-600 text-white px-4 pt-4 pb-6 flex-shrink-0 relative overflow-hidden"
           style={{ borderBottomLeftRadius: '28px', borderBottomRightRadius: '28px' }}>
-          <div className="flex items-center justify-between">
+
+          {/* ── Wave abstract decoration ── */}
+          <div className="absolute inset-0 pointer-events-none">
+            <svg width="100%" height="100%" viewBox="0 0 390 130" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+              {/* Wave 1 – back */}
+              <path d="M-10,80 C40,40 90,110 150,70 C210,30 260,90 320,55 C360,35 385,60 400,50 L400,130 L-10,130 Z"
+                fill="rgba(255,255,255,0.06)"/>
+              {/* Wave 2 – mid */}
+              <path d="M-10,95 C30,65 80,105 140,82 C200,58 250,100 310,78 C350,64 380,82 400,75 L400,130 L-10,130 Z"
+                fill="rgba(255,255,255,0.08)"/>
+              {/* Wave 3 – front */}
+              <path d="M-10,108 C50,88 100,118 160,100 C220,82 270,112 330,95 C365,84 385,98 400,93 L400,130 L-10,130 Z"
+                fill="rgba(255,255,255,0.10)"/>
+              {/* Decorative circles top-right */}
+              <circle cx="340" cy="30" r="38" fill="rgba(255,255,255,0.05)"/>
+              <circle cx="340" cy="30" r="22" fill="rgba(255,255,255,0.06)"/>
+              <circle cx="360" cy="12" r="12" fill="rgba(255,255,255,0.07)"/>
+              {/* Floating dots */}
+              <circle cx="270" cy="22" r="4"   fill="rgba(255,255,255,0.15)"/>
+              <circle cx="290" cy="38" r="2.5" fill="rgba(255,255,255,0.12)"/>
+              <circle cx="310" cy="18" r="3"   fill="rgba(255,255,255,0.10)"/>
+              <circle cx="255" cy="48" r="2"   fill="rgba(255,255,255,0.13)"/>
+              {/* Subtle arc lines */}
+              <path d="M200,0 Q260,35 230,70" stroke="rgba(255,255,255,0.07)" strokeWidth="1.5" fill="none"/>
+              <path d="M220,0 Q290,40 255,78" stroke="rgba(255,255,255,0.05)" strokeWidth="1"   fill="none"/>
+            </svg>
+          </div>
+
+          {/* Header top row */}
+          <div className="flex items-center justify-between relative z-10">
             <button className="p-1.5 rounded-lg hover:bg-white/20" onClick={() => setSidebarOpen(true)}>
               <Menu className="w-6 h-6 text-white" />
             </button>
@@ -401,8 +430,9 @@ export default function DashboardLayout({ children }) {
               </button>
             </div>
           </div>
+
           {/* App title row */}
-          <div className="mt-2">
+          <div className="mt-2 relative z-10">
             <p className="font-bold text-xl text-white leading-tight">{warungName.toLowerCase()}</p>
             <p className="text-blue-200 text-xs">Kasir Pos & Warung</p>
           </div>
