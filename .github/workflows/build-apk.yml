@@ -2,81 +2,44 @@ name: Build WarungKu APK
 
 on:
   push:
-    branches: [main]
-  workflow_dispatch:
+    branches: [ "main" ]
 
 jobs:
-  build-apk:
+  build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write        # ← tambahan ini
-
     steps:
-      - name: Checkout Repository
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-
-      - name: Setup Java JDK
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
 
       - name: Install Dependencies
         run: npm install
 
-      - name: Install Capacitor CLI
-        run: npm install -g @capacitor/cli
-
-      - name: Create Web Assets Directory
-        run: mkdir -p out
-
-      - name: Add Android Platform
-        run: npx cap add android
+      - name: Build Web App
+        run: npm run build
 
       - name: Capacitor Sync
         run: npx cap sync android
+
+      - name: Decode Keystore
+        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/my-release-key.keystore
 
       - name: Build Release APK
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleRelease
-
-      - name: Sign APK
-        uses: r0adkll/sign-android-release@v1
-        id: sign_app
-        with:
-          releaseDirectory: android/app/build/outputs/apk/release
-          signingKeyBase64: ${{ secrets.KEYSTORE_BASE64 }}
-          alias: ${{ secrets.KEY_ALIAS }}
-          keyStorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
-          keyPassword: ${{ secrets.KEY_PASSWORD }}
+          ./gradlew assembleRelease \
+          -Pandroid.injected.signing.store.file=my-release-key.keystore \
+          -Pandroid.injected.signing.store.password="${{ secrets.KEYSTORE_PASSWORD }}" \
+          -Pandroid.injected.signing.key.alias="${{ secrets.KEY_ALIAS }}" \
+          -Pandroid.injected.signing.key.password="${{ secrets.KEY_PASSWORD }}"
 
       - name: Upload Signed APK
         uses: actions/upload-artifact@v4
         with:
           name: warungku-release-apk
-          path: ${{ steps.sign_app.outputs.signedReleaseFile }}
-          retention-days: 30
-
-      - name: Create Release
-        uses: softprops/action-gh-release@v2
-        if: github.ref == 'refs/heads/main'
-        with:
-          tag_name: apk-${{ github.run_number }}
-          name: "WarungKu APK - Build #${{ github.run_number }}"
-          files: ${{ steps.sign_app.outputs.signedReleaseFile }}
-          body: |
-            Download aplikasi WarungKu (Signed Release).
-            Aman dari peringatan Play Protect.
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          path: android/app/build/outputs/apk/release/app-release-unsigned.apk
