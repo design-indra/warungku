@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServerSupabase } from '@/lib/supabase-server'
 
-// PATCH /api/transaksi/[id] → update status (e.g. batal)
+// PATCH /api/transaksi/[id] → update status ke 'batal'
 export async function PATCH(request, { params }) {
   try {
     const supabase = createServerSupabase()
@@ -16,36 +16,35 @@ export async function PATCH(request, { params }) {
       return NextResponse.json({ error: 'Hanya boleh mengubah status ke batal' }, { status: 400 })
     }
 
-    // Cek transaksi milik tenant yang sama
+    // Ambil tenant_id user
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('tenant_id')
+      .eq('id', user.id)
+      .single()
+    if (!profile?.tenant_id) return NextResponse.json({ error: 'Profil tidak ditemukan' }, { status: 404 })
+
+    // Cek transaksi ada & milik tenant ini
     const { data: trx, error: fetchErr } = await supabase
       .from('transaksi')
-      .select('id, status, detail_transaksi(*)')
+      .select('id, status, tenant_id')
       .eq('id', id)
+      .eq('tenant_id', profile.tenant_id)
       .single()
+
     if (fetchErr || !trx) return NextResponse.json({ error: 'Transaksi tidak ditemukan' }, { status: 404 })
     if (trx.status === 'batal') return NextResponse.json({ error: 'Transaksi sudah dibatalkan' }, { status: 400 })
 
-    // Update status
+    // Update status ke 'batal'
+    // Trigger handle_batal_transaksi di DB otomatis:
+    // 1. Kembalikan stok semua item
+    // 2. Set hutang terkait ke 'batal' (bukan 'lunas')
     const { error: updateErr } = await supabase
       .from('transaksi')
       .update({ status: 'batal' })
       .eq('id', id)
+
     if (updateErr) throw updateErr
-
-    // Kembalikan stok barang
-    for (const d of trx.detail_transaksi || []) {
-      try {
-        const { error } = await supabase.rpc('increment_stok', { p_barang_id: d.barang_id, p_qty: d.qty })
-        if (error) throw error
-      } catch {
-        // fallback manual jika RPC belum ada
-        const { data: b } = await supabase.from('barang').select('stok').eq('id', d.barang_id).single()
-        if (b) await supabase.from('barang').update({ stok: b.stok + d.qty }).eq('id', d.barang_id)
-      }
-    }
-
-    // Jika transaksi hutang, tandai hutang sebagai lunas (bukan 'dibatalkan' — tidak valid di DB)
-    await supabase.from('hutang').update({ status: 'lunas', sisa: 0 }).eq('transaksi_id', id)
 
     return NextResponse.json({ success: true })
   } catch (e) {
