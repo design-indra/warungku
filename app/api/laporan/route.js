@@ -37,27 +37,38 @@ export async function GET(request) {
     const today = new Date().toISOString().split('T')[0]
     if (!isPaidActive) { from = today; to = today }
 
+    const fromTs = from + 'T00:00:00'
+    const toTs   = to   + 'T23:59:59'
+
     // ── Transaksi periode ini ──────────────────────────────
-    const { data: trxData } = await supabase
+    const { data: trxData, error: trxErr } = await supabase
       .from('transaksi')
-      .select('created_at, total, status, metode_bayar')
+      .select('id, created_at, total, status, metode_bayar')
       .eq('tenant_id', tenantId)
-      .gte('created_at', from)
-      .lte('created_at', to + 'T23:59:59')
+      .gte('created_at', fromTs)
+      .lte('created_at', toTs)
       .neq('status', 'batal')
 
-    // ── Detail transaksi (barang terlaris + kategori) ──────
-    const { data: detailData } = await supabase
-      .from('detail_transaksi')
-      .select('nama_barang, qty, harga_jual, harga_beli, barang_id, transaksi!inner(created_at, status, tenant_id)')
-      .eq('transaksi.tenant_id', tenantId)
-      .gte('transaksi.created_at', from)
-      .lte('transaksi.created_at', to + 'T23:59:59')
-      .neq('transaksi.status', 'batal')
+    if (trxErr) throw trxErr
 
-    // ── Ambil kategori barang untuk penjualan per kategori ─
+    // ── Detail transaksi — filter via transaksi_id IN ──────
+    // FIX: .eq('transaksi.tenant_id') tidak reliable di PostgREST
+    let detailData = []
+    const trxIds = trxData?.map(t => t.id) || []
+
+    if (trxIds.length > 0) {
+      const { data, error: detailErr } = await supabase
+        .from('detail_transaksi')
+        .select('nama_barang, qty, harga_jual, harga_beli, barang_id, transaksi_id')
+        .in('transaksi_id', trxIds)
+
+      if (detailErr) throw detailErr
+      detailData = data || []
+    }
+
+    // ── Ambil kategori barang ──────────────────────────────
     let perKategori = []
-    if (detailData?.length > 0) {
+    if (detailData.length > 0) {
       const barangIds = [...new Set(detailData.map(d => d.barang_id).filter(Boolean))]
       if (barangIds.length > 0) {
         const { data: barangData } = await supabase
@@ -107,13 +118,13 @@ export async function GET(request) {
     // ── Summary ───────────────────────────────────────────
     const totalOmzet = trxData?.reduce((s, t) => s + t.total, 0) || 0
     const totalTrx   = trxData?.length || 0
-    const totalLaba  = detailData?.reduce((s, d) => s + (d.harga_jual - d.harga_beli) * d.qty, 0) || 0
-    const totalQty   = detailData?.reduce((s, d) => s + d.qty, 0) || 0
+    const totalLaba  = detailData.reduce((s, d) => s + (d.harga_jual - d.harga_beli) * d.qty, 0) || 0
+    const totalQty   = detailData.reduce((s, d) => s + d.qty, 0) || 0
     const rataRata   = totalTrx > 0 ? Math.round(totalOmzet / totalTrx) : 0
 
     // ── Top barang ────────────────────────────────────────
     const barangMap = {}
-    detailData?.forEach(d => {
+    detailData.forEach(d => {
       if (!barangMap[d.nama_barang]) barangMap[d.nama_barang] = { nama: d.nama_barang, qty: 0, omzet: 0 }
       barangMap[d.nama_barang].qty   += d.qty
       barangMap[d.nama_barang].omzet += d.harga_jual * d.qty
