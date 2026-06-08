@@ -86,7 +86,7 @@ html, body {
 
 /* Mobile bottom nav — 5 items, compact (FIXED flex-2 -> flex-1) */
 .bottom-nav-item {
-  @apply flex flex-col items-center justify-center gap-1 flex-1 py-3 text-gray-400 transition-colors;
+  @apply flex flex-col items-center justify-center gap-1 flex-1 py-3 text-blue-300 transition-colors;
   min-width: 0;
 }
 .bottom-nav-item span {
@@ -96,7 +96,7 @@ html, body {
   @apply w-[18px] h-[18px] flex-shrink-0;
 }
 .bottom-nav-item.active {
-  @apply text-blue-600;
+  @apply text-white;
 }
 .bottom-nav-item.active svg {
   @apply drop-shadow-sm;
