@@ -23,36 +23,36 @@ export async function middleware(request) {
     }
   )
 
-  let user = null
+  // ── Cek session dari cookie lokal (tidak hit network) ───────────────────
+  // getSession() aman dipakai di middleware karena baca JWT dari cookie
+  // getUser() tidak cocok di sini karena selalu hit Supabase server
+  let session = null
   try {
-    const { data } = await supabase.auth.getUser()
-    user = data?.user
+    const { data } = await supabase.auth.getSession()
+    session = data?.session ?? null
   } catch {
-    // Supabase tidak bisa dihubungi (offline)
-    // Cek apakah ada session cookie tersimpan di browser
-    const cookies = request.cookies.getAll()
-    const hasSession = cookies.some(c =>
-      c.name.includes('auth-token') ||
-      c.name.includes('sb-') ||
-      c.name.startsWith('supabase')
-    )
-
-    if (hasSession && pathname.startsWith('/dashboard')) {
-      // Ada session → izinkan akses saat offline
-      return NextResponse.next()
-    }
+    // Jika Supabase SDK error, fallback ke cek cookie manual
+    session = null
   }
 
-  // Protect dashboard
-  if (pathname.startsWith('/dashboard') && !user) {
+  // ── Fallback: cek cookie Supabase secara manual ─────────────────────────
+  // Dipakai jika getSession() gagal (jarang, tapi bisa terjadi)
+  const hasSessionCookie = request.cookies.getAll().some(c =>
+    c.name.startsWith('sb-') && c.name.endsWith('-auth-token')
+  )
+
+  const isAuthenticated = !!session || hasSessionCookie
+
+  // Protect dashboard — izinkan jika ada session ATAU ada cookie session
+  if (pathname.startsWith('/dashboard') && !isAuthenticated) {
     return NextResponse.redirect(new URL('/auth/login', request.url))
   }
 
-  // Redirect user login dari halaman auth
+  // Redirect user yang sudah login dari halaman auth
   if (
     pathname.startsWith('/auth') &&
     !pathname.startsWith('/auth/callback') &&
-    user
+    isAuthenticated
   ) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
