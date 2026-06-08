@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server'
 import { createServerSupabase } from '@/lib/supabase-server'
 
 const PLANS = {
-  basic: { label: 'Basic', amount: 49000, duration_days: 30  },
-  pro:   { label: 'Pro',   amount: 2000, duration_days: 365 },
+  basic: { label: 'Basic', amount: 15000, duration_days: 30  },
+  pro:   { label: 'Pro',   amount: 30000, duration_days: 30 },
 }
 
 // POST /api/subscription/create-order
