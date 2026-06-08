@@ -16,6 +16,13 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
       - name: Install Dependencies
         run: npm install
 
@@ -26,34 +33,85 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: npm run build
 
+      - name: Verify Build Output
+        run: |
+          if [ ! -d "out" ]; then
+            echo "ERROR: Next.js build output directory 'out' not found!"
+            echo "Available directories:"
+            ls -la
+            exit 1
+          fi
+          echo "✓ Build output directory verified"
+          ls -la out/
+
       - name: Create Android Assets Directory
-        run: mkdir -p android/app/src/main/assets
+        run: mkdir -p android/app/src/main/assets/public
+
+      - name: Copy Web Assets
+        run: |
+          if [ -d "out" ]; then
+            cp -r out/* android/app/src/main/assets/public/
+            echo "✓ Web assets copied successfully"
+          else
+            echo "WARNING: out directory not found, skipping asset copy"
+          fi
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Make Gradle Wrapper Executable
+        run: |
+          cd android
+          chmod +x gradlew
+          ls -la gradlew
 
       - name: Capacitor Sync
         run: npx cap sync android
 
-      - name: Setup Gradle Wrapper
+      - name: Decode Keystore
         run: |
-          cd android
-          if [ ! -f gradlew ]; then
-            gradle wrapper
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/my-release-key.keystore
+          if [ -f "android/app/my-release-key.keystore" ]; then
+            echo "✓ Keystore decoded successfully"
+            ls -lh android/app/my-release-key.keystore
+          else
+            echo "ERROR: Keystore file not created!"
+            exit 1
           fi
 
-      - name: Decode Keystore
-        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/my-release-key.keystore
-
       - name: Build Release APK
+        working-directory: ./android
         run: |
-          cd android
-          chmod +x gradlew
-          ./gradlew assembleRelease \
-          -Pandroid.injected.signing.store.file=my-release-key.keystore \
-          -Pandroid.injected.signing.store.password="${{ secrets.KEYSTORE_PASSWORD }}" \
-          -Pandroid.injected.signing.key.alias="${{ secrets.KEY_ALIAS }}" \
-          -Pandroid.injected.signing.key.password="${{ secrets.KEY_PASSWORD }}"
+          ./gradlew clean assembleRelease \
+            --stacktrace \
+            --debug \
+            -Pandroid.injected.signing.store.file=app/my-release-key.keystore \
+            -Pandroid.injected.signing.store.password="${{ secrets.KEYSTORE_PASSWORD }}" \
+            -Pandroid.injected.signing.key.alias="${{ secrets.KEY_ALIAS }}" \
+            -Pandroid.injected.signing.key.password="${{ secrets.KEY_PASSWORD }}"
+
+      - name: Verify APK Output
+        run: |
+          if [ -f "android/app/build/outputs/apk/release/app-release-unsigned.apk" ]; then
+            echo "✓ APK built successfully"
+            ls -lh android/app/build/outputs/apk/release/app-release-unsigned.apk
+          else
+            echo "ERROR: APK file not found!"
+            ls -la android/app/build/outputs/apk/ || echo "Release directory not found"
+            exit 1
+          fi
 
       - name: Upload Signed APK
         uses: actions/upload-artifact@v4
         with:
           name: warungku-release-apk
           path: android/app/build/outputs/apk/release/app-release-unsigned.apk
+          if-no-files-found: error
+
+      - name: Upload Build Logs on Failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs
+          path: android/build/reports/
+          retention-days: 7
