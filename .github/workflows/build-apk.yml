@@ -32,6 +32,13 @@ jobs:
       - name: Capacitor Sync
         run: npx cap sync android
 
+      - name: Setup Gradle Wrapper
+        run: |
+          cd android
+          if [ ! -f gradlew ]; then
+            gradle wrapper
+          fi
+
       - name: Decode Keystore
         run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/my-release-key.keystore
 
