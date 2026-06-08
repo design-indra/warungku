@@ -82,10 +82,17 @@ const sidebarSections = [
 ]
 
 // ─── Mobile Sidebar Drawer ───────────────────────────────────────────────────
-function MobileSidebar({ open, onClose, isActive, user, warungName, onLogout, router }) {
+const PLAN_BADGE = {
+  free:  { label: 'FREE',  bg: 'bg-gray-100',  text: 'text-gray-500'  },
+  basic: { label: 'BASIC', bg: 'bg-blue-100',  text: 'text-blue-700'  },
+  pro:   { label: 'PRO',   bg: 'bg-amber-100', text: 'text-amber-700' },
+}
+
+function MobileSidebar({ open, onClose, isActive, user, warungName, plan = 'free', onLogout, router }) {
   const fullName = user?.user_metadata?.full_name || 'Pemilik Warungku'
   const email    = user?.email || ''
   const initial  = fullName?.[0]?.toUpperCase() || email?.[0]?.toUpperCase() || 'P'
+  const badge    = PLAN_BADGE[plan] || PLAN_BADGE.free
 
   if (!open) return null
 
@@ -119,19 +126,30 @@ function MobileSidebar({ open, onClose, isActive, user, warungName, onLogout, ro
 
         {/* ── User card (putih, di bawah header biru) ── */}
         <div className="px-3 py-3 border-b border-gray-100 flex-shrink-0">
-          <div className="bg-blue-50 rounded-2xl px-3 py-3 flex items-center gap-3">
+          <button
+            onClick={() => { onClose(); router.push('/dashboard/berlangganan') }}
+            className="w-full bg-blue-50 hover:bg-blue-100 transition-colors rounded-2xl px-3 py-3 flex items-center gap-3 text-left"
+          >
             <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-base flex-shrink-0">
               {initial}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-gray-900 font-bold text-sm leading-tight truncate">{fullName}</p>
               <p className="text-gray-500 text-xs leading-tight truncate mt-0.5">{email}</p>
-              <span className="inline-block mt-1 bg-blue-100 text-blue-700 text-[10px] px-2 py-0.5 rounded-full font-semibold">
-                Pemilik
-              </span>
+              <div className="flex items-center gap-1.5 mt-1">
+                <span className="inline-block bg-blue-100 text-blue-700 text-[10px] px-2 py-0.5 rounded-full font-semibold">
+                  Pemilik
+                </span>
+                <span className={`inline-block text-[10px] px-2 py-0.5 rounded-full font-bold ${badge.bg} ${badge.text}`}>
+                  {badge.label}
+                </span>
+                {plan === 'free' && (
+                  <span className="text-[10px] text-amber-600 font-semibold">↑ Upgrade</span>
+                )}
+              </div>
             </div>
             <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
-          </div>
+          </button>
         </div>
 
         {/* ── Scrollable nav sections ── */}
@@ -190,6 +208,7 @@ export default function DashboardLayout({ children }) {
   const [user, setUser] = useState(null)
   const [warungName, setWarungName] = useState('warungku')
   const [cabang, setCabang] = useState('')
+  const [plan, setPlan] = useState('free')
 
   useEffect(() => {
     const supabase = createClient()
@@ -201,6 +220,7 @@ export default function DashboardLayout({ children }) {
         const res = await fetch('/api/pengaturan/profil')
         const json = await res.json()
         if (json.nama_warung) setWarungName(json.nama_warung)
+        if (json.plan) setPlan(json.plan)
       } catch {}
 
       try {
@@ -284,6 +304,7 @@ export default function DashboardLayout({ children }) {
         isActive={isActive}
         user={user}
         warungName={warungName}
+        plan={plan}
         onLogout={handleLogout}
         router={router}
       />
