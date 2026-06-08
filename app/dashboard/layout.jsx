@@ -442,7 +442,8 @@ export default function DashboardLayout({ children }) {
         </main>
 
         {/* ── BOTTOM NAV 5 ITEM (mobile only) ── */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex items-center safe-area-pb z-20">
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-blue-600 flex items-center safe-area-pb z-20"
+          style={{ borderTopLeftRadius: '24px', borderTopRightRadius: '24px', boxShadow: '0 -2px 16px rgba(37,99,235,0.18)' }}>
           {bottomNavItems.map(({ href, label, icon: Icon }) => (
             <Link key={href} href={href} className={`bottom-nav-item ${isActive(href) ? 'active' : ''}`}>
               <Icon className="w-[18px] h-[18px] flex-shrink-0" />
