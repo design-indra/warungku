@@ -1,34 +1,8 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 
-// Halaman yang boleh diakses offline (sudah di-cache SW)
-const OFFLINE_ALLOWED = [
-  '/dashboard',
-  '/dashboard/kasir',
-  '/dashboard/stok',
-  '/dashboard/laporan',
-  '/dashboard/hutang',
-  '/dashboard/pelanggan',
-  '/dashboard/riwayat',
-  '/dashboard/menu-lainnya',
-]
-
 export async function middleware(request) {
   const { pathname } = request.nextUrl
-
-  // Deteksi request offline via header SW atau Service-Worker
-  // Saat offline, browser kirim request dari cache SW — tidak ada Supabase session
-  // Kita allow akses dashboard jika:
-  // 1. Request dari Service Worker (SW navigation preload)
-  // 2. Header X-Offline-Request ada
-  const isOfflineRequest =
-    request.headers.get('x-offline-request') === '1' ||
-    request.headers.get('service-worker-navigation-preload') !== null
-
-  // Kalau offline request ke halaman yang diizinkan → langsung allow
-  if (isOfflineRequest && OFFLINE_ALLOWED.some(p => pathname.startsWith(p))) {
-    return NextResponse.next()
-  }
 
   let response = NextResponse.next({ request })
 
@@ -41,7 +15,9 @@ export async function middleware(request) {
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
           response = NextResponse.next({ request })
-          cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options))
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options)
+          )
         },
       },
     }
@@ -52,25 +28,27 @@ export async function middleware(request) {
     const { data } = await supabase.auth.getUser()
     user = data?.user
   } catch {
-    // Supabase tidak bisa dihubungi (offline) → cek cookie session manual
-    const sessionCookie =
-      request.cookies.get('sb-access-token') ||
-      request.cookies.get('supabase-auth-token') ||
-      // next-pwa stores session in cookie with this pattern
-      [...request.cookies.getAll()].find(c => c.name.includes('auth-token'))
+    // Supabase tidak bisa dihubungi (offline)
+    // Cek apakah ada session cookie tersimpan di browser
+    const cookies = request.cookies.getAll()
+    const hasSession = cookies.some(c =>
+      c.name.includes('auth-token') ||
+      c.name.includes('sb-') ||
+      c.name.startsWith('supabase')
+    )
 
-    if (sessionCookie && pathname.startsWith('/dashboard')) {
-      // Ada session cookie → izinkan akses (offline dengan session tersimpan)
+    if (hasSession && pathname.startsWith('/dashboard')) {
+      // Ada session → izinkan akses saat offline
       return NextResponse.next()
     }
   }
 
-  // Protect dashboard routes
+  // Protect dashboard
   if (pathname.startsWith('/dashboard') && !user) {
     return NextResponse.redirect(new URL('/auth/login', request.url))
   }
 
-  // Redirect logged-in users away from auth pages
+  // Redirect user login dari halaman auth
   if (
     pathname.startsWith('/auth') &&
     !pathname.startsWith('/auth/callback') &&

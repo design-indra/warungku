@@ -4,8 +4,6 @@ const withPWA = require('next-pwa')({
   register: true,
   skipWaiting: true,
   disable: process.env.NODE_ENV === 'development',
-  // Tambah header offline ke setiap navigasi dari SW
-  navigationPreload: true,
   runtimeCaching: [
     // ── Static assets Next.js ──────────────────────────────
     {
@@ -16,7 +14,7 @@ const withPWA = require('next-pwa')({
         expiration: { maxEntries: 500, maxAgeSeconds: 60 * 60 * 24 * 30 },
       },
     },
-    // ── Static assets umum (gambar, font, css) ─────────────
+    // ── Static assets umum ─────────────────────────────────
     {
       urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico|woff|woff2|ttf|eot|css)$/i,
       handler: 'CacheFirst',
@@ -25,7 +23,7 @@ const withPWA = require('next-pwa')({
         expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 30 },
       },
     },
-    // ── Halaman dashboard (NetworkFirst → fallback cache) ──
+    // ── Halaman dashboard ──────────────────────────────────
     {
       urlPattern: /\/dashboard.*/i,
       handler: 'NetworkFirst',
@@ -33,19 +31,9 @@ const withPWA = require('next-pwa')({
         cacheName: 'pages-dashboard',
         networkTimeoutSeconds: 5,
         expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 },
-        plugins: [
-          {
-            // Tambah header X-Offline-Request saat fetch dari cache
-            requestWillFetch: async ({ request }) => {
-              const headers = new Headers(request.headers)
-              headers.set('x-offline-request', '1')
-              return new Request(request, { headers })
-            },
-          },
-        ],
       },
     },
-    // ── API barang (NetworkFirst → fallback IndexedDB via app) ─
+    // ── API barang ─────────────────────────────────────────
     {
       urlPattern: /\/api\/barang.*/i,
       handler: 'NetworkFirst',
@@ -55,7 +43,7 @@ const withPWA = require('next-pwa')({
         expiration: { maxEntries: 5, maxAgeSeconds: 60 * 60 },
       },
     },
-    // ── API profil & subscription/status ──────────────────
+    // ── API profil & subscription ──────────────────────────
     {
       urlPattern: /\/api\/(?:pengaturan\/profil|subscription\/status).*/i,
       handler: 'NetworkFirst',
@@ -65,7 +53,7 @@ const withPWA = require('next-pwa')({
         expiration: { maxEntries: 5, maxAgeSeconds: 60 * 60 * 6 },
       },
     },
-    // ── Auth Supabase (NetworkOnly — tidak pernah cache) ───
+    // ── Supabase auth — jangan pernah cache ───────────────
     {
       urlPattern: /supabase\.co\/auth.*/i,
       handler: 'NetworkOnly',
