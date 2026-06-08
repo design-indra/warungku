@@ -28,20 +28,13 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
-      - name: Build Web App
-        env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        run: npm run build
+      - name: Create dummy webDir (required by Capacitor even in server URL mode)
+        run: mkdir -p out
 
-      - name: Add Android Platform
+      - name: Remove incomplete Android folder & re-generate
         run: |
-          if [ ! -d "android" ]; then
-            npx cap add android
-          else
-            echo "Android folder already exists, skipping cap add"
-          fi
+          rm -rf android
+          npx cap add android
 
       - name: Capacitor Sync
         run: npx cap sync android
