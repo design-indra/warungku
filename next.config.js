@@ -4,53 +4,71 @@ const withPWA = require('next-pwa')({
   register: true,
   skipWaiting: true,
   disable: process.env.NODE_ENV === 'development',
+  // Tambah header offline ke setiap navigasi dari SW
+  navigationPreload: true,
   runtimeCaching: [
-    // Cache halaman Next.js
+    // ── Static assets Next.js ──────────────────────────────
     {
-      urlPattern: /^https:\/\/.*\.vercel\.app\/_next\/static\/.*/i,
+      urlPattern: /\/_next\/static\/.*/i,
+      handler: 'CacheFirst',
+      options: {
+        cacheName: 'next-static',
+        expiration: { maxEntries: 500, maxAgeSeconds: 60 * 60 * 24 * 30 },
+      },
+    },
+    // ── Static assets umum (gambar, font, css) ─────────────
+    {
+      urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico|woff|woff2|ttf|eot|css)$/i,
       handler: 'CacheFirst',
       options: {
         cacheName: 'static-assets',
         expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 30 },
       },
     },
-    // Cache halaman app (dashboard, kasir, dll)
+    // ── Halaman dashboard (NetworkFirst → fallback cache) ──
     {
-      urlPattern: /^https:\/\/.*\.vercel\.app\/dashboard.*/i,
+      urlPattern: /\/dashboard.*/i,
       handler: 'NetworkFirst',
       options: {
-        cacheName: 'pages-cache',
-        networkTimeoutSeconds: 10,
+        cacheName: 'pages-dashboard',
+        networkTimeoutSeconds: 5,
         expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 },
+        plugins: [
+          {
+            // Tambah header X-Offline-Request saat fetch dari cache
+            requestWillFetch: async ({ request }) => {
+              const headers = new Headers(request.headers)
+              headers.set('x-offline-request', '1')
+              return new Request(request, { headers })
+            },
+          },
+        ],
       },
     },
-    // Cache API barang
+    // ── API barang (NetworkFirst → fallback IndexedDB via app) ─
     {
-      urlPattern: /^https:\/\/.*\.vercel\.app\/api\/barang.*/i,
+      urlPattern: /\/api\/barang.*/i,
       handler: 'NetworkFirst',
       options: {
         cacheName: 'api-barang',
-        networkTimeoutSeconds: 10,
-        expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 },
+        networkTimeoutSeconds: 5,
+        expiration: { maxEntries: 5, maxAgeSeconds: 60 * 60 },
       },
     },
-    // Cache gambar
+    // ── API profil & subscription/status ──────────────────
     {
-      urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/i,
-      handler: 'CacheFirst',
+      urlPattern: /\/api\/(?:pengaturan\/profil|subscription\/status).*/i,
+      handler: 'NetworkFirst',
       options: {
-        cacheName: 'images',
-        expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 7 },
+        cacheName: 'api-config',
+        networkTimeoutSeconds: 5,
+        expiration: { maxEntries: 5, maxAgeSeconds: 60 * 60 * 6 },
       },
     },
-    // Cache font & CSS
+    // ── Auth Supabase (NetworkOnly — tidak pernah cache) ───
     {
-      urlPattern: /\.(?:woff|woff2|ttf|eot|css)$/i,
-      handler: 'CacheFirst',
-      options: {
-        cacheName: 'static-fonts',
-        expiration: { maxEntries: 30, maxAgeSeconds: 60 * 60 * 24 * 30 },
-      },
+      urlPattern: /supabase\.co\/auth.*/i,
+      handler: 'NetworkOnly',
     },
   ],
 })
