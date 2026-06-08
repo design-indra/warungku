@@ -1,6 +1,6 @@
 import './globals.css'
-// import OfflineBadge from '@/components/OfflineBadge'
-// import OnlineSyncHandler from '@/components/OnlineSyncHandler'
+import OfflineBadge from '@/components/OfflineBadge'
+import OnlineSyncHandler from '@/components/OnlineSyncHandler'
 
 export const metadata = {
   title: 'WarungKu — Kelola Warung Makin Mudah',
@@ -117,8 +117,8 @@ export default function RootLayout({ children }) {
         `}} />
       </head>
       <body>
-        {/* <OfflineBadge /> */}
-        {/* <OnlineSyncHandler /> */}
+        <OfflineBadge />
+        <OnlineSyncHandler />
 
         <div id="wk-splash">
           <div className="wk-ripple"></div>
