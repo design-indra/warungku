@@ -53,22 +53,22 @@ jobs:
                     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />\n
                     <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />\n
                     <uses-feature android:name="android.hardware.bluetooth" android:required="false" />\n
-                    # Notifikasi lokal
-                    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-                    <uses-permission android:name="android.permission.VIBRATE" />
-                    # Network state
+                    # Notifikasi lokal\n
+                    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n
+                    <uses-permission android:name="android.permission.VIBRATE" />\n
+                    # Network state\n
                     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />\n
-                    # Baca/tulis file (untuk Filesystem di Android lama)
-                    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-                    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-               <application|gx
+                    # Baca/tulis file (untuk Filesystem di Android lama)\n
+                    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />\n
+                    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />\n
+                    <application|gx
             ' -i "$MANIFEST"
 
             # Hapus baris komentar (perl tidak bisa comment di string replacement, bersihkan manual)
             sed -i '/^[[:space:]]*# /d' "$MANIFEST"
 
             echo "=== AndroidManifest.xml (bagian permissions) ==="
-            grep -A 15 "<uses-permission" "$MANIFEST" | head -20
+            grep -A 25 "<uses-permission" "$MANIFEST" | head -30
           else
             echo "Warning: $MANIFEST not found"
           fi
@@ -78,67 +78,38 @@ jobs:
 
       - name: Copy custom icons
         run: |
-          cp -f icons/mipmap-hdpi/*     android/app/src/main/res/mipmap-hdpi/     || true
-          cp -f icons/mipmap-mdpi/*     android/app/src/main/res/mipmap-mdpi/     || true
-          cp -f icons/mipmap-xhdpi/*    android/app/src/main/res/mipmap-xhdpi/    || true
-          cp -f icons/mipmap-xxhdpi/*   android/app/src/main/res/mipmap-xxhdpi/   || true
-          cp -f icons/mipmap-xxxhdpi/*  android/app/src/main/res/mipmap-xxxhdpi/  || true
+          cp -f icons/mipmap-hdpi/* android/app/src/main/res/mipmap-hdpi/     || true
+          cp -f icons/mipmap-mdpi/* android/app/src/main/res/mipmap-mdpi/     || true
+          cp -f icons/mipmap-xhdpi/* android/app/src/main/res/mipmap-xhdpi/    || true
+          cp -f icons/mipmap-xxhdpi/* android/app/src/main/res/mipmap-xxhdpi/   || true
+          cp -f icons/mipmap-xxxhdpi/* android/app/src/main/res/mipmap-xxxhdpi/  || true
 
-      - name: Decode Keystore (use real keystore if provided)
-        if: ${{ secrets.KEYSTORE_BASE64 != '' }}
+      - name: Decode Keystore
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
         run: |
           mkdir -p android/app
-          echo "$KEYSTORE_BASE64" | base64 -d > android/app/my-release-key.keystore
-          echo "Keystore decoded"
-
-      - name: Create temporary keystore (CI fallback)
-        if: ${{ secrets.KEYSTORE_BASE64 == '' }}
-        run: |
-          echo "No KEYSTORE_BASE64 secret found — generating temporary keystore for CI build"
-          mkdir -p android/app
-          keytool -genkeypair -v -keystore android/app/my-release-key.keystore \
-            -storepass android -keypass android -alias actionkey \
-            -keyalg RSA -keysize 2048 -validity 10000 \
-            -dname "CN=CI, OU=CI, O=CI, L=CI, S=CI, C=ID"
-          echo "Temporary keystore created (alias: actionkey / password: android)"
-
-      - name: Clear Gradle caches (fix corrupted jars)
-        run: |
-          echo "Clearing Gradle caches that can cause corrupted JAR issues"
-          rm -rf ~/.gradle/caches/jars-9 || true
-          rm -rf ~/.gradle/caches/modules-2 || true
-          rm -rf ~/.gradle/caches/v4 || true
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > android/app/my-release-key.keystore
+            echo "Keystore decoded"
+          else
+            echo "Error: KEYSTORE_BASE64 secret is empty"
+            exit 1
+          fi
 
       - name: Build Release APK
         env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           cd android
           chmod +x gradlew
-
-          if [ -n "$KEYSTORE_BASE64" ]; then
-            STORE_FILE="$(pwd)/app/my-release-key.keystore"
-            STORE_PASS="$KEYSTORE_PASSWORD"
-            ALIAS="$KEY_ALIAS"
-            KEY_PASS="$KEY_PASSWORD"
-          else
-            STORE_FILE="$(pwd)/app/my-release-key.keystore"
-            STORE_PASS="android"
-            ALIAS="actionkey"
-            KEY_PASS="android"
-          fi
-
           ./gradlew assembleRelease \
-            -Pandroid.injected.signing.store.file="$STORE_FILE" \
-            -Pandroid.injected.signing.store.password="$STORE_PASS" \
-            -Pandroid.injected.signing.key.alias="$ALIAS" \
-            -Pandroid.injected.signing.key.password="$KEY_PASS" \
-            --no-daemon --stacktrace --refresh-dependencies
+            -Pandroid.injected.signing.store.file=$(pwd)/app/my-release-key.keystore \
+            -Pandroid.injected.signing.store.password="$KEYSTORE_PASSWORD" \
+            -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
+            -Pandroid.injected.signing.key.password="$KEY_PASSWORD"
 
       - name: Upload Signed APK
         uses: actions/upload-artifact@v4
