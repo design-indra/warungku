@@ -34,8 +34,8 @@ jobs:
           if ! grep -q "@capacitor/camera" package.json; then
             npm install @capacitor/camera@^6.0.0 --no-save
           fi
-          if ! grep -q "@capacitor-community/bluetooth-serial" package.json; then
-            npm install @capacitor-community/bluetooth-serial@^3.0.0 --no-save
+          if ! grep -q "@e-is/capacitor-bluetooth-serial" package.json; then
+            npm install @e-is/capacitor-bluetooth-serial@^6.0.0 --no-save
           fi
 
       - name: Create dummy webDir
