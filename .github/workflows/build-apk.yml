@@ -45,49 +45,49 @@ jobs:
         run: |
           MAIN="android/app/src/main/java/com/warungku/app/MainActivity.java"
           mkdir -p "$(dirname "$MAIN")"
-          cat > "$MAIN" << 'JAVA'
-package com.warungku.app;
-import android.Manifest;
-import android.content.pm.PackageManager;
-import android.os.Bundle;
-import android.webkit.PermissionRequest;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
-import com.getcapacitor.BridgeActivity;
-import com.getcapacitor.BridgeWebChromeClient;
-public class MainActivity extends BridgeActivity {
-  @Override
-  public void onCreate(Bundle savedInstanceState) {
-    super.onCreate(savedInstanceState);
-    getBridge().setWebChromeClient(new BridgeWebChromeClient(getBridge()) {
-      @Override
-      public void onPermissionRequest(final PermissionRequest request) {
-        String[] resources = request.getResources();
-        boolean needCamera = false;
-        for (String r : resources) {
-          if (PermissionRequest.RESOURCE_VIDEO_CAPTURE.equals(r) ||
-              PermissionRequest.RESOURCE_AUDIO_CAPTURE.equals(r)) {
-            needCamera = true;
-            break;
-          }
-        }
-        if (needCamera) {
-          if (ContextCompat.checkSelfPermission(MainActivity.this,
-              Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
-            request.grant(resources);
-          } else {
-            ActivityCompat.requestPermissions(MainActivity.this,
-                new String[]{Manifest.permission.CAMERA}, 100);
-            request.grant(resources);
-          }
-        } else {
-          super.onPermissionRequest(request);
-        }
-      }
-    });
-  }
-}
-JAVA
+          printf '%s\n' \
+            'package com.warungku.app;' \
+            'import android.Manifest;' \
+            'import android.content.pm.PackageManager;' \
+            'import android.os.Bundle;' \
+            'import android.webkit.PermissionRequest;' \
+            'import androidx.core.app.ActivityCompat;' \
+            'import androidx.core.content.ContextCompat;' \
+            'import com.getcapacitor.BridgeActivity;' \
+            'import com.getcapacitor.BridgeWebChromeClient;' \
+            'public class MainActivity extends BridgeActivity {' \
+            '  @Override' \
+            '  public void onCreate(Bundle savedInstanceState) {' \
+            '    super.onCreate(savedInstanceState);' \
+            '    getBridge().setWebChromeClient(new BridgeWebChromeClient(getBridge()) {' \
+            '      @Override' \
+            '      public void onPermissionRequest(final PermissionRequest request) {' \
+            '        String[] resources = request.getResources();' \
+            '        boolean needCamera = false;' \
+            '        for (String r : resources) {' \
+            '          if (PermissionRequest.RESOURCE_VIDEO_CAPTURE.equals(r) ||' \
+            '              PermissionRequest.RESOURCE_AUDIO_CAPTURE.equals(r)) {' \
+            '            needCamera = true;' \
+            '            break;' \
+            '          }' \
+            '        }' \
+            '        if (needCamera) {' \
+            '          if (ContextCompat.checkSelfPermission(MainActivity.this,' \
+            '              Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {' \
+            '            request.grant(resources);' \
+            '          } else {' \
+            '            ActivityCompat.requestPermissions(MainActivity.this,' \
+            '                new String[]{Manifest.permission.CAMERA}, 100);' \
+            '            request.grant(resources);' \
+            '          }' \
+            '        } else {' \
+            '          super.onPermissionRequest(request);' \
+            '        }' \
+            '      }' \
+            '    });' \
+            '  }' \
+            '}' \
+            > "$MAIN"
 
       - name: Capacitor Sync
         run: npx cap sync android
