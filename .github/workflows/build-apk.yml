@@ -43,6 +43,54 @@ jobs:
           echo "=== Verifikasi Permissions ==="
           grep "uses-permission\|uses-feature" "$MANIFEST"
 
+      - name: Patch MainActivity - WebView Camera Permission
+        run: |
+          MAIN_ACTIVITY="android/app/src/main/java/com/warungku/app/MainActivity.java"
+          cat > "$MAIN_ACTIVITY" << 'JAVA'
+          package com.warungku.app;
+
+          import android.Manifest;
+          import android.content.pm.PackageManager;
+          import android.webkit.PermissionRequest;
+          import android.webkit.WebChromeClient;
+          import android.webkit.WebView;
+          import androidx.core.app.ActivityCompat;
+          import androidx.core.content.ContextCompat;
+          import com.getcapacitor.BridgeActivity;
+
+          public class MainActivity extends BridgeActivity {
+
+            @Override
+            public void onStart() {
+              super.onStart();
+              // Patch WebView agar meneruskan izin kamera dari OS ke WebView
+              WebView webView = getBridge().getWebView();
+              webView.setWebChromeClient(new WebChromeClient() {
+                @Override
+                public void onPermissionRequest(final PermissionRequest request) {
+                  String[] requestedResources = request.getResources();
+                  for (String resource : requestedResources) {
+                    if (resource.equals(PermissionRequest.RESOURCE_VIDEO_CAPTURE)) {
+                      if (ContextCompat.checkSelfPermission(MainActivity.this,
+                          Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+                        request.grant(request.getResources());
+                      } else {
+                        ActivityCompat.requestPermissions(MainActivity.this,
+                            new String[]{Manifest.permission.CAMERA}, 1);
+                        request.grant(request.getResources());
+                      }
+                      return;
+                    }
+                  }
+                  request.deny();
+                }
+              });
+            }
+          }
+          JAVA
+          echo "=== MainActivity.java ==="
+          cat "$MAIN_ACTIVITY"
+
       - name: Capacitor Sync
         run: npx cap sync android
 
@@ -53,8 +101,6 @@ jobs:
           cp -f icons/mipmap-xhdpi/* android/app/src/main/res/mipmap-xhdpi/
           cp -f icons/mipmap-xxhdpi/* android/app/src/main/res/mipmap-xxhdpi/
           cp -f icons/mipmap-xxxhdpi/* android/app/src/main/res/mipmap-xxxhdpi/
-          echo "=== Verifikasi ==="
-          wc -c android/app/src/main/res/mipmap-hdpi/ic_launcher.png
 
       - name: Decode Keystore
         run: |
