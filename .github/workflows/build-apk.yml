@@ -28,8 +28,15 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
-      - name: Create dummy webDir (required by Capacitor even in server URL mode)
+      - name: Create dummy webDir
         run: mkdir -p out
+
+      - name: Verify icons in repo
+        run: |
+          echo "=== Icons di repo ==="
+          ls -la icons/mipmap-hdpi/
+          echo "Size ic_launcher.png:"
+          wc -c icons/mipmap-hdpi/ic_launcher.png
 
       - name: Remove incomplete Android folder & re-generate
         run: |
@@ -46,6 +53,10 @@ jobs:
           cp -rf icons/mipmap-xhdpi android/app/src/main/res/mipmap-xhdpi
           cp -rf icons/mipmap-xxhdpi android/app/src/main/res/mipmap-xxhdpi
           cp -rf icons/mipmap-xxxhdpi android/app/src/main/res/mipmap-xxxhdpi
+          echo "=== Icons setelah copy ke android ==="
+          ls -la android/app/src/main/res/mipmap-hdpi/
+          echo "Size ic_launcher.png di android:"
+          wc -c android/app/src/main/res/mipmap-hdpi/ic_launcher.png
 
       - name: Decode Keystore
         run: |
