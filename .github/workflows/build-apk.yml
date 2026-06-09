@@ -41,46 +41,53 @@ jobs:
           MANIFEST="android/app/src/main/AndroidManifest.xml"
           sed -i 's|<application|<uses-permission android:name="android.permission.CAMERA" />\n    <uses-feature android:name="android.hardware.camera" android:required="false" />\n    <application|' "$MANIFEST"
 
-      - name: Patch MainActivity - WebView Camera Permission
+      - name: Patch MainActivity - Camera + Bluetooth
         run: |
-          MAIN_ACTIVITY="android/app/src/main/java/com/warungku/app/MainActivity.java"
-          mkdir -p "$(dirname "$MAIN_ACTIVITY")"
-          cat > "$MAIN_ACTIVITY" << 'JAVA'
-          package com.warungku.app;
-
-          import android.Manifest;
-          import android.content.pm.PackageManager;
-          import android.webkit.PermissionRequest;
-          import android.webkit.WebChromeClient;
-          import android.webkit.WebView;
-          import androidx.core.app.ActivityCompat;
-          import androidx.core.content.ContextCompat;
-          import com.getcapacitor.BridgeActivity;
-
-          public class MainActivity extends BridgeActivity {
-            @Override
-            public void onStart() {
-              super.onStart();
-              WebView webView = getBridge().getWebView();
-              webView.setWebChromeClient(new WebChromeClient() {
-                @Override
-                public void onPermissionRequest(final PermissionRequest request) {
-                  for (String resource : request.getResources()) {
-                    if (PermissionRequest.RESOURCE_VIDEO_CAPTURE.equals(resource)) {
-                      if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
-                        request.grant(request.getResources());
-                      } else {
-                        ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.CAMERA}, 1);
-                      }
-                      return;
-                    }
-                  }
-                  request.deny();
-                }
-              });
-            }
+          MAIN="android/app/src/main/java/com/warungku/app/MainActivity.java"
+          mkdir -p "$(dirname "$MAIN")"
+          cat > "$MAIN" << 'JAVA'
+package com.warungku.app;
+import android.Manifest;
+import android.content.pm.PackageManager;
+import android.os.Bundle;
+import android.webkit.PermissionRequest;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+import com.getcapacitor.BridgeActivity;
+import com.getcapacitor.BridgeWebChromeClient;
+public class MainActivity extends BridgeActivity {
+  @Override
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    getBridge().setWebChromeClient(new BridgeWebChromeClient(getBridge()) {
+      @Override
+      public void onPermissionRequest(final PermissionRequest request) {
+        String[] resources = request.getResources();
+        boolean needCamera = false;
+        for (String r : resources) {
+          if (PermissionRequest.RESOURCE_VIDEO_CAPTURE.equals(r) ||
+              PermissionRequest.RESOURCE_AUDIO_CAPTURE.equals(r)) {
+            needCamera = true;
+            break;
           }
-          JAVA
+        }
+        if (needCamera) {
+          if (ContextCompat.checkSelfPermission(MainActivity.this,
+              Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+            request.grant(resources);
+          } else {
+            ActivityCompat.requestPermissions(MainActivity.this,
+                new String[]{Manifest.permission.CAMERA}, 100);
+            request.grant(resources);
+          }
+        } else {
+          super.onPermissionRequest(request);
+        }
+      }
+    });
+  }
+}
+JAVA
 
       - name: Capacitor Sync
         run: npx cap sync android
