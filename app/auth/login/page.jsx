@@ -103,7 +103,7 @@ export default function LoginPage() {
         
         {/* ── Logo & Ilustrasi ── */}
         <div className="flex flex-col items-center mb-10 text-center">
-          <div className="w-32 h-32 relative mb-3">
+          <div className="w-65 h-65 relative mb-3">
             <Image
               src="/icons/icon-128x128.png"
               alt="WarungKu Logo"
