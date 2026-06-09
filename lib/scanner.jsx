@@ -12,31 +12,24 @@ export default function BarcodeScanner({ onDetected, onClose }) {
   useEffect(() => {
     async function startScanner() {
       try {
-        setPermissionStatus('granted')
         const html5QrCode = new Html5Qrcode('reader')
         scannerRef.current = html5QrCode
-
         await html5QrCode.start(
           { facingMode: 'environment' },
           { fps: 10, qrbox: { width: 250, height: 250 } },
           (decodedText) => {
             if (scannerRef.current?.isScanning) {
-              scannerRef.current.stop().then(() => {
-                onDetected(decodedText)
-              }).catch(console.error)
+              scannerRef.current.stop().then(() => onDetected(decodedText))
             }
           },
-          () => {
-            // Abaikan error saat memindai
-          }
+          () => {}
         )
+        setPermissionStatus('granted')
       } catch (err) {
-        console.error('Camera error:', err)
         setPermissionStatus('denied')
-        setError('Gagal mengakses kamera. Pastikan izin kamera sudah diaktifkan di pengaturan aplikasi.')
+        setError('Izin kamera ditolak. Aktifkan di Pengaturan HP.')
       }
     }
-
     startScanner()
 
     return () => {
@@ -50,10 +43,7 @@ export default function BarcodeScanner({ onDetected, onClose }) {
     <div className="fixed inset-0 z-[100] bg-black flex flex-col">
       <div className="flex items-center justify-between p-4 bg-black/50 absolute top-0 left-0 right-0 z-10">
         <span className="text-white font-semibold">Arahkan ke Barcode</span>
-        <button
-          onClick={onClose}
-          className="p-2 bg-gray-800 hover:bg-gray-700 rounded-full text-white transition-colors"
-        >
+        <button onClick={onClose} className="p-2 bg-gray-800 hover:bg-gray-700 rounded-full text-white transition-colors">
           <X className="w-5 h-5" />
         </button>
       </div>
@@ -70,12 +60,7 @@ export default function BarcodeScanner({ onDetected, onClose }) {
           <div className="bg-white p-5 rounded-xl m-4 text-center">
             <p className="text-red-500 font-semibold mb-2">Akses Ditolak</p>
             <p className="text-gray-700 text-sm">{error}</p>
-            <button
-              onClick={onClose}
-              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold"
-            >
-              Tutup
-            </button>
+            <button onClick={onClose} className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold">Tutup</button>
           </div>
         ) : (
           <div className="w-full max-w-sm mx-auto overflow-hidden bg-black relative">
