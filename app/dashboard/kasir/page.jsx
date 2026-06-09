@@ -692,8 +692,7 @@ async function kirimStrukGambarWA(strukeRef, tx, store, nomorPelanggan) {
       `No: ${tx.nomor_transaksi || '-'}`,
       `Total: ${rp(tx.total)} (${namaMetode})`,
       `Terima kasih telah berbelanja! 🙏`,
-    ].join('
-')
+    ].join('\n')
 
     // Coba Web Share API dengan file (didukung Android Chrome & Capacitor WebView)
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
