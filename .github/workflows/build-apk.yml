@@ -28,10 +28,6 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
-      - name: Install Capacitor plugins
-        run: |
-          npm install @capacitor/camera @capacitor/filesystem @capacitor/preferences --save
-
       - name: Create dummy webDir
         run: mkdir -p out
 
@@ -43,12 +39,9 @@ jobs:
       - name: Inject Android Permissions into AndroidManifest.xml
         run: |
           MANIFEST="android/app/src/main/AndroidManifest.xml"
-
-          # Inject permissions sebelum tag <application
-          sed -i 's|<application|<!-- Permissions -->\n    <uses-permission android:name="android.permission.CAMERA" />\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />\n    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />\n    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />\n    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />\n    <uses-feature android:name="android.hardware.camera" android:required="false" />\n    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />\n    <application|' "$MANIFEST"
-
-          echo "=== AndroidManifest.xml setelah inject ==="
-          cat "$MANIFEST"
+          sed -i 's|<application|<uses-permission android:name="android.permission.CAMERA" />\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />\n    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />\n    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />\n    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />\n    <uses-feature android:name="android.hardware.camera" android:required="false" />\n    <application|' "$MANIFEST"
+          echo "=== Verifikasi Permissions ==="
+          grep "uses-permission\|uses-feature" "$MANIFEST"
 
       - name: Capacitor Sync
         run: npx cap sync android
