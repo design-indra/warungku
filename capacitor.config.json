@@ -8,5 +8,11 @@
   },
   "android": {
     "backgroundColor": "#1d4ed8"
+  },
+  "plugins": {
+    "Camera": {
+      "saveToGallery": false
+    },
+    "Permissions": {}
   }
 }
