@@ -26,17 +26,7 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Install Dependencies
-        run: npm ci
-
-      # Pastikan @capacitor/camera dan bluetooth-serial ikut terinstall
-      - name: Install Capacitor Plugins (jika belum ada di package.json)
-        run: |
-          if ! grep -q "@capacitor/camera" package.json; then
-            npm install @capacitor/camera@^6.0.0 --no-save
-          fi
-          if ! grep -q "@e-is/capacitor-bluetooth-serial" package.json; then
-            npm install @e-is/capacitor-bluetooth-serial@^6.0.0 --no-save
-          fi
+        run: npm install --legacy-peer-deps
 
       - name: Create dummy webDir
         run: mkdir -p out
