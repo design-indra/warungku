@@ -27,13 +27,13 @@ export default function BarcodeScanner({ onDetected, onClose }) {
             }
           },
           () => {
-            // Abaikan error saat mencari barcode
+            // Abaikan error saat memindai
           }
         )
       } catch (err) {
-        console.error('Camera permission/start error', err)
+        console.error('Camera error:', err)
         setPermissionStatus('denied')
-        setError('Gagal mengakses kamera. Pastikan izin kamera sudah diberikan di pengaturan aplikasi.')
+        setError('Gagal mengakses kamera. Pastikan izin kamera sudah diaktifkan di pengaturan aplikasi.')
       }
     }
 
@@ -68,7 +68,7 @@ export default function BarcodeScanner({ onDetected, onClose }) {
 
         {error ? (
           <div className="bg-white p-5 rounded-xl m-4 text-center">
-            <p className="text-red-500 font-semibold mb-2">Kamera Tidak Bisa Diakses</p>
+            <p className="text-red-500 font-semibold mb-2">Akses Ditolak</p>
             <p className="text-gray-700 text-sm">{error}</p>
             <button
               onClick={onClose}
