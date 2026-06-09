@@ -258,7 +258,7 @@ export default function LoginPage() {
               Belum punya akun?
             </span>
             <Link
-              href="/register"
+              href="/auth/register"
               className="ml-2 font-bold text-white hover:underline"
             >
               Daftar
