@@ -606,7 +606,7 @@ function generateStrukPDF(tx, store, paperWidth = 32) {
   win.onload = () => { win.focus(); win.print() }
 }
 
-function generateStrukWA(tx, store, nomorPelanggan) {
+async function generateStrukWA(tx, store, nomorPelanggan) {
   const namaMetode = METODE.find(m => m.id === tx.metode_bayar)?.label || 'Tunai'
   const totalItem = tx.items.reduce((s, i) => s + i.qty, 0)
   const tgl = fmt(tx.created_at || new Date())
@@ -648,7 +648,18 @@ function generateStrukWA(tx, store, nomorPelanggan) {
     ? `https://wa.me/${nomor}?text=${encoded}`
     : `https://wa.me/?text=${encoded}`
 
-  window.open(url, '_blank')
+  // Di APK Capacitor, window.open() tidak bekerja untuk URL eksternal
+  // Gunakan Capacitor Browser plugin jika tersedia, fallback window.open untuk PWA
+  if (typeof window !== 'undefined' && window.Capacitor?.isNativePlatform?.()) {
+    try {
+      const { Browser } = await import('@capacitor/browser')
+      await Browser.open({ url })
+    } catch {
+      window.open(url, '_blank')
+    }
+  } else {
+    window.open(url, '_blank')
+  }
 }
 
 function StrukView({ tx, onSelesai, store }) {
