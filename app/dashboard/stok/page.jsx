@@ -57,7 +57,10 @@ async function parseExcel(file) {
 
 // ─── Komponen foto picker ─────────────────────────────────────
 function FotoPicker({ fotoUrl, onFotoChange, uploading }) {
-  const inputRef = useRef(null)
+  // Dua ref terpisah: galeri (tanpa capture) & kamera (capture=environment)
+  // Ini wajib untuk APK Capacitor/WebView — setAttribute dinamis tidak reliable
+  const inputGaleriRef = useRef(null)
+  const inputKameraRef = useRef(null)
   const [tab, setTab] = useState('galeri') // 'galeri' | 'kamera'
   const [showPicker, setShowPicker] = useState(false)
   const [preview, setPreview] = useState(fotoUrl || null)
@@ -150,7 +153,7 @@ function FotoPicker({ fotoUrl, onFotoChange, uploading }) {
             <div className="p-4 overflow-y-auto" style={{ maxHeight: '60vh' }}>
               {tab === 'galeri' ? (
                 <div
-                  onClick={() => { inputRef.current.removeAttribute('capture'); inputRef.current.click() }}
+                  onClick={() => { inputGaleriRef.current.click() }}
                   className="flex flex-col items-center justify-center border-2 border-dashed border-gray-200 rounded-2xl p-8 cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors gap-3"
                 >
                   <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center">
@@ -163,7 +166,7 @@ function FotoPicker({ fotoUrl, onFotoChange, uploading }) {
                 </div>
               ) : (
                 <div
-                  onClick={() => { inputRef.current.setAttribute('capture', 'environment'); inputRef.current.click() }}
+                  onClick={() => { inputKameraRef.current.click() }}
                   className="flex flex-col items-center justify-center border-2 border-dashed border-gray-200 rounded-2xl p-8 cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors gap-3"
                 >
                   <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center">
@@ -178,10 +181,20 @@ function FotoPicker({ fotoUrl, onFotoChange, uploading }) {
             </div>
           </div>
 
+          {/* Input galeri: TANPA attribute capture agar hanya buka galeri */}
           <input
-            ref={inputRef}
+            ref={inputGaleriRef}
             type="file"
             accept="image/jpeg,image/png,image/webp"
+            className="hidden"
+            onChange={handleInputChange}
+          />
+          {/* Input kamera: capture hardcoded di JSX — setAttribute dinamis tidak reliable di APK WebView */}
+          <input
+            ref={inputKameraRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            capture="environment"
             className="hidden"
             onChange={handleInputChange}
           />
