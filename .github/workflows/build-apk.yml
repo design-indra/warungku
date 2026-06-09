@@ -26,63 +26,27 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Install Dependencies
-        run: npm install
+        run: npm ci
 
       - name: Create dummy webDir
         run: mkdir -p out
 
       - name: Remove incomplete Android folder & re-generate
         run: |
-          rm -rf android
+          rm -rf android || true
           npx cap add android
 
       - name: Inject Android Permissions into AndroidManifest.xml
         run: |
           MANIFEST="android/app/src/main/AndroidManifest.xml"
-          sed -i 's|<application|<uses-permission android:name="android.permission.CAMERA" />\n    <uses-feature android:name="android.hardware.camera" android:required="false" />\n    <application|' "$MANIFEST"
+          if [ -f "$MANIFEST" ]; then
+            # Use perl to safely insert lines before the <application> tag (supports literal \n in replacement)
+            perl -0777 -pe 's|<application|    <uses-permission android:name="android.permission.CAMERA" />\n    <uses-feature android:name="android.hardware.camera" android:required="false" />\n    <application|' -i "$MANIFEST"
+            echo "Injected CAMERA permission into $MANIFEST"
+          else
+            echo "Warning: $MANIFEST not found, skipping permission injection"
+          fi
 
-      package com.warungku.app;
-import android.Manifest;
-import android.content.pm.PackageManager;
-import android.os.Bundle;
-import android.webkit.PermissionRequest;
-import android.webkit.WebChromeClient;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
-import com.getcapacitor.BridgeActivity;
-
-public class MainActivity extends BridgeActivity {
-  @Override
-  public void onCreate(Bundle savedInstanceState) {
-    super.onCreate(savedInstanceState);
-    getWebView().setWebChromeClient(new WebChromeClient() {
-      @Override
-      public void onPermissionRequest(final PermissionRequest request) {
-        String[] resources = request.getResources();
-        boolean needCamera = false;
-        for (String r : resources) {
-          if (PermissionRequest.RESOURCE_VIDEO_CAPTURE.equals(r) ||
-              PermissionRequest.RESOURCE_AUDIO_CAPTURE.equals(r)) {
-            needCamera = true;
-            break;
-          }
-        }
-        if (needCamera) {
-          if (ContextCompat.checkSelfPermission(MainActivity.this,
-              Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
-            request.grant(resources);
-          } else {
-            ActivityCompat.requestPermissions(MainActivity.this,
-                new String[]{Manifest.permission.CAMERA}, 100);
-            request.grant(resources);
-          }
-        } else {
-          super.onPermissionRequest(request);
-        }
-      }
-    });
-  }
-}
       - name: Capacitor Sync
         run: npx cap sync android
 
@@ -95,19 +59,31 @@ public class MainActivity extends BridgeActivity {
           cp -f icons/mipmap-xxxhdpi/* android/app/src/main/res/mipmap-xxxhdpi/ || true
 
       - name: Decode Keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
         run: |
           mkdir -p android/app
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/my-release-key.keystore
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > android/app/my-release-key.keystore
+            echo "Keystore decoded"
+          else
+            echo "Error: KEYSTORE_BASE64 secret is empty"
+            exit 1
+          fi
 
       - name: Build Release APK
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           cd android
           chmod +x gradlew
           ./gradlew assembleRelease \
             -Pandroid.injected.signing.store.file=$(pwd)/app/my-release-key.keystore \
-            -Pandroid.injected.signing.store.password="${{ secrets.KEYSTORE_PASSWORD }}" \
-            -Pandroid.injected.signing.key.alias="${{ secrets.KEY_ALIAS }}" \
-            -Pandroid.injected.signing.key.password="${{ secrets.KEY_PASSWORD }}"
+            -Pandroid.injected.signing.store.password="$KEYSTORE_PASSWORD" \
+            -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
+            -Pandroid.injected.signing.key.password="$KEY_PASSWORD"
 
       - name: Upload Signed APK
         uses: actions/upload-artifact@v4
