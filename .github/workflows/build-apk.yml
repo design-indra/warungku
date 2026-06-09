@@ -53,7 +53,15 @@ jobs:
                     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />\n
                     <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />\n
                     <uses-feature android:name="android.hardware.bluetooth" android:required="false" />\n
-                    <application|gx
+                    # Notifikasi lokal
+                    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+                    <uses-permission android:name="android.permission.VIBRATE" />
+                    # Network state
+                    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+                    # Baca/tulis file (untuk Filesystem di Android lama)
+                    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+                    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+               <application|gx
             ' -i "$MANIFEST"
 
             # Hapus baris komentar (perl tidak bisa comment di string replacement, bersihkan manual)
