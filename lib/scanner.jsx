@@ -6,23 +6,14 @@ import { X } from 'lucide-react'
 
 export default function BarcodeScanner({ onDetected, onClose }) {
   const [error, setError] = useState(null)
-  const [permissionStatus, setPermissionStatus] = useState('checking') // 'checking' | 'granted' | 'denied'
+  const [permissionStatus, setPermissionStatus] = useState('checking')
   const scannerRef = useRef(null)
 
   useEffect(() => {
-    let html5QrCode = null
-
     async function startScanner() {
       try {
-        // Minta izin kamera secara eksplisit — ini yang memunculkan dialog izin di Android
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-        // Langsung stop stream ini, kita hanya butuh untuk trigger dialog izin
-        stream.getTracks().forEach(track => track.stop())
-
         setPermissionStatus('granted')
-
-        // Setelah izin diberikan, baru start scanner
-        html5QrCode = new Html5Qrcode('reader')
+        const html5QrCode = new Html5Qrcode('reader')
         scannerRef.current = html5QrCode
 
         await html5QrCode.start(
@@ -41,13 +32,8 @@ export default function BarcodeScanner({ onDetected, onClose }) {
         )
       } catch (err) {
         console.error('Camera permission/start error', err)
-        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-          setPermissionStatus('denied')
-          setError('Izin kamera ditolak. Buka Pengaturan → Aplikasi → WarungKu → Izin → Kamera, lalu aktifkan.')
-        } else {
-          setPermissionStatus('denied')
-          setError('Gagal mengakses kamera. Pastikan izin kamera sudah diberikan.')
-        }
+        setPermissionStatus('denied')
+        setError('Gagal mengakses kamera. Pastikan izin kamera sudah diberikan di pengaturan aplikasi.')
       }
     }
 
@@ -62,7 +48,6 @@ export default function BarcodeScanner({ onDetected, onClose }) {
 
   return (
     <div className="fixed inset-0 z-[100] bg-black flex flex-col">
-      {/* Header Modal Kamera */}
       <div className="flex items-center justify-between p-4 bg-black/50 absolute top-0 left-0 right-0 z-10">
         <span className="text-white font-semibold">Arahkan ke Barcode</span>
         <button
@@ -73,12 +58,11 @@ export default function BarcodeScanner({ onDetected, onClose }) {
         </button>
       </div>
 
-      {/* Viewport Scanner */}
       <div className="flex-1 relative flex flex-col items-center justify-center pt-16">
         {permissionStatus === 'checking' && (
           <div className="flex flex-col items-center gap-3">
             <div className="w-10 h-10 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            <p className="text-white text-sm">Meminta izin kamera...</p>
+            <p className="text-white text-sm">Memuat kamera...</p>
           </div>
         )}
 
@@ -93,17 +77,11 @@ export default function BarcodeScanner({ onDetected, onClose }) {
               Tutup
             </button>
           </div>
-        ) : permissionStatus === 'granted' ? (
+        ) : (
           <div className="w-full max-w-sm mx-auto overflow-hidden bg-black relative">
             <div id="reader" className="w-full" />
             <div className="absolute inset-0 border-[40px] border-black/40 pointer-events-none" />
           </div>
-        ) : null}
-
-        {permissionStatus === 'granted' && !error && (
-          <p className="text-gray-400 text-sm mt-6 text-center px-4">
-            Arahkan kamera ke barcode barang.<br />Scanner akan membaca secara otomatis.
-          </p>
         )}
       </div>
     </div>
