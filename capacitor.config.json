@@ -7,12 +7,14 @@
     "cleartext": false
   },
   "android": {
-    "backgroundColor": "#1d4ed8"
+    "backgroundColor": "#1d4ed8",
+    "allowMixedContent": false,
+    "captureInput": true,
+    "webContentsDebuggingEnabled": false
   },
   "plugins": {
-    "Camera": {
-      "saveToGallery": false
-    },
-    "Permissions": {}
+    "CapacitorHttp": {
+      "enabled": false
+    }
   }
 }
