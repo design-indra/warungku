@@ -7,7 +7,8 @@ import {
   Wallet, Banknote, ScanLine, CheckCircle2, Printer, ArrowLeft,
   X, History, Receipt, Bluetooth, BluetoothSearching, AlertCircle,
   FileDown, ChevronDown, ChevronUp, XCircle, Users,
-  Camera, Keyboard // <-- Icon baru ditambah di sini
+  Camera, Keyboard, // <-- Icon baru ditambah di sini
+  MessageCircle, Send, Phone
 } from 'lucide-react'
 
 // IMPORT COMPONENT SCANNER
@@ -605,11 +606,58 @@ function generateStrukPDF(tx, store, paperWidth = 32) {
   win.onload = () => { win.focus(); win.print() }
 }
 
+function generateStrukWA(tx, store, nomorPelanggan) {
+  const namaMetode = METODE.find(m => m.id === tx.metode_bayar)?.label || 'Tunai'
+  const totalItem = tx.items.reduce((s, i) => s + i.qty, 0)
+  const tgl = fmt(tx.created_at || new Date())
+
+  const itemsText = tx.items.map(item =>
+    `• ${item.nama}\n  ${item.qty} x ${Number(item.harga).toLocaleString('id-ID')} = Rp ${Number(item.harga * item.qty).toLocaleString('id-ID')}`
+  ).join('\n')
+
+  const lines = [
+    `🧾 *STRUK BELANJA*`,
+    `*${store.nama_warung || 'WARUNGKU'}*`,
+    store.alamat ? store.alamat : null,
+    store.no_hp ? `Telp: ${store.no_hp}` : null,
+    ``,
+    `No. Transaksi: ${tx.nomor_transaksi || '-'}`,
+    `Tanggal: ${tgl}`,
+    ``,
+    `*Detail Belanja:*`,
+    itemsText,
+    ``,
+    `Total Item  : ${totalItem}`,
+    `Subtotal    : ${rp(tx.subtotal)}`,
+    tx.diskon > 0 ? `Diskon      : -${rp(tx.diskon)}` : null,
+    `*TOTAL       : ${rp(tx.total)}*`,
+    ``,
+    `Dibayar (${namaMetode}): ${tx.metode_bayar === 'hutang' ? 'Hutang' : rp(tx.bayar)}`,
+    tx.kembalian > 0 ? `Kembalian   : ${rp(tx.kembalian)}` : null,
+    ``,
+    `_Terima kasih telah berbelanja! 🙏_`,
+  ].filter(l => l !== null).join('\n')
+
+  // Bersihkan nomor HP: hapus spasi, tanda hubung, pastikan diawali 62
+  let nomor = (nomorPelanggan || '').replace(/[\s\-().]/g, '')
+  if (nomor.startsWith('0')) nomor = '62' + nomor.slice(1)
+  if (nomor && !nomor.startsWith('62')) nomor = '62' + nomor
+
+  const encoded = encodeURIComponent(lines)
+  const url = nomor
+    ? `https://wa.me/${nomor}?text=${encoded}`
+    : `https://wa.me/?text=${encoded}`
+
+  window.open(url, '_blank')
+}
+
 function StrukView({ tx, onSelesai, store }) {
   const [btStatus, setBtStatus] = useState('idle')
   const [btName, setBtName] = useState('')
   const [btError, setBtError] = useState('')
   const [paperWidth, setPaperWidth] = useState(32)
+  const [showWaInput, setShowWaInput] = useState(false)
+  const [waPhone, setWaPhone] = useState('')
 
   const handleConnect = useCallback(async () => {
     setBtStatus('connecting'); setBtError('')
@@ -663,6 +711,50 @@ function StrukView({ tx, onSelesai, store }) {
           </div>
           {btStatus === 'connected' && <div className="flex items-center justify-between px-3 py-2 bg-blue-50 rounded-xl border border-blue-200"><div className="flex items-center gap-2"><div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" /><span className="text-xs font-semibold text-blue-700">{btName || 'Printer Terhubung'}</span></div><button onClick={handleDisconnect} className="text-[10px] text-red-500 font-semibold hover:text-red-700">Putuskan</button></div>}
           {btStatus === 'error' && <div className="flex items-start gap-2 px-3 py-2 bg-red-50 rounded-xl border border-red-200"><AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" /><p className="text-xs text-red-600">{btError}</p></div>}
+          {/* Tombol Kirim WhatsApp */}
+          <button
+            onClick={() => setShowWaInput(v => !v)}
+            className="w-full flex items-center justify-center gap-2 py-3.5 bg-green-50 border-2 border-green-300 text-green-700 rounded-2xl font-semibold text-sm hover:bg-green-100 transition-colors"
+          >
+            <MessageCircle className="w-5 h-5" />
+            <span className="font-bold">Kirim Struk via WhatsApp</span>
+          </button>
+
+          {/* Panel input nomor pelanggan */}
+          {showWaInput && (
+            <div className="bg-green-50 border-2 border-green-200 rounded-2xl p-4 space-y-3">
+              <p className="text-xs font-bold text-green-800 flex items-center gap-1.5">
+                <Phone className="w-3.5 h-3.5" />
+                Nomor WhatsApp Pelanggan
+              </p>
+              <p className="text-[10px] text-green-600">
+                Kosongkan jika ingin pelanggan pilih sendiri dari kontak mereka.
+                Nomor pengirim akan menggunakan akun WhatsApp kamu.
+              </p>
+              <div className="flex gap-2">
+                <input
+                  type="tel"
+                  value={waPhone}
+                  onChange={e => setWaPhone(e.target.value)}
+                  placeholder="Contoh: 0812345678"
+                  className="flex-1 px-3 py-2 border border-green-300 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-400"
+                />
+                <button
+                  onClick={() => generateStrukWA(tx, store, waPhone)}
+                  className="flex items-center gap-1.5 px-4 py-2 bg-green-600 text-white rounded-xl font-bold text-sm hover:bg-green-700 transition-colors"
+                >
+                  <Send className="w-4 h-4" />
+                  Kirim
+                </button>
+              </div>
+              {store.no_hp && (
+                <p className="text-[10px] text-gray-400">
+                  💡 Struk dikirim menggunakan WA kamu ({store.no_hp})
+                </p>
+              )}
+            </div>
+          )}
+
           <div className="flex items-center justify-between px-1"><span className="text-[10px] text-gray-400">Ukuran kertas (Bluetooth & PDF)</span><div className="flex gap-1">{[[32, '58mm'], [48, '80mm']].map(([w, l]) => <button key={w} onClick={() => setPaperWidth(w)} className={`px-2 py-1 text-[10px] font-bold rounded-lg border transition-colors ${paperWidth === w ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-100 text-gray-500 border-gray-200'}`}>{l}</button>)}</div></div>
         </div>
       </div>
