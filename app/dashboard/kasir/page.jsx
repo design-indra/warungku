@@ -664,60 +664,175 @@ async function generateStrukWA(tx, store, nomorPelanggan) {
 
 // Kirim struk sebagai GAMBAR ke WhatsApp menggunakan Web Share API
 // Bekerja di APK Capacitor maupun PWA Android
-async function kirimStrukGambarWA(strukeRef, tx, store, nomorPelanggan) {
-  if (!strukeRef?.current) return false
+// Generate gambar struk pakai Canvas API native (tanpa html2canvas)
+// Bekerja di APK Capacitor WebView maupun PWA
+function buatGambarStruk(tx, store, paperWidth = 32) {
+  const namaMetode = METODE.find(m => m.id === tx.metode_bayar)?.label || 'Tunai'
+  const lebar = paperWidth === 32 ? 380 : 520  // px, sesuai 58mm / 80mm
+  const fontMono = '13px "Courier New", monospace'
+  const fontMonoBold = 'bold 13px "Courier New", monospace'
+  const fontBesar = 'bold 15px "Courier New", monospace'
+  const fontKecil = '11px "Courier New", monospace'
+  const pad = 20
+  const colW = lebar - pad * 2
 
+  // Hitung tinggi canvas dulu (dry run)
+  const canvas = document.createElement('canvas')
+  const ctx = canvas.getContext('2d')
+
+  function hitungBaris() {
+    let y = pad
+    const baris = (h = 18) => { y += h }
+    baris(10)                              // margin atas
+    baris(22)                              // nama warung
+    if (store.alamat) baris(16)
+    if (store.no_hp) baris(16)
+    baris(10)                              // garis
+    baris(16)                              // no transaksi
+    baris(16)                              // tanggal
+    baris(16)                              // kasir
+    baris(10)                              // garis
+    tx.items.forEach(item => {
+      baris(18)                            // nama item
+      baris(15)                            // qty x harga
+    })
+    baris(10)                              // garis
+    baris(16)                              // total item
+    baris(16)                              // subtotal
+    if (tx.diskon > 0) baris(16)
+    baris(20)                              // TOTAL (besar)
+    baris(10)                              // garis
+    baris(16)                              // dibayar
+    if (tx.kembalian > 0) baris(16)
+    baris(10)                              // garis
+    baris(18)                              // terima kasih
+    baris(15)                              // simpan struk
+    baris(20)                              // margin bawah
+    return y
+  }
+
+  const tinggi = hitungBaris()
+  canvas.width = lebar
+  canvas.height = tinggi
+
+  // Background putih
+  ctx.fillStyle = '#ffffff'
+  ctx.fillRect(0, 0, lebar, tinggi)
+
+  ctx.fillStyle = '#111111'
+  let y = pad + 10
+
+  // Helper draw
+  const teks = (t, x, bold = false, size = 13) => {
+    ctx.font = bold ? `bold ${size}px "Courier New", monospace` : `${size}px "Courier New", monospace`
+    ctx.fillText(t, x, y)
+  }
+  const tengah = (t, bold = false, size = 13) => {
+    ctx.font = bold ? `bold ${size}px "Courier New", monospace` : `${size}px "Courier New", monospace`
+    const w = ctx.measureText(t).width
+    ctx.fillText(t, (lebar - w) / 2, y)
+  }
+  const garis = (tebal = false) => {
+    ctx.strokeStyle = tebal ? '#333' : '#aaa'
+    ctx.setLineDash(tebal ? [] : [4, 3])
+    ctx.lineWidth = tebal ? 1.5 : 1
+    ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(lebar - pad, y); ctx.stroke()
+    ctx.setLineDash([])
+    y += 10
+  }
+  const baris2 = (kiri, kanan, bold = false) => {
+    ctx.font = bold ? fontMonoBold : fontMono
+    ctx.fillText(kiri, pad, y)
+    const w = ctx.measureText(kanan).width
+    ctx.fillText(kanan, lebar - pad - w, y)
+    y += 18
+  }
+
+  // Nama warung
+  tengah(store.nama_warung || 'WARUNGKU', true, 15); y += 22
+  if (store.alamat) { tengah(store.alamat, false, 11); y += 16 }
+  if (store.no_hp) { tengah(`Telp: ${store.no_hp}`, false, 11); y += 16 }
+
+  garis()
+  baris2('No. Transaksi', tx.nomor_transaksi || '-')
+  baris2('Tanggal', new Date(tx.created_at || Date.now()).toLocaleString('id-ID'))
+  baris2('Kasir', 'Admin')
+  garis()
+
+  // Items
+  tx.items.forEach(item => {
+    ctx.font = fontMono
+    ctx.fillText(item.nama, pad, y)
+    const hargaTotal = Number(item.harga * item.qty).toLocaleString('id-ID')
+    const w = ctx.measureText(hargaTotal).width
+    ctx.fillText(hargaTotal, lebar - pad - w, y)
+    y += 18
+    ctx.font = fontKecil
+    ctx.fillStyle = '#666'
+    ctx.fillText(`  ${item.qty} x ${Number(item.harga).toLocaleString('id-ID')}`, pad, y)
+    ctx.fillStyle = '#111'
+    y += 15
+  })
+
+  garis()
+  baris2('Total Item', String(tx.items.reduce((s, i) => s + i.qty, 0)))
+  baris2('Subtotal', rp(tx.subtotal))
+  if (tx.diskon > 0) baris2('Diskon', `-${rp(tx.diskon)}`)
+
+  // TOTAL besar
+  ctx.strokeStyle = '#333'; ctx.setLineDash([]); ctx.lineWidth = 1.5
+  ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(lebar - pad, y); ctx.stroke()
+  y += 6
+  ctx.font = `bold 15px "Courier New", monospace`
+  ctx.fillText('TOTAL', pad, y)
+  const totalStr = rp(tx.total)
+  const wTotal = ctx.measureText(totalStr).width
+  ctx.fillText(totalStr, lebar - pad - wTotal, y)
+  y += 22
+
+  garis()
+  baris2(`Dibayar (${namaMetode})`, tx.metode_bayar === 'hutang' ? 'HUTANG' : rp(tx.bayar))
+  if (tx.kembalian > 0) baris2('Kembalian', rp(tx.kembalian), true)
+
+  garis()
+  ctx.font = fontKecil; ctx.fillStyle = '#555'
+  tengah('Terima kasih telah berbelanja'); y += 18
+  tengah('*** Simpan struk ini sebagai bukti ***'); y += 15
+  ctx.fillStyle = '#111'
+
+  return canvas
+}
+
+async function kirimStrukGambarWA(strukeRef, tx, store, nomorPelanggan, paperWidth = 32) {
   try {
-    // Lazy load html2canvas agar tidak membebani bundle
-    const html2canvas = (await import('html2canvas')).default
+    // Generate gambar struk pakai Canvas API native (tidak butuh html2canvas)
+    const canvas = buatGambarStruk(tx, store, paperWidth)
 
-    // Render elemen struk menjadi canvas
-    const canvas = await html2canvas(strukeRef.current, {
-      scale: 2,           // resolusi 2x agar teks tajam
-      useCORS: true,
-      backgroundColor: '#ffffff',
-      logging: false,
+    // Canvas → Blob PNG
+    const blob = await new Promise((resolve, reject) => {
+      canvas.toBlob(b => b ? resolve(b) : reject(new Error('toBlob gagal')), 'image/png')
     })
 
-    // Convert canvas → Blob PNG
-    const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'))
-    if (!blob) throw new Error('Gagal membuat gambar struk')
+    const namaFile = `struk-${tx.nomor_transaksi || 'belanja'}.png`
+    const file = new File([blob], namaFile, { type: 'image/png' })
 
-    const file = new File([blob], `struk-${tx.nomor_transaksi || 'belanja'}.png`, { type: 'image/png' })
-
-    // Teks pendamping
-    const namaMetode = METODE.find(m => m.id === tx.metode_bayar)?.label || 'Tunai'
-    const teks = [
-      `🧾 Struk Belanja - ${store.nama_warung || 'WARUNGKU'}`,
-      `No: ${tx.nomor_transaksi || '-'}`,
-      `Total: ${rp(tx.total)} (${namaMetode})`,
-      `Terima kasih telah berbelanja! 🙏`,
-    ].join('\n')
-
-    // Coba Web Share API dengan file (didukung Android Chrome & Capacitor WebView)
+    // Coba Web Share API dengan file
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share({ files: [file], text: teks })
+      await navigator.share({ files: [file] })
       return true
     }
 
-    // Fallback: share teks saja (tanpa gambar)
-    if (navigator.share) {
-      await navigator.share({ text: teks })
-      return true
-    }
-
-    // Fallback terakhir: buka wa.me dengan teks
-    let nomor = (nomorPelanggan || '').replace(/[\s\-().]/g, '')
-    if (nomor.startsWith('0')) nomor = '62' + nomor.slice(1)
-    if (nomor && !nomor.startsWith('62')) nomor = '62' + nomor
-    const url = nomor
-      ? `https://wa.me/${nomor}?text=${encodeURIComponent(teks)}`
-      : `https://wa.me/?text=${encodeURIComponent(teks)}`
-    window.open(url, '_blank')
+    // Fallback: download gambar ke perangkat
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = namaFile
+    a.click()
+    URL.revokeObjectURL(url)
+    alert('Gambar struk disimpan. Buka WhatsApp dan kirim gambar dari galeri.')
     return true
 
   } catch (err) {
-    // User cancel share dianggap bukan error
     if (err?.name === 'AbortError') return true
     console.error('kirimStrukGambarWA error:', err)
     return false
@@ -828,7 +943,7 @@ function StrukView({ tx, onSelesai, store }) {
                   disabled={waSharing}
                   onClick={async () => {
                     setWaSharing(true)
-                    const ok = await kirimStrukGambarWA(strukeRef, tx, store, waPhone)
+                    const ok = await kirimStrukGambarWA(strukeRef, tx, store, waPhone, paperWidth)
                     if (!ok) alert('Gagal mengirim gambar struk. Coba gunakan Kirim Teks.')
                     setWaSharing(false)
                   }}
