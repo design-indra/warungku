@@ -39,14 +39,13 @@ jobs:
       - name: Inject Android Permissions into AndroidManifest.xml
         run: |
           MANIFEST="android/app/src/main/AndroidManifest.xml"
-          sed -i 's|<application|<uses-permission android:name="android.permission.CAMERA" />\n    <uses-feature android:name="android.hardware.camera" android:required="false" />\n    <application|' "$MANIFEST"
+          sed -i 's|<application|<uses-permission android:name="android.permission.CAMERA" />\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />\n    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />\n    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />\n    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />\n    <uses-feature android:name="android.hardware.camera" android:required="false" />\n    <application|' "$MANIFEST"
 
       - name: Patch MainActivity - WebView Camera Permission
         run: |
           MAIN_ACTIVITY="android/app/src/main/java/com/warungku/app/MainActivity.java"
           cat > "$MAIN_ACTIVITY" << 'JAVA'
           package com.warungku.app;
-
           import android.Manifest;
           import android.content.pm.PackageManager;
           import android.webkit.PermissionRequest;
@@ -64,17 +63,11 @@ jobs:
               webView.setWebChromeClient(new WebChromeClient() {
                 @Override
                 public void onPermissionRequest(final PermissionRequest request) {
-                  for (String resource : request.getResources()) {
-                    if (PermissionRequest.RESOURCE_VIDEO_CAPTURE.equals(resource)) {
-                      if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
-                        request.grant(request.getResources());
-                      } else {
-                        ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.CAMERA}, 1);
-                      }
-                      return;
-                    }
+                  if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+                    request.grant(request.getResources());
+                  } else {
+                    ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.CAMERA}, 1);
                   }
-                  request.deny();
                 }
               });
             }
@@ -84,10 +77,17 @@ jobs:
       - name: Capacitor Sync
         run: npx cap sync android
 
+      - name: Copy custom icons
+        run: |
+          cp -f icons/mipmap-hdpi/* android/app/src/main/res/mipmap-hdpi/ || true
+          cp -f icons/mipmap-mdpi/* android/app/src/main/res/mipmap-mdpi/ || true
+          cp -f icons/mipmap-xhdpi/* android/app/src/main/res/mipmap-xhdpi/ || true
+          cp -f icons/mipmap-xxhdpi/* android/app/src/main/res/mipmap-xxhdpi/ || true
+          cp -f icons/mipmap-xxxhdpi/* android/app/src/main/res/mipmap-xxxhdpi/ || true
+
       - name: Decode Keystore
         run: |
-          mkdir -p android/app
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/my-release-key.keystore
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/my-release-key.keystore
 
       - name: Build Release APK
         run: |
