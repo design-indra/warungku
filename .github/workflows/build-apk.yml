@@ -68,7 +68,7 @@ jobs:
             sed -i '/^[[:space:]]*# /d' "$MANIFEST"
 
             echo "=== AndroidManifest.xml (bagian permissions) ==="
-            grep -A 15 "<uses-permission" "$MANIFEST" | head -20
+            grep -A 25 "<uses-permission" "$MANIFEST" | head -30
           else
             echo "Warning: $MANIFEST not found"
           fi
@@ -78,11 +78,11 @@ jobs:
 
       - name: Copy custom icons
         run: |
-          cp -f icons/mipmap-hdpi/*     android/app/src/main/res/mipmap-hdpi/     || true
-          cp -f icons/mipmap-mdpi/*     android/app/src/main/res/mipmap-mdpi/     || true
-          cp -f icons/mipmap-xhdpi/*    android/app/src/main/res/mipmap-xhdpi/    || true
-          cp -f icons/mipmap-xxhdpi/*   android/app/src/main/res/mipmap-xxhdpi/   || true
-          cp -f icons/mipmap-xxxhdpi/*  android/app/src/main/res/mipmap-xxxhdpi/  || true
+          cp -f icons/mipmap-hdpi/* android/app/src/main/res/mipmap-hdpi/     || true
+          cp -f icons/mipmap-mdpi/* android/app/src/main/res/mipmap-mdpi/     || true
+          cp -f icons/mipmap-xhdpi/* android/app/src/main/res/mipmap-xhdpi/    || true
+          cp -f icons/mipmap-xxhdpi/* android/app/src/main/res/mipmap-xxhdpi/   || true
+          cp -f icons/mipmap-xxxhdpi/* android/app/src/main/res/mipmap-xxxhdpi/  || true
 
       - name: Decode Keystore
         env:
