@@ -252,6 +252,18 @@ export default function LoginPage() {
             )}
             Masuk dengan Google
           </button>
+
+          <div className="mt-6 text-center">
+            <span className="text-blue-100 text-sm">
+              Belum punya akun?
+            </span>
+            <Link
+              href="/register"
+              className="ml-2 font-bold text-white hover:underline"
+            >
+              Daftar
+            </Link>
+          </div>
         </div>
       </div>
 
