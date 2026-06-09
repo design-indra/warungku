@@ -4,7 +4,13 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
+import { Pacifico } from 'next/font/google'
 import { createClient } from '@/lib/supabase'
+
+const pacifico = Pacifico({
+  subsets: ['latin'],
+  weight: '400',
+})
 
 export default function LoginPage() {
   const router = useRouter()
@@ -103,17 +109,36 @@ export default function LoginPage() {
         
         {/* ── Logo & Ilustrasi ── */}
         <div className="flex flex-col items-center mb-10 text-center">
-          <div className="w-40 h-40 relative mb-4">
+          <div className="w-36 h-36 relative mb-1">
             <Image
               src="/icons/icon-128x128.png"
               alt="WarungKu Logo"
               fill
-              className="object-contain"
+              className="object-contain drop-shadow-2xl"
               priority
             />
           </div>
-          <h1 className="text-5xl font-extrabold tracking-tight text-white mb-2">Warung<span className="text-blue-100">Ku</span></h1>
-          <p className="text-blue-100 text-lg font-medium opacity-90">Kelola warung, makin mudah</p>
+
+          <div className="relative mb-4">
+            <h1
+              className={`${pacifico.className} text-6xl md:text-7xl text-white leading-none select-none`}
+              style={{
+                WebkitTextStroke: '3px rgba(255,255,255,0.9)',
+                textShadow: '0 4px 8px rgba(0,0,0,.15), 0 8px 18px rgba(37,99,235,.45)',
+              }}
+            >
+              WarungKu
+            </h1>
+
+            <div
+              className="absolute left-10 right-10 -bottom-2 h-2 rounded-full bg-white opacity-95"
+              style={{ transform: 'skewX(-20deg)' }}
+            />
+          </div>
+
+          <p className="text-blue-100 text-lg font-medium opacity-90">
+            Kelola warung, makin mudah
+          </p>
         </div>
 
         {/* ── Form Card ── */}
