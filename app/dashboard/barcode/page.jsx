@@ -170,8 +170,8 @@ function PrintBottomSheet({ barang, qty, onClose, namaWarung }) {
   const [btMsg, setBtMsg]         = useState('')
   const [paperWidth, setPaperWidth] = useState(32)
 
-  const handleBrowserPrint = () => {
-    // Render label ke Canvas lalu download sebagai PNG — bekerja di mobile
+  const handleBrowserPrint = async () => {
+    // Render label ke Canvas
     const canvas  = document.createElement('canvas')
     const LABEL_W = 400
     const LABEL_H = 200
@@ -235,10 +235,45 @@ function PrintBottomSheet({ barang, qty, onClose, namaWarung }) {
       ctx.fillText(rp(barang.harga_jual), ox + LABEL_W / 2, oy + 36 + barH + 52)
     }
 
-    // Download PNG
+    const pngDataUrl = canvas.toDataURL('image/png')
+
+    // ── APK Capacitor: buka via /api/struk dengan HTML embed gambar ──
+    if (typeof window !== 'undefined' && window.Capacitor?.isNativePlatform?.()) {
+      try {
+        const { Browser } = await import('@capacitor/browser')
+
+        const printBtnStyle = `position:fixed;bottom:20px;right:20px;z-index:999;background:#1d4ed8;color:#fff;border:none;border-radius:12px;padding:12px 24px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.2);font-family:sans-serif;`
+        const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Label Barcode</title>
+          <style>@media print{.no-print{display:none!important;}body{margin:0;}}body{background:#f5f5f5;display:flex;flex-direction:column;align-items:center;padding:20px;font-family:sans-serif;}img{max-width:100%;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.1);}p{color:#555;font-size:13px;margin-top:12px;}</style>
+          </head><body>
+          <button class="no-print" style="${printBtnStyle}" onclick="window.print()">🖨️ Cetak / Save PDF</button>
+          <img src="${pngDataUrl}" alt="Label Barcode"/>
+          <p>${barang.nama} • ${qty} label</p>
+          </body></html>`
+
+        const res = await fetch('/api/struk', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ html }),
+        })
+
+        if (!res.ok) throw new Error('Gagal menyimpan label ke server')
+
+        const { token } = await res.json()
+        if (!token) throw new Error('Token tidak diterima dari server')
+
+        const url = `${window.location.origin}/api/struk?token=${token}`
+        await Browser.open({ url, presentationStyle: 'fullscreen' })
+      } catch (err) {
+        if (err?.name !== 'AbortError') alert('Gagal membuka label: ' + (err?.message || err))
+      }
+      return
+    }
+
+    // ── PWA / Browser: download PNG seperti biasa ──
     const link    = document.createElement('a')
     link.download = `label-${barang.barcode || barang.nama}-${qty}pcs.png`
-    link.href     = canvas.toDataURL('image/png')
+    link.href     = pngDataUrl
     link.click()
   }
 
