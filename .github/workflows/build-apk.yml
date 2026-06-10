@@ -55,25 +55,19 @@ jobs:
               sys.exit(0)
 
           permissions = """
-              <!-- Kamera -->
               <uses-permission android:name="android.permission.CAMERA" />
               <uses-feature android:name="android.hardware.camera" android:required="false" />
               <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
-              <!-- Bluetooth Classic -->
               <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
               <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
-              <!-- Bluetooth Android 12+ -->
               <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
               <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
               <uses-feature android:name="android.hardware.bluetooth" android:required="false" />
-              <!-- Notifikasi dan Vibrasi -->
               <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
               <uses-permission android:name="android.permission.VIBRATE" />
               <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-              <!-- Network -->
               <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
               <uses-permission android:name="android.permission.INTERNET" />
-              <!-- Storage -->
               <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
               <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29" />
           """
@@ -83,8 +77,6 @@ jobs:
               with open(manifest_path, "w") as f:
                   f.write(content)
               print("Permissions injected successfully")
-          else:
-              print("Warning: <application tag not found")
           PYEOF
 
       - name: Capacitor Sync
@@ -118,11 +110,12 @@ jobs:
             echo "Temporary keystore created"
           fi
 
-      - name: Clear Gradle caches
+      - name: Clear ALL Gradle caches (must run AFTER cap sync)
         run: |
-          rm -rf ~/.gradle/caches/jars-9 || true
-          rm -rf ~/.gradle/caches/modules-2 || true
-          rm -rf ~/.gradle/caches/v4 || true
+          rm -rf ~/.gradle/caches/ || true
+          rm -rf ~/.gradle/wrapper/ || true
+          rm -rf android/.gradle/ || true
+          echo "All Gradle caches cleared"
 
       - name: Build Release APK
         run: |
@@ -134,7 +127,10 @@ jobs:
             -Pandroid.injected.signing.store.password="$STORE_PASS" \
             -Pandroid.injected.signing.key.alias="$ALIAS" \
             -Pandroid.injected.signing.key.password="$KEY_PASS" \
-            --no-daemon --stacktrace --refresh-dependencies
+            --no-daemon \
+            --no-build-cache \
+            --stacktrace \
+            --refresh-dependencies
 
       - name: Upload Signed APK
         uses: actions/upload-artifact@v4
