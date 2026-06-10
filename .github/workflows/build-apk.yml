@@ -7,6 +7,12 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+      KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+      KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+      KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -38,21 +44,22 @@ jobs:
 
       - name: Inject Android Permissions into AndroidManifest.xml
         run: |
-          MANIFEST="android/app/src/main/AndroidManifest.xml"
-          if [ -f "$MANIFEST" ]; then
-            python3 << 'PYEOF'
-          import re
-
+          python3 << 'PYEOF'
+          import sys
           manifest_path = "android/app/src/main/AndroidManifest.xml"
-          with open(manifest_path, "r") as f:
-              content = f.read()
+          try:
+              with open(manifest_path, "r") as f:
+                  content = f.read()
+          except FileNotFoundError:
+              print("Warning: AndroidManifest.xml not found")
+              sys.exit(0)
 
           permissions = """
               <!-- Kamera -->
               <uses-permission android:name="android.permission.CAMERA" />
               <uses-feature android:name="android.hardware.camera" android:required="false" />
               <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
-              <!-- Bluetooth Classic (printer thermal) -->
+              <!-- Bluetooth Classic -->
               <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
               <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
               <!-- Bluetooth Android 12+ -->
@@ -66,24 +73,19 @@ jobs:
               <!-- Network -->
               <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
               <uses-permission android:name="android.permission.INTERNET" />
-              <!-- Storage untuk Filesystem plugin -->
+              <!-- Storage -->
               <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
               <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29" />
           """
 
-          content = content.replace("<application", permissions + "\n    <application", 1)
-
-          with open(manifest_path, "w") as f:
-              f.write(content)
-
-          print("Permissions injected successfully")
+          if "<application" in content:
+              content = content.replace("<application", permissions + "\n    <application", 1)
+              with open(manifest_path, "w") as f:
+                  f.write(content)
+              print("Permissions injected successfully")
+          else:
+              print("Warning: <application tag not found")
           PYEOF
-
-            echo "=== Permissions in AndroidManifest.xml ==="
-            grep "uses-permission\|uses-feature" "$MANIFEST"
-          else
-            echo "Warning: $MANIFEST not found"
-          fi
 
       - name: Capacitor Sync
         run: npx cap sync android
@@ -96,25 +98,25 @@ jobs:
           cp -f icons/mipmap-xxhdpi/*   android/app/src/main/res/mipmap-xxhdpi/   || true
           cp -f icons/mipmap-xxxhdpi/*  android/app/src/main/res/mipmap-xxxhdpi/  || true
 
-      - name: Decode Keystore (use real keystore if provided)
-        if: ${{ secrets.KEYSTORE_BASE64 != '' }}
-        env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+      - name: Setup Keystore
         run: |
           mkdir -p android/app
-          echo "$KEYSTORE_BASE64" | base64 -d > android/app/my-release-key.keystore
-          echo "Keystore decoded"
-
-      - name: Create temporary keystore (CI fallback)
-        if: ${{ secrets.KEYSTORE_BASE64 == '' }}
-        run: |
-          echo "No KEYSTORE_BASE64 secret found — generating temporary keystore for CI build"
-          mkdir -p android/app
-          keytool -genkeypair -v -keystore android/app/my-release-key.keystore \
-            -storepass android -keypass android -alias actionkey \
-            -keyalg RSA -keysize 2048 -validity 10000 \
-            -dname "CN=CI, OU=CI, O=CI, L=CI, S=CI, C=ID"
-          echo "Temporary keystore created"
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > android/app/my-release-key.keystore
+            echo "STORE_PASS=$KEYSTORE_PASSWORD" >> $GITHUB_ENV
+            echo "ALIAS=$KEY_ALIAS" >> $GITHUB_ENV
+            echo "KEY_PASS=$KEY_PASSWORD" >> $GITHUB_ENV
+            echo "Keystore decoded from secret"
+          else
+            keytool -genkeypair -v -keystore android/app/my-release-key.keystore \
+              -storepass android -keypass android -alias actionkey \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -dname "CN=CI, OU=CI, O=CI, L=CI, S=CI, C=ID"
+            echo "STORE_PASS=android" >> $GITHUB_ENV
+            echo "ALIAS=actionkey" >> $GITHUB_ENV
+            echo "KEY_PASS=android" >> $GITHUB_ENV
+            echo "Temporary keystore created"
+          fi
 
       - name: Clear Gradle caches
         run: |
@@ -123,27 +125,10 @@ jobs:
           rm -rf ~/.gradle/caches/v4 || true
 
       - name: Build Release APK
-        env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           cd android
           chmod +x gradlew
-
-          if [ -n "$KEYSTORE_BASE64" ]; then
-            STORE_FILE="$(pwd)/app/my-release-key.keystore"
-            STORE_PASS="$KEYSTORE_PASSWORD"
-            ALIAS="$KEY_ALIAS"
-            KEY_PASS="$KEY_PASSWORD"
-          else
-            STORE_FILE="$(pwd)/app/my-release-key.keystore"
-            STORE_PASS="android"
-            ALIAS="actionkey"
-            KEY_PASS="android"
-          fi
-
+          STORE_FILE="$(pwd)/app/my-release-key.keystore"
           ./gradlew assembleRelease \
             -Pandroid.injected.signing.store.file="$STORE_FILE" \
             -Pandroid.injected.signing.store.password="$STORE_PASS" \
