@@ -814,22 +814,67 @@ async function kirimStrukGambarWA(strukeRef, tx, store, nomorPelanggan, paperWid
     })
 
     const namaFile = `struk-${tx.nomor_transaksi || 'belanja'}.png`
-    const file = new File([blob], namaFile, { type: 'image/png' })
 
-    // Coba Web Share API dengan file
+    // ── APK Capacitor: simpan ke galeri lalu share native ──────────────────────
+    if (typeof window !== 'undefined' && window.Capacitor?.isNativePlatform?.()) {
+      try {
+        const { Filesystem, Directory } = await import('@capacitor/filesystem')
+        const { Share } = await import('@capacitor/share')
+
+        // Blob → base64 string (tanpa prefix data:...)
+        const base64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader()
+          reader.onload = () => resolve(reader.result.split(',')[1])
+          reader.onerror = () => reject(new Error('FileReader gagal'))
+          reader.readAsDataURL(blob)
+        })
+
+        // Simpan ke folder cache internal Capacitor (bisa diakses Share)
+        const filePath = `struk/${namaFile}`
+        await Filesystem.writeFile({
+          path: filePath,
+          data: base64,
+          directory: Directory.Cache,
+          recursive: true,
+        })
+
+        // Dapatkan URI native untuk Share
+        const { uri } = await Filesystem.getUri({
+          path: filePath,
+          directory: Directory.Cache,
+        })
+
+        // Buka native share sheet — user bisa pilih WhatsApp / dll
+        await Share.share({
+          title: `Struk ${tx.nomor_transaksi || 'Belanja'}`,
+          text: `Struk belanja dari ${store.nama_warung || 'WarungKu'}`,
+          url: uri,
+          dialogTitle: 'Kirim Struk via',
+        })
+
+        return true
+      } catch (nativeErr) {
+        if (nativeErr?.name === 'AbortError') return true
+        console.error('Native share error:', nativeErr)
+        // Jatuh ke fallback Web Share di bawah
+      }
+    }
+
+    // ── PWA / Browser: coba Web Share API dengan file ──────────────────────────
+    const file = new File([blob], namaFile, { type: 'image/png' })
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
       await navigator.share({ files: [file] })
       return true
     }
 
-    // Fallback: download gambar ke perangkat
+    // ── Fallback terakhir: download biasa (desktop/browser lama) ───────────────
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
     a.download = namaFile
     a.click()
     URL.revokeObjectURL(url)
-    alert('Gambar struk disimpan. Buka WhatsApp dan kirim gambar dari galeri.')
+    alert('Gambar struk diunduh. Silakan kirim manual via WhatsApp dari galeri.')
     return true
 
   } catch (err) {
