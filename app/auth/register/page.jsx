@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Eye, EyeOff, Store } from 'lucide-react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
+import { useGoogleAuth } from '@/lib/useGoogleAuth'
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -14,7 +15,10 @@ export default function RegisterPage() {
   })
   const [showPass, setShowPass] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [loadingGoogle, setLoadingGoogle] = useState(false)
+  const { signInWithGoogle, loading: loadingGoogle } = useGoogleAuth({
+    onSuccess: () => router.push('/dashboard'),
+    onError: () => setError('Gagal daftar dengan Google. Silakan coba lagi.'),
+  })
   const [error, setError] = useState('')
   const [step, setStep] = useState(1)
   // State untuk tampilkan pesan "cek email konfirmasi"
@@ -76,23 +80,7 @@ export default function RegisterPage() {
     }
   }
 
-  const handleGoogleRegister = async () => {
-    setLoadingGoogle(true)
-    setError('')
-    try {
-      const supabase = createClient()
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `https://warungku-one.vercel.app/auth/callback`,
-        },
-      })
-      if (error) throw error
-    } catch {
-      setError('Gagal daftar dengan Google. Silakan coba lagi.')
-      setLoadingGoogle(false)
-    }
-  }
+  const handleGoogleRegister = () => signInWithGoogle()
 
   // ── Tampilan setelah daftar sukses, menunggu verifikasi email
   if (emailSent) {

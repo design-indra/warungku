@@ -6,6 +6,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Pacifico } from 'next/font/google'
 import { createClient } from '@/lib/supabase'
+import { useGoogleAuth } from '@/lib/useGoogleAuth'
 
 const pacifico = Pacifico({
   subsets: ['latin'],
@@ -17,7 +18,10 @@ export default function LoginPage() {
   const [form, setForm]               = useState({ email: '', password: '' })
   const [remember, setRemember]       = useState(false)
   const [loading, setLoading]         = useState(false)
-  const [loadingGoogle, setLoadingGoogle] = useState(false)
+  const { signInWithGoogle, loading: loadingGoogle } = useGoogleAuth({
+    onSuccess: () => router.push('/dashboard'),
+    onError: () => setError('Gagal masuk dengan Google. Silakan coba lagi.'),
+  })
   const [error, setError]             = useState('')
 
   // ── State modal lupa password
@@ -50,23 +54,7 @@ export default function LoginPage() {
     }
   }
 
-  const handleGoogleLogin = async () => {
-    setLoadingGoogle(true)
-    setError('')
-    try {
-      const supabase = createClient()
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `https://warungku-one.vercel.app/auth/callback`,
-        },
-      })
-      if (error) throw error
-    } catch {
-      setError('Gagal masuk dengan Google. Silakan coba lagi.')
-      setLoadingGoogle(false)
-    }
-  }
+  const handleGoogleLogin = () => signInWithGoogle()
 
   const handleForgotPassword = async (e) => {
     e.preventDefault()
