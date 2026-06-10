@@ -1083,8 +1083,7 @@ function StrukView({ tx, onSelesai, store }) {
                 Nomor WhatsApp Pelanggan
               </p>
               <p className="text-[10px] text-green-600">
-                Kosongkan jika ingin pelanggan pilih sendiri dari kontak mereka.
-                Nomor pengirim akan menggunakan akun WhatsApp kamu.
+                Kosongkan jika ingin kirim langsung ke kontak WhatsApp.
               </p>
               <div className="flex gap-2">
                 <input
@@ -1120,13 +1119,9 @@ function StrukView({ tx, onSelesai, store }) {
                   }
                 </button>
               </div>
-              <p className="text-[10px] text-green-700 bg-green-100 rounded-lg px-2 py-1.5">
-                📸 <strong>Kirim Gambar</strong> — struk dikirim sebagai foto (cocok untuk APK & PWA)<br/>
-                💬 <strong>Kirim Teks</strong> — struk dikirim sebagai pesan teks biasa
-              </p>
               {store.no_hp && (
                 <p className="text-[10px] text-gray-400">
-                  💡 Struk dikirim menggunakan WA kamu ({store.no_hp})
+                  Dikirim dari WA: {store.no_hp}
                 </p>
               )}
             </div>
