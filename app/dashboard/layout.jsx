@@ -415,13 +415,6 @@ export default function DashboardLayout({ children }) {
                   </span>
                 )}
               </button>
-              {/* Avatar */}
-              <button
-                onClick={() => router.push('/dashboard/menu-lainnya')}
-                className="w-9 h-9 bg-white/20 border-2 border-white/40 rounded-full flex items-center justify-center text-white font-bold text-sm hover:bg-white/30 transition-colors"
-              >
-                {user?.email?.[0]?.toUpperCase() || 'P'}
-              </button>
             </div>
           </div>
           {/* App title row */}
