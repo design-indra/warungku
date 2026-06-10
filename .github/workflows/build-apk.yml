@@ -40,10 +40,46 @@ jobs:
         run: |
           MANIFEST="android/app/src/main/AndroidManifest.xml"
           if [ -f "$MANIFEST" ]; then
-            # Inject semua permissions sebelum tag <application
-            sed -i 's|<application|<!-- Kamera -->\n    <uses-permission android:name="android.permission.CAMERA" />\n    <uses-feature android:name="android.hardware.camera" android:required="false" />\n    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />\n    <!-- Bluetooth Classic (printer thermal) -->\n    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />\n    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />\n    <!-- Bluetooth Android 12+ -->\n    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />\n    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />\n    <uses-feature android:name="android.hardware.bluetooth" android:required="false" />\n    <!-- Notifikasi \& Vibrasi -->\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n    <uses-permission android:name="android.permission.VIBRATE" />\n    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />\n    <!-- Network -->\n    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />\n    <uses-permission android:name="android.permission.INTERNET" />\n    <!-- Storage (Filesystem plugin) -->\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />\n    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29" />\n    <application|g' "$MANIFEST"
+            python3 << 'PYEOF'
+          import re
 
-            echo "=== Permissions injected ==="
+          manifest_path = "android/app/src/main/AndroidManifest.xml"
+          with open(manifest_path, "r") as f:
+              content = f.read()
+
+          permissions = """
+              <!-- Kamera -->
+              <uses-permission android:name="android.permission.CAMERA" />
+              <uses-feature android:name="android.hardware.camera" android:required="false" />
+              <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
+              <!-- Bluetooth Classic (printer thermal) -->
+              <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+              <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
+              <!-- Bluetooth Android 12+ -->
+              <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+              <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
+              <uses-feature android:name="android.hardware.bluetooth" android:required="false" />
+              <!-- Notifikasi dan Vibrasi -->
+              <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+              <uses-permission android:name="android.permission.VIBRATE" />
+              <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+              <!-- Network -->
+              <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+              <uses-permission android:name="android.permission.INTERNET" />
+              <!-- Storage untuk Filesystem plugin -->
+              <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+              <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29" />
+          """
+
+          content = content.replace("<application", permissions + "\n    <application", 1)
+
+          with open(manifest_path, "w") as f:
+              f.write(content)
+
+          print("Permissions injected successfully")
+          PYEOF
+
+            echo "=== Permissions in AndroidManifest.xml ==="
             grep "uses-permission\|uses-feature" "$MANIFEST"
           else
             echo "Warning: $MANIFEST not found"
@@ -78,11 +114,10 @@ jobs:
             -storepass android -keypass android -alias actionkey \
             -keyalg RSA -keysize 2048 -validity 10000 \
             -dname "CN=CI, OU=CI, O=CI, L=CI, S=CI, C=ID"
-          echo "Temporary keystore created (alias: actionkey / password: android)"
+          echo "Temporary keystore created"
 
-      - name: Clear Gradle caches (fix corrupted jars)
+      - name: Clear Gradle caches
         run: |
-          echo "Clearing Gradle caches"
           rm -rf ~/.gradle/caches/jars-9 || true
           rm -rf ~/.gradle/caches/modules-2 || true
           rm -rf ~/.gradle/caches/v4 || true
