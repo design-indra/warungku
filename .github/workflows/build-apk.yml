@@ -40,35 +40,11 @@ jobs:
         run: |
           MANIFEST="android/app/src/main/AndroidManifest.xml"
           if [ -f "$MANIFEST" ]; then
-            perl -0777 -pe '
-              s|<application|
-                # Kamera
-                    <uses-permission android:name="android.permission.CAMERA" />\n
-                    <uses-feature android:name="android.hardware.camera" android:required="false" />\n
-                    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />\n
-                    # Bluetooth Classic (untuk printer thermal)\n
-                    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />\n
-                    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />\n
-                    # Bluetooth untuk Android 12+ (API 31+)\n
-                    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />\n
-                    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />\n
-                    <uses-feature android:name="android.hardware.bluetooth" android:required="false" />\n
-                    # Notifikasi lokal
-                    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-                    <uses-permission android:name="android.permission.VIBRATE" />
-                    # Network state
-                    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />\n
-                    # Baca/tulis file (untuk Filesystem di Android lama)
-                    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-                    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-               <application|gx
-            ' -i "$MANIFEST"
+            # Inject semua permissions sebelum tag <application
+            sed -i 's|<application|<!-- Kamera -->\n    <uses-permission android:name="android.permission.CAMERA" />\n    <uses-feature android:name="android.hardware.camera" android:required="false" />\n    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />\n    <!-- Bluetooth Classic (printer thermal) -->\n    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />\n    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />\n    <!-- Bluetooth Android 12+ -->\n    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />\n    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />\n    <uses-feature android:name="android.hardware.bluetooth" android:required="false" />\n    <!-- Notifikasi \& Vibrasi -->\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n    <uses-permission android:name="android.permission.VIBRATE" />\n    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />\n    <!-- Network -->\n    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />\n    <uses-permission android:name="android.permission.INTERNET" />\n    <!-- Storage (Filesystem plugin) -->\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />\n    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29" />\n    <application|g' "$MANIFEST"
 
-            # Hapus baris komentar (perl tidak bisa comment di string replacement, bersihkan manual)
-            sed -i '/^[[:space:]]*# /d' "$MANIFEST"
-
-            echo "=== AndroidManifest.xml (bagian permissions) ==="
-            grep -A 15 "<uses-permission" "$MANIFEST" | head -20
+            echo "=== Permissions injected ==="
+            grep "uses-permission\|uses-feature" "$MANIFEST"
           else
             echo "Warning: $MANIFEST not found"
           fi
@@ -106,7 +82,7 @@ jobs:
 
       - name: Clear Gradle caches (fix corrupted jars)
         run: |
-          echo "Clearing Gradle caches that can cause corrupted JAR issues"
+          echo "Clearing Gradle caches"
           rm -rf ~/.gradle/caches/jars-9 || true
           rm -rf ~/.gradle/caches/modules-2 || true
           rm -rf ~/.gradle/caches/v4 || true
