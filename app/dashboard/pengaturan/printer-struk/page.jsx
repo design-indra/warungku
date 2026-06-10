@@ -212,12 +212,13 @@ export default function PrinterStrukPage() {
     const itemsHtml = DUMMY_TX.items.map(item =>
       `<div class="row"><span>${item.nama} <small>(${item.qty}x${item.harga.toLocaleString('id-ID')})</small></span><span>${(item.qty * item.harga).toLocaleString('id-ID')}</span></div>`
     ).join('')
-    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>Test Struk</title>
+    const printBtnStyle = `position:fixed;bottom:20px;right:20px;z-index:999;background:#1d4ed8;color:#fff;border:none;border-radius:12px;padding:12px 24px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.2);font-family:sans-serif;`
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Test Struk</title>
     <style>@page{margin:0;size:${mmWidth} auto;}*{box-sizing:border-box;}body{font-family:'Courier New',monospace;font-size:11px;width:${mmWidth};margin:0 auto;padding:6mm 4mm;color:#111;}
     .center{text-align:center;}.bold{font-weight:700;}.small{font-size:9px;color:#555;}.dash{border-top:1px dashed #999;margin:5px 0;}
     .row{display:flex;justify-content:space-between;margin-bottom:2px;}.total-row{display:flex;justify-content:space-between;font-weight:700;font-size:12px;border-top:1px solid #333;padding-top:4px;margin-top:4px;}
-    @media print{body{-webkit-print-color-adjust:exact;}}</style></head>
-    <body>
+    @media print{.no-print{display:none !important;}body{-webkit-print-color-adjust:exact;}}</style></head>
+    <body><button class="no-print" style="${printBtnStyle}" onclick="window.print()">🖨️ Cetak / Save PDF</button>
     ${settings.showStoreName ? `<div class="center bold" style="font-size:13px;letter-spacing:2px;">${store.nama_warung || 'WARUNGKU'}</div>` : ''}
     ${settings.showAddress && store.alamat ? `<div class="center small">${store.alamat}</div>` : ''}
     ${settings.showPhone && store.no_hp ? `<div class="center small">Telp: ${store.no_hp}</div>` : ''}
