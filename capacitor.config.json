@@ -7,13 +7,12 @@
     "cleartext": false,
     "androidScheme": "https"
   },
-  "android": {
-    "backgroundColor": "#1d4ed8",
-    "allowMixedContent": false,
-    "captureInput": true,
-    "webContentsDebuggingEnabled": false
-  },
   "plugins": {
+    "GoogleAuth": {
+      "scopes": ["profile", "email"],
+      "serverClientId": "112112398934-ofphqa4hkeaktka3npf0f79moqs8688i.apps.googleusercontent.com",
+      "forceCodeForRefreshToken": true
+    },
     "CapacitorHttp": {
       "enabled": false
     },
