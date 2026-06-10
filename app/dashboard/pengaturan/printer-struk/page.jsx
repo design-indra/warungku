@@ -207,7 +207,7 @@ export default function PrinterStrukPage() {
     } catch (e) { setBtError(e.message); setBtStatus('error') }
   }, [store, settings.paperWidth])
 
-  const handleTestPDF = () => {
+  const handleTestPDF = async () => {
     const mmWidth = settings.paperWidth === 48 ? '80mm' : '58mm'
     const itemsHtml = DUMMY_TX.items.map(item =>
       `<div class="row"><span>${item.nama} <small>(${item.qty}x${item.harga.toLocaleString('id-ID')})</small></span><span>${(item.qty * item.harga).toLocaleString('id-ID')}</span></div>`
@@ -237,7 +237,38 @@ export default function PrinterStrukPage() {
     ${settings.footerLine1 ? `<div class="center small">${settings.footerLine1}</div>` : ''}
     ${settings.footerLine2 ? `<div class="center small">${settings.footerLine2}</div>` : ''}
     </body></html>`
+
+    // ── APK Capacitor: window.open() diblokir → simpan HTML lalu share native ──
+    if (typeof window !== 'undefined' && window.Capacitor?.isNativePlatform?.()) {
+      try {
+        const { Filesystem, Directory } = await import('@capacitor/filesystem')
+        const { Share } = await import('@capacitor/share')
+        const base64 = btoa(unescape(encodeURIComponent(html)))
+        await Filesystem.writeFile({
+          path: 'struk/test-struk.html',
+          data: base64,
+          directory: Directory.Cache,
+          recursive: true,
+        })
+        const { uri } = await Filesystem.getUri({
+          path: 'struk/test-struk.html',
+          directory: Directory.Cache,
+        })
+        await Share.share({
+          title: 'Test Struk PDF',
+          text: 'Buka di Chrome lalu Print / Save as PDF',
+          url: uri,
+          dialogTitle: 'Simpan / Cetak Test Struk',
+        })
+      } catch (err) {
+        if (err?.name !== 'AbortError') alert('Gagal membuka test PDF: ' + (err?.message || err))
+      }
+      return
+    }
+
+    // ── PWA / Browser: buka tab baru lalu print ──
     const w = window.open('', '_blank')
+    if (!w) { alert('Popup diblokir browser. Izinkan popup untuk halaman ini.'); return }
     w.document.write(html)
     w.document.close()
     w.onload = () => { w.print() }
