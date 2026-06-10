@@ -604,49 +604,15 @@ async function generateStrukPDF(tx, store, paperWidth = 32) {
   const printBtnStyle = `position:fixed;bottom:20px;right:20px;z-index:999;background:#1d4ed8;color:#fff;border:none;border-radius:12px;padding:12px 24px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.2);font-family:sans-serif;`
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Struk - ${tx.nomor_transaksi || ''}</title><style>@page { margin: 0; size: ${mmWidth} auto; } * { box-sizing: border-box; } body { font-family: 'Courier New', Courier, monospace; font-size: 11px; width: ${mmWidth}; margin: 0 auto; padding: 6mm 4mm; color: #111; background: #fff; } .center { text-align: center; } .bold { font-weight: 700; } .small { font-size: 9px; color: #555; } .dash { border-top: 1px dashed #999; margin: 5px 0; } .row { display: flex; justify-content: space-between; margin-bottom: 2px; } .total-row { display: flex; justify-content: space-between; font-weight: 700; font-size: 12px; border-top: 1px solid #333; padding-top: 4px; margin-top: 4px; } @media print { .no-print { display: none !important; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }</style></head><body><button class="no-print" style="${printBtnStyle}" onclick="window.print()">🖨️ Cetak / Save PDF</button><div class="center bold" style="font-size:13px;letter-spacing:2px;margin-bottom:2px;">${store.nama_warung || 'WARUNGKU'}</div>${store.alamat ? `<div class="center small">${store.alamat}</div>` : ''}${store.no_hp ? `<div class="center small">Telp: ${store.no_hp}</div>` : ''}<div class="dash"></div><div class="row"><span>No. Transaksi</span><span>${tx.nomor_transaksi || '-'}</span></div><div class="row"><span>Tanggal</span><span>${fmt(tx.created_at || new Date())}</span></div><div class="row"><span>Kasir</span><span>Admin</span></div><div class="dash"></div>${itemsHtml}<div class="dash"></div><div class="row"><span>Total Item</span><span>${totalItem}</span></div><div class="row"><span>Subtotal</span><span>${rp(tx.subtotal)}</span></div>${tx.diskon > 0 ? `<div class="row"><span>Diskon</span><span>-${rp(tx.diskon)}</span></div>` : ''}<div class="total-row"><span>TOTAL</span><span>${rp(tx.total)}</span></div><div class="dash"></div><div class="row"><span>Dibayar (${namaMetode})</span><span>${rp(tx.bayar)}</span></div>${kembalianHtml}<div class="dash"></div><div class="center small" style="margin-top:6px;">Terima kasih telah berbelanja</div><div class="center small">*** Simpan struk ini sebagai bukti ***</div></body></html>`
 
-  // ── APK Capacitor: window.open() diblokir WebView → simpan HTML lalu buka via Browser plugin ──
+  // ── APK Capacitor: window.open() diblokir WebView → buka via data: URL di Browser plugin ──
   if (typeof window !== 'undefined' && window.Capacitor?.isNativePlatform?.()) {
     try {
-      const { Filesystem, Directory } = await import('@capacitor/filesystem')
       const { Browser } = await import('@capacitor/browser')
-
-      const namaFile = `struk-${tx.nomor_transaksi || 'belanja'}.html`
-      const base64 = btoa(unescape(encodeURIComponent(html)))
-
-      await Filesystem.writeFile({
-        path: `struk/${namaFile}`,
-        data: base64,
-        directory: Directory.Cache,
-        recursive: true,
-      })
-
-      const { uri } = await Filesystem.getUri({
-        path: `struk/${namaFile}`,
-        directory: Directory.Cache,
-      })
-
-      // Buka langsung di in-app browser → user tinggal tap tombol 🖨️ Cetak / Save PDF
-      await Browser.open({ url: uri, presentationStyle: 'fullscreen' })
+      const dataUrl = 'data:text/html;charset=utf-8,' + encodeURIComponent(html)
+      await Browser.open({ url: dataUrl, presentationStyle: 'fullscreen' })
     } catch (err) {
-      // Fallback ke Share jika Browser.open gagal (misal: file URI tidak didukung device tertentu)
-      try {
-        const { Filesystem, Directory } = await import('@capacitor/filesystem')
-        const { Share } = await import('@capacitor/share')
-        const namaFile = `struk-${tx.nomor_transaksi || 'belanja'}.html`
-        const { uri } = await Filesystem.getUri({
-          path: `struk/${namaFile}`,
-          directory: Directory.Cache,
-        })
-        await Share.share({
-          title: `Struk ${tx.nomor_transaksi || 'Belanja'}`,
-          text: '👆 Buka di Chrome → tap tombol 🖨️ Cetak / Save PDF',
-          url: uri,
-          dialogTitle: 'Buka Struk di Browser',
-        })
-      } catch (fallbackErr) {
-        if (fallbackErr?.name !== 'AbortError') {
-          alert('Gagal membuka struk: ' + (fallbackErr?.message || fallbackErr))
-        }
+      if (err?.name !== 'AbortError') {
+        alert('Gagal membuka struk: ' + (err?.message || err))
       }
     }
     return
