@@ -54,14 +54,13 @@ jobs:
 
       - name: Copy custom icons
         run: |
-          cp -f icons/mipmap-hdpi/*     android/app/src/main/res/mipmap-hdpi/     || true
-          cp -f icons/mipmap-mdpi/*     android/app/src/main/res/mipmap-mdpi/     || true
-          cp -f icons/mipmap-xhdpi/*    android/app/src/main/res/mipmap-xhdpi/    || true
-          cp -f icons/mipmap-xxhdpi/*   android/app/src/main/res/mipmap-xxhdpi/   || true
-          cp -f icons/mipmap-xxxhdpi/*  android/app/src/main/res/mipmap-xxxhdpi/  || true
+          cp -f icons/mipmap-hdpi/* android/app/src/main/res/mipmap-hdpi/     || true
+          cp -f icons/mipmap-mdpi/* android/app/src/main/res/mipmap-mdpi/     || true
+          cp -f icons/mipmap-xhdpi/* android/app/src/main/res/mipmap-xhdpi/    || true
+          cp -f icons/mipmap-xxhdpi/* android/app/src/main/res/mipmap-xxhdpi/   || true
+          cp -f icons/mipmap-xxxhdpi/* android/app/src/main/res/mipmap-xxxhdpi/  || true
 
-      - name: Decode Keystore (use real keystore if provided)
-        if: ${{ secrets.KEYSTORE_BASE64 != '' }}
+      - name: Decode Keystore
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
         run: |
@@ -89,32 +88,17 @@ jobs:
 
       - name: Build Release APK
         env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           cd android
           chmod +x gradlew
-
-          if [ -n "$KEYSTORE_BASE64" ]; then
-            STORE_FILE="$(pwd)/app/my-release-key.keystore"
-            STORE_PASS="$KEYSTORE_PASSWORD"
-            ALIAS="$KEY_ALIAS"
-            KEY_PASS="$KEY_PASSWORD"
-          else
-            STORE_FILE="$(pwd)/app/my-release-key.keystore"
-            STORE_PASS="android"
-            ALIAS="actionkey"
-            KEY_PASS="android"
-          fi
-
           ./gradlew assembleRelease \
-            -Pandroid.injected.signing.store.file="$STORE_FILE" \
-            -Pandroid.injected.signing.store.password="$STORE_PASS" \
-            -Pandroid.injected.signing.key.alias="$ALIAS" \
-            -Pandroid.injected.signing.key.password="$KEY_PASS" \
-            --no-daemon --stacktrace --refresh-dependencies
+            -Pandroid.injected.signing.store.file=$(pwd)/app/my-release-key.keystore \
+            -Pandroid.injected.signing.store.password="$KEYSTORE_PASSWORD" \
+            -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
+            -Pandroid.injected.signing.key.password="$KEY_PASSWORD"
 
       - name: Upload Signed APK
         uses: actions/upload-artifact@v4
