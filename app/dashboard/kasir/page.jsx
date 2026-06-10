@@ -588,7 +588,7 @@ function KeranjangPanel({ cart, subtotal, totalItem, diskon, setDiskon, diskonNo
   )
 }
 
-function generateStrukPDF(tx, store, paperWidth = 32) {
+async function generateStrukPDF(tx, store, paperWidth = 32) {
   const namaMetode = METODE.find(m => m.id === tx.metode_bayar)?.label || 'Tunai'
   const mmWidth = paperWidth === 32 ? '58mm' : '80mm'
   const totalItem = tx.items.reduce((s, i) => s + i.qty, 0)
@@ -600,7 +600,45 @@ function generateStrukPDF(tx, store, paperWidth = 32) {
   ).join('')
   const kembalianHtml = tx.kembalian > 0 ? `<div style="display:flex;justify-content:space-between;font-weight:700;"><span>Kembalian</span><span>${rp(tx.kembalian)}</span></div>` : ''
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>Struk - ${tx.nomor_transaksi || ''}</title><style>@page { margin: 0; size: ${mmWidth} auto; } * { box-sizing: border-box; } body { font-family: 'Courier New', Courier, monospace; font-size: 11px; width: ${mmWidth}; margin: 0 auto; padding: 6mm 4mm; color: #111; background: #fff; } .center { text-align: center; } .bold { font-weight: 700; } .small { font-size: 9px; color: #555; } .dash { border-top: 1px dashed #999; margin: 5px 0; } .row { display: flex; justify-content: space-between; margin-bottom: 2px; } .total-row { display: flex; justify-content: space-between; font-weight: 700; font-size: 12px; border-top: 1px solid #333; padding-top: 4px; margin-top: 4px; } @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }</style></head><body><div class="center bold" style="font-size:13px;letter-spacing:2px;margin-bottom:2px;">${store.nama_warung || 'WARUNGKU'}</div>${store.alamat ? `<div class="center small">${store.alamat}</div>` : ''}${store.no_hp ? `<div class="center small">Telp: ${store.no_hp}</div>` : ''}<div class="dash"></div><div class="row"><span>No. Transaksi</span><span>${tx.nomor_transaksi || '-'}</span></div><div class="row"><span>Tanggal</span><span>${fmt(tx.created_at || new Date())}</span></div><div class="row"><span>Kasir</span><span>Admin</span></div><div class="dash"></div>${itemsHtml}<div class="dash"></div><div class="row"><span>Total Item</span><span>${totalItem}</span></div><div class="row"><span>Subtotal</span><span>${rp(tx.subtotal)}</span></div>${tx.diskon > 0 ? `<div class="row"><span>Diskon</span><span>-${rp(tx.diskon)}</span></div>` : ''}<div class="total-row"><span>TOTAL</span><span>${rp(tx.total)}</span></div><div class="dash"></div><div class="row"><span>Dibayar (${namaMetode})</span><span>${rp(tx.bayar)}</span></div>${kembalianHtml}<div class="dash"></div><div class="center small" style="margin-top:6px;">Terima kasih telah berbelanja</div><div class="center small">*** Simpan struk ini sebagai bukti ***</div></body></html>`
+
+  // ── APK Capacitor: window.open() diblokir WebView → simpan HTML lalu share ──
+  if (typeof window !== 'undefined' && window.Capacitor?.isNativePlatform?.()) {
+    try {
+      const { Filesystem, Directory } = await import('@capacitor/filesystem')
+      const { Share } = await import('@capacitor/share')
+
+      const namaFile = `struk-${tx.nomor_transaksi || 'belanja'}.html`
+      const base64 = btoa(unescape(encodeURIComponent(html)))
+
+      await Filesystem.writeFile({
+        path: `struk/${namaFile}`,
+        data: base64,
+        directory: Directory.Cache,
+        recursive: true,
+      })
+
+      const { uri } = await Filesystem.getUri({
+        path: `struk/${namaFile}`,
+        directory: Directory.Cache,
+      })
+
+      await Share.share({
+        title: `Struk ${tx.nomor_transaksi || 'Belanja'}`,
+        text: `Struk belanja dari ${store.nama_warung || 'WarungKu'} — buka di browser lalu Print/Save as PDF`,
+        url: uri,
+        dialogTitle: 'Simpan / Cetak Struk',
+      })
+    } catch (err) {
+      if (err?.name !== 'AbortError') {
+        alert('Gagal membuka struk: ' + (err?.message || err))
+      }
+    }
+    return
+  }
+
+  // ── PWA / Browser: buka di tab baru lalu print seperti biasa ──
   const win = window.open('', '_blank', 'width=400,height=600')
+  if (!win) { alert('Popup diblokir browser. Izinkan popup untuk halaman ini.'); return }
   win.document.write(html)
   win.document.close()
   win.onload = () => { win.focus(); win.print() }
