@@ -224,7 +224,7 @@ export default function LaporanPage() {
   useEffect(() => { fetchData() }, [fetchData])
 
   // Export CSV
-  const exportCSV = () => {
+  const exportCSV = async () => {
     if (!data) return
     const rows = [
       ['Laporan Warungku', '', ''],
@@ -253,12 +253,47 @@ export default function LaporanPage() {
       ['Metode', 'Jumlah Transaksi', 'Persen'],
       ...(data.per_metode || []).map(m => [LABEL_METODE[m.metode] || m.metode, m.jumlah, m.persen + '%']),
     ]
-    const csv  = rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n')
+    const csv      = rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n')
+    const namaFile = `laporan-warungku-${from}-${to}.csv`
+
+    // ── APK Capacitor: simpan ke Cache lalu share (a.click() tidak bisa di WebView) ──
+    if (typeof window !== 'undefined' && window.Capacitor?.isNativePlatform?.()) {
+      try {
+        const { Filesystem, Directory } = await import('@capacitor/filesystem')
+        const { Share } = await import('@capacitor/share')
+
+        const base64 = btoa(unescape(encodeURIComponent(csv)))
+
+        await Filesystem.writeFile({
+          path: `laporan/${namaFile}`,
+          data: base64,
+          directory: Directory.Cache,
+          recursive: true,
+        })
+
+        const { uri } = await Filesystem.getUri({
+          path: `laporan/${namaFile}`,
+          directory: Directory.Cache,
+        })
+
+        await Share.share({
+          title: `Laporan Warungku ${from} s/d ${to}`,
+          text: 'Ekspor laporan CSV dari Warungku',
+          url: uri,
+          dialogTitle: 'Simpan atau Bagikan CSV',
+        })
+      } catch (err) {
+        if (err?.name !== 'AbortError') alert('Gagal mengekspor CSV: ' + (err?.message || err))
+      }
+      return
+    }
+
+    // ── PWA / Browser: download langsung ──
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
     const url  = URL.createObjectURL(blob)
     const a    = document.createElement('a')
     a.href     = url
-    a.download = `laporan-warungku-${from}-${to}.csv`
+    a.download = namaFile
     a.click()
     URL.revokeObjectURL(url)
   }
