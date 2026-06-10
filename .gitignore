@@ -31,3 +31,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+android/
+assets/
+keystore_base64.txt
+warungku-release.keystore
