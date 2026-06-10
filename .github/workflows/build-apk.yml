@@ -77,6 +77,15 @@ jobs:
             echo "Temporary keystore created"
           fi
 
+      # ── TEMPORARY: untuk ambil SHA-1, hapus step ini setelah dapat SHA-1 ──
+      - name: Print SHA-1 Fingerprint
+        run: |
+          echo "======= SHA-1 FINGERPRINT ======="
+          keytool -keystore android/app/my-release-key.keystore \
+            -list -v -alias $ALIAS -storepass $STORE_PASS \
+            | grep "SHA1:"
+          echo "================================="
+
       - name: Clear Gradle caches
         run: |
           rm -rf ~/.gradle/caches/ || true
