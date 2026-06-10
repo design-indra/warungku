@@ -73,6 +73,83 @@ function RiwayatView({ onBack }) {
 
   const toggleExpand = (id) => setExpanded(prev => ({ ...prev, [id]: !prev[id] }))
 
+  const cetakUlangStruk = async (t) => {
+    const METODE_LABEL = { tunai: 'Tunai', transfer: 'Transfer', qris: 'QRIS', hutang: 'Hutang' }
+    const namaMetode   = METODE_LABEL[t.metode_bayar] || 'Tunai'
+    let namaWarung = 'WARUNGKU'
+    try {
+      const res = await fetch('/api/pengaturan/profil')
+      const p   = await res.json()
+      if (p.nama_warung) namaWarung = p.nama_warung
+    } catch {}
+
+    const items = (t.detail_transaksi || []).map(d => ({ nama: d.nama_barang, qty: d.qty, harga: d.harga_jual }))
+    const totalItem = items.reduce((s, i) => s + i.qty, 0)
+    const rpFmt = (n) => 'Rp ' + Number(n || 0).toLocaleString('id-ID')
+    const fmtTgl = (d) => new Date(d).toLocaleString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+
+    const itemsHtml = items.map(item =>
+      `<div style="display:flex;justify-content:space-between;margin-bottom:2px;">
+        <span style="flex:1;">${item.nama}<br/>
+          <span style="font-size:9px;color:#666;">${item.qty} x ${Number(item.harga).toLocaleString('id-ID')}</span>
+        </span>
+        <span style="white-space:nowrap;margin-left:8px;">${Number(item.harga * item.qty).toLocaleString('id-ID')}</span>
+      </div>`
+    ).join('')
+
+    const printBtnStyle = `position:fixed;bottom:20px;right:20px;z-index:999;background:#1d4ed8;color:#fff;border:none;border-radius:12px;padding:12px 24px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.2);font-family:sans-serif;`
+
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+      <title>Struk - ${t.nomor_transaksi || ''}</title>
+      <style>@page{margin:0;size:58mm auto;}*{box-sizing:border-box;}body{font-family:'Courier New',Courier,monospace;font-size:11px;width:58mm;margin:0 auto;padding:6mm 4mm;color:#111;background:#fff;}
+      .center{text-align:center;}.bold{font-weight:700;}.small{font-size:9px;color:#555;}.dash{border-top:1px dashed #999;margin:5px 0;}
+      .row{display:flex;justify-content:space-between;margin-bottom:2px;}.total-row{display:flex;justify-content:space-between;font-weight:700;font-size:12px;border-top:1px solid #333;padding-top:4px;margin-top:4px;}
+      @media print{.no-print{display:none!important;}}</style>
+      </head><body>
+      <button class="no-print" style="${printBtnStyle}" onclick="window.print()">🖨️ Cetak / Save PDF</button>
+      <div class="center bold" style="font-size:13px;letter-spacing:2px;margin-bottom:2px;">${namaWarung}</div>
+      <div class="dash"></div>
+      <div class="row"><span>No. Transaksi</span><span>${t.nomor_transaksi || '-'}</span></div>
+      <div class="row"><span>Tanggal</span><span>${fmtTgl(t.created_at)}</span></div>
+      <div class="dash"></div>
+      ${itemsHtml}
+      <div class="dash"></div>
+      <div class="row"><span>Total Item</span><span>${totalItem}</span></div>
+      ${t.diskon > 0 ? `<div class="row"><span>Diskon</span><span>-${rpFmt(t.diskon)}</span></div>` : ''}
+      <div class="total-row"><span>TOTAL</span><span>${rpFmt(t.total)}</span></div>
+      <div class="dash"></div>
+      <div class="row"><span>Dibayar (${namaMetode})</span><span>${rpFmt(t.bayar || t.total)}</span></div>
+      <div class="dash"></div>
+      <div class="center small" style="margin-top:6px;">Terima kasih telah berbelanja</div>
+      <div class="center small">*** Simpan struk ini sebagai bukti ***</div>
+      </body></html>`
+
+    if (typeof window !== 'undefined' && window.Capacitor?.isNativePlatform?.()) {
+      try {
+        const { Browser } = await import('@capacitor/browser')
+        const res = await fetch('/api/struk', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ html }),
+        })
+        if (!res.ok) throw new Error('Gagal menyimpan struk ke server')
+        const { token } = await res.json()
+        if (!token) throw new Error('Token tidak diterima dari server')
+        const url = `${window.location.origin}/api/struk?token=${token}`
+        await Browser.open({ url, presentationStyle: 'fullscreen' })
+      } catch (err) {
+        if (err?.name !== 'AbortError') alert('Gagal mencetak struk: ' + (err?.message || err))
+      }
+      return
+    }
+
+    const win = window.open('', '_blank', 'width=400,height=600')
+    if (!win) { alert('Popup diblokir browser. Izinkan popup untuk halaman ini.'); return }
+    win.document.write(html)
+    win.document.close()
+    win.onload = () => { win.focus(); win.print() }
+  }
+
   const handleCancel = async (trx) => {
     if (!confirm(`Batalkan transaksi ${trx.nomor_transaksi}?`)) return
     setCancelling(trx.id)
@@ -146,6 +223,15 @@ function RiwayatView({ onBack }) {
                       <span className="text-gray-500">Diskon</span><span className="text-red-500 font-semibold">-{rp(t.diskon)}</span>
                     </div>
                   )}
+                  <div className="mt-3 pt-2 border-t border-gray-200">
+                    <button
+                      onClick={() => cetakUlangStruk(t)}
+                      className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold hover:bg-blue-100 transition-colors"
+                    >
+                      <Printer className="w-3.5 h-3.5" />
+                      Cetak Ulang Struk
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
