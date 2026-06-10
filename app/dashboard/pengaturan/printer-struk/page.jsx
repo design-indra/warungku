@@ -239,28 +239,24 @@ export default function PrinterStrukPage() {
     ${settings.footerLine2 ? `<div class="center small">${settings.footerLine2}</div>` : ''}
     </body></html>`
 
-    // ── APK Capacitor: window.open() diblokir → simpan HTML lalu share native ──
+    // ── APK Capacitor: simpan HTML ke Vercel /api/struk → buka URL https:// via Browser plugin ──
     if (typeof window !== 'undefined' && window.Capacitor?.isNativePlatform?.()) {
       try {
-        const { Filesystem, Directory } = await import('@capacitor/filesystem')
-        const { Share } = await import('@capacitor/share')
-        const base64 = btoa(unescape(encodeURIComponent(html)))
-        await Filesystem.writeFile({
-          path: 'struk/test-struk.html',
-          data: base64,
-          directory: Directory.Cache,
-          recursive: true,
+        const { Browser } = await import('@capacitor/browser')
+
+        const res = await fetch('/api/struk', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ html }),
         })
-        const { uri } = await Filesystem.getUri({
-          path: 'struk/test-struk.html',
-          directory: Directory.Cache,
-        })
-        await Share.share({
-          title: 'Test Struk PDF',
-          text: 'Buka di Chrome lalu Print / Save as PDF',
-          url: uri,
-          dialogTitle: 'Simpan / Cetak Test Struk',
-        })
+
+        if (!res.ok) throw new Error('Gagal menyimpan struk ke server')
+
+        const { token } = await res.json()
+        if (!token) throw new Error('Token tidak diterima dari server')
+
+        const url = `${window.location.origin}/api/struk?token=${token}`
+        await Browser.open({ url, presentationStyle: 'fullscreen' })
       } catch (err) {
         if (err?.name !== 'AbortError') alert('Gagal membuka test PDF: ' + (err?.message || err))
       }
